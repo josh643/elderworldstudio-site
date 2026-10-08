@@ -1,0 +1,13 @@
+# Cloudflare Pages redirects
+/privacy              /privacy-policy/  301
+/privacy/             /privacy-policy/  301
+/privacy.html         /privacy-policy/  301
+/privacy-policy.html  /privacy-policy/  301
+/privacypolicy        /privacy-policy/  301
+/privacy_policy       /privacy-policy/  301
+# Old single-page-app routes from the previous site
+/about     /#about    301
+/games     /#games    301
+/tools     /#tools    301
+/services  /          301
+/schedule  /contact/  301

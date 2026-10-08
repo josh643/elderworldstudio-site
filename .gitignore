@@ -1,0 +1,5 @@
+.venv/
+shots/
+*.zip
+node_modules/
+.wrangler/

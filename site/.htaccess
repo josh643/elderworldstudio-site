@@ -1,0 +1,14 @@
+# For Apache hosts (e.g. Hostinger). Cloudflare Pages uses _redirects/_headers instead.
+Options -MultiViews
+DirectoryIndex index.html
+ErrorDocument 404 /404.html
+RewriteEngine On
+RewriteRule ^privacy/?$ /privacy-policy/ [R=301,L]
+RewriteRule ^privacy\.html$ /privacy-policy/ [R=301,L]
+RewriteRule ^privacy-policy\.html$ /privacy-policy/ [R=301,L]
+RewriteRule ^privacy-policy$ /privacy-policy/ [R=301,L]
+RewriteRule ^about/?$ /#about [R=301,NE,L]
+RewriteRule ^games/?$ /#games [R=301,NE,L]
+RewriteRule ^tools/?$ /#tools [R=301,NE,L]
+RewriteRule ^services/?$ / [R=301,L]
+RewriteRule ^schedule/?$ /contact/ [R=301,L]
