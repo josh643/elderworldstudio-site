@@ -3,3 +3,4 @@ shots/
 *.zip
 node_modules/
 .wrangler/
+dns-backup-*.json
