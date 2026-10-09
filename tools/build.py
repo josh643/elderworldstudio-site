@@ -4,7 +4,7 @@ Run: python3 tools/build.py"""
 import os, pathlib
 ROOT = pathlib.Path(__file__).resolve().parent.parent / "site"
 DOMAIN = "https://elderworldstudio.com"
-STUDIO = "Elder Worlds Studio Inc"
+STUDIO = "Elder World Studio Inc"
 EMAIL = "unity@elderworldsstudio.com"
 EFFECTIVE = "October 8, 2026"
 PLAY_SW = "https://play.google.com/store/apps/details?id=com.elderworlds.starwayfarer"
@@ -28,7 +28,7 @@ def page(path, title, desc, body, canonical, current="", noindex=False):
 <meta name="description" content="{desc}">
 {robots}
 <link rel="canonical" href="{DOMAIN}{canonical}">
-<link rel="icon" type="image/png" href="{P}favicon.png">
+<link rel="icon" type="image/png" href="{P}favicon.png?v=2">
 <meta property="og:title" content="{title}">
 <meta property="og:description" content="{desc}">
 <meta property="og:type" content="website">
@@ -43,7 +43,7 @@ def page(path, title, desc, body, canonical, current="", noindex=False):
 <a class="skip" href="#main">Skip to content</a>
 <header class="site-header">
  <div class="wrap">
-  <a class="brand" href="{P}index.html"><img src="{P}assets/img/logo-gold-64.png" width="36" height="36" alt=""><span>{STUDIO}</span></a>
+  <a class="brand" href="{P}index.html"><img src="{P}assets/img/logo-gold-64.png?v=2" width="36" height="36" alt=""><span>{STUDIO}</span></a>
   <nav class="nav" aria-label="Main">{navhtml}</nav>
  </div>
 </header>
@@ -66,7 +66,7 @@ def page(path, title, desc, body, canonical, current="", noindex=False):
 HOME = f"""
 <section class="hero">
  <div class="wrap">
-  <img class="logo" src="{{P}}assets/img/logo-gold.png" width="256" height="256" alt="Elder Worlds Studio crest: crossed swords over a shield">
+  <img class="logo" src="{{P}}assets/img/logo-gold.png?v=2" width="256" height="256" alt="Elder World Studio crest: crossed swords over a shield">
   <h1>Forging Digital Realms</h1>
   <p>{STUDIO} is a game development studio that blends the enchanting aesthetics of medieval worlds with the power of modern technology. We make PC and mobile games, and assets for other developers.</p>
   <div class="btns"><a class="btn btn-primary" href="#games">View Our Games</a><a class="btn btn-ghost" href="{{P}}contact/index.html">Get in Touch</a></div>
@@ -126,8 +126,8 @@ HOME = f"""
 <section class="block" id="about">
  <div class="wrap grid two">
   <div>
-   <h2>About Elder Worlds Studio</h2>
-   <p class="lead">Founded with a passion for immersive storytelling and robust engineering, Elder Worlds Studio began by creating medieval-style RPGs.</p>
+   <h2>About Elder World Studio</h2>
+   <p class="lead">Founded with a passion for immersive storytelling and robust engineering, Elder World Studio began by creating medieval-style RPGs.</p>
    <p class="lead">As we built our own tools to solve hard development problems, we realized we could help other creators too. Today we make games for PC and mobile, and assets for the developers who make theirs.</p>
   </div>
   <div class="panel center">
@@ -203,7 +203,7 @@ POLICY = f"""
   </nav>
 
   <h2 id="who-we-are">1. Who we are</h2>
-  <p>This Privacy Policy is published by <strong>{STUDIO}</strong> (&ldquo;Elder Worlds Studio&rdquo;, &ldquo;we&rdquo;, &ldquo;us&rdquo;), the developer of the games listed below. On Google Play and Steam our developer name may appear as &ldquo;Elder World Studio&rdquo; or &ldquo;Elder World Studio Inc&rdquo;; these all refer to us. Our Unity Asset Store publisher name is &ldquo;Elder Worlds Publishing&rdquo;.</p>
+  <p>This Privacy Policy is published by <strong>{STUDIO}</strong> (&ldquo;Elder World Studio&rdquo;, &ldquo;we&rdquo;, &ldquo;us&rdquo;), the developer of the games listed below. On Google Play and Steam our developer name may appear as &ldquo;Elder World Studio&rdquo; or &ldquo;Elder World Studio Inc&rdquo;; these all refer to us. Our Unity Asset Store publisher name is &ldquo;Elder Worlds Publishing&rdquo;.</p>
   <p>You can contact us about privacy at any time at <a href="mailto:{EMAIL}">{EMAIL}</a>.</p>
 
   <h2 id="scope">2. What this policy covers</h2>
@@ -353,7 +353,7 @@ def _merch_body():
     return f"""
 <section class="hero merch-hero">
  <div class="wrap">
-  <img class="logo" src="{{P}}assets/img/logo-gold.png" width="256" height="297" alt="Elder Worlds Studio crest">
+  <img class="logo" src="{{P}}assets/img/logo-gold.png?v=2" width="256" height="297" alt="Elder World Studio crest">
   <h1>Studio Merch</h1>
   <p>Wear the worlds we build. Every order helps fund development of Omnivael, Star Wayfarer and Chronicles of the Realm.</p>
   {top}
@@ -373,6 +373,6 @@ page("merch/index.html", f"Merch | {STUDIO}", f"Official {STUDIO} merch: crest t
 # 404 uses root-absolute links (served for any missing path)
 page("404.html", f"Page not found | {STUDIO}", "Page not found.", NOTFOUND, "/404.html", noindex=True)
 p404 = ROOT / "404.html"
-t = p404.read_text().replace('href="favicon.png"', 'href="/favicon.png"').replace('href="assets/', 'href="/assets/').replace('src="assets/', 'src="/assets/').replace('href="index.html', 'href="/index.html').replace('href="contact/', 'href="/contact/').replace('href="merch/', 'href="/merch/').replace('href="privacy-policy/index.html"', 'href="/privacy-policy/"').replace('href="mailto', 'href="mailto')
+t = p404.read_text().replace('href="favicon.png', 'href="/favicon.png').replace('href="assets/', 'href="/assets/').replace('src="assets/', 'src="/assets/').replace('href="index.html', 'href="/index.html').replace('href="contact/', 'href="/contact/').replace('href="merch/', 'href="/merch/').replace('href="privacy-policy/index.html"', 'href="/privacy-policy/"').replace('href="mailto', 'href="mailto')
 p404.write_text(t)
 print("built", sum(1 for _ in ROOT.rglob("*.html")), "html files")

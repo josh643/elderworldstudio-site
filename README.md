@@ -1,6 +1,6 @@
 # elderworldstudio.com
 
-Static website for Elder Worlds Studio Inc. No build step is needed to deploy: the deployable site is the `site/` folder.
+Static website for Elder World Studio Inc. No build step is needed to deploy: the deployable site is the `site/` folder.
 
 - `site/` – deploy this directory as-is (Cloudflare Pages, GitHub Pages, or any static host).
   - `privacy-policy/` – the Privacy Policy (also served at `/privacy/`, `/privacy.html`, `/privacy-policy.html`, `/star-wayfarer/privacy/`).
