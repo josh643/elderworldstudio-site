@@ -15,7 +15,7 @@ def page(path, title, desc, body, canonical, current="", noindex=False):
     depth = path.count("/")  # e.g. "privacy-policy/index.html" -> 1
     P = "../" * depth
     nav = [("index.html", "Home", "home"), ("index.html#games", "Games", "games"),
-           ("index.html#tools", "Assets", "tools"), ("contact/index.html", "Contact", "contact"),
+           ("index.html#tools", "Assets", "tools"), ("merch/index.html", "Merch", "merch"), ("contact/index.html", "Contact", "contact"),
            ("privacy-policy/index.html", "Privacy Policy", "privacy")]
     navhtml = "".join(f'<a href="{P}{h}"{" aria-current=\"page\"" if k == current else ""}>{t}</a>' for h, t, k in nav)
     robots = '<meta name="robots" content="noindex">' if noindex else '<meta name="robots" content="index,follow">'
@@ -53,7 +53,7 @@ def page(path, title, desc, body, canonical, current="", noindex=False):
 <footer class="site-footer">
  <div class="wrap">
   <div>&copy; 2026 {STUDIO}. All rights reserved.</div>
-  <nav aria-label="Footer"><a href="{P}index.html#games">Games</a><a href="{P}contact/index.html">Contact</a><a href="{P}privacy-policy/index.html">Privacy Policy</a><a href="mailto:{EMAIL}">{EMAIL}</a></nav>
+  <nav aria-label="Footer"><a href="{P}index.html#games">Games</a><a href="{P}merch/index.html">Merch</a><a href="{P}contact/index.html">Contact</a><a href="{P}privacy-policy/index.html">Privacy Policy</a><a href="mailto:{EMAIL}">{EMAIL}</a></nav>
  </div>
 </footer>
 </body>
@@ -313,9 +313,65 @@ page("index.html", f"{STUDIO} | Games and Developer Assets", f"{STUDIO} makes PC
 page("contact/index.html", f"Contact | {STUDIO}", f"Contact {STUDIO} for support, privacy requests and business enquiries.", CONTACT, "/contact/", "contact")
 for p in ["privacy-policy/index.html", "privacy/index.html", "privacy-policy.html", "privacy.html", "star-wayfarer/privacy/index.html", "star-wayfarer/privacy-policy/index.html"]:
     page(p, f"Privacy Policy | {STUDIO}", PDESC, POLICY, "/privacy-policy/", "privacy")
+
+# ---- Merch page (store links live in tools/merch_config.py) ----
+import html as _h, sys as _sys
+_sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+import merch_config as MC
+def _merch_body():
+    live = bool(MC.STORE_URL)
+    cards = []
+    for it in MC.PRODUCTS:
+        url = it.get("url") or MC.STORE_URL
+        if live and url:
+            tag = '<span class="tag live">Available now</span>'
+            btn = f'<a class="btn btn-primary" href="{_h.escape(url)}" rel="noopener">Buy &middot; {_h.escape(it["price"])}</a>'
+        else:
+            subj = f'Notify me: {it["name"]}'.replace('\u201c','"').replace('\u201d','"')
+            from urllib.parse import quote
+            mail = f'mailto:{MC.NOTIFY_EMAIL}?subject={quote(subj)}&body={quote("Please email me when this is available. Size (if apparel): ")}'
+            tag = '<span class="tag soon">Coming soon</span>'
+            btn = f'<a class="btn btn-ghost" href="{mail}">Notify me</a>'
+        cards.append(f"""   <article class="card merch" id="{it['id']}">
+    <img class="thumb sq" src="{{P}}assets/img/merch/{it['img']}" width="900" height="900" alt="{_h.escape(it['name'])} preview" loading="lazy">
+    <div class="body">
+     {tag}
+     <h3>{_h.escape(it['name'])}</h3>
+     <p class="meta">{_h.escape(it['game'])}</p>
+     <p>{_h.escape(it['desc'])}</p>
+     <div class="actions"><span class="price">{_h.escape(it['price'])}</span>{btn}</div>
+    </div>
+   </article>""")
+    if live:
+        top = f'<div class="btns"><a class="btn btn-primary" href="{_h.escape(MC.STORE_URL)}" rel="noopener">Visit the store</a></div>'
+        note = f'Orders are printed on demand and shipped by {_h.escape(MC.STORE_NAME)}, which also handles checkout, sales tax and order support.'
+    else:
+        from urllib.parse import quote
+        top = f'<div class="btns"><a class="btn btn-primary" href="mailto:{MC.NOTIFY_EMAIL}?subject={quote("Notify me when the merch store opens")}">Email me when it opens</a><a class="btn btn-ghost" href="#lineup">See the lineup</a></div>'
+        note = 'The store is opening soon. Tap &ldquo;Notify me&rdquo; to send us a quick email and we&rsquo;ll write back once it&rsquo;s live. Prices are planned launch prices in USD and may change slightly.'
+    return f"""
+<section class="hero merch-hero">
+ <div class="wrap">
+  <img class="logo" src="{{P}}assets/img/logo-gold.png" width="256" height="297" alt="Elder Worlds Studio crest">
+  <h1>Studio Merch</h1>
+  <p>Wear the worlds we build. Every order helps fund development of Omnivael, Star Wayfarer and Chronicles of the Realm.</p>
+  {top}
+ </div>
+</section>
+<section class="block" id="lineup">
+ <div class="wrap">
+  <div class="center"><h2>The Launch Lineup</h2><p class="lead">{note}</p></div>
+  <div class="grid cards">
+{chr(10).join(cards)}
+  </div>
+  <p class="meta center" style="margin-top:28px">Print-on-demand: each item is made when you order it, so nothing goes to waste. Questions? <a href="mailto:{MC.NOTIFY_EMAIL}">{MC.NOTIFY_EMAIL}</a></p>
+ </div>
+</section>
+"""
+page("merch/index.html", f"Merch | {STUDIO}", f"Official {STUDIO} merch: crest tees and hoodies, Omnivael, Star Wayfarer and Chronicles of the Realm designs, mugs and stickers.", _merch_body(), "/merch/", "merch")
 # 404 uses root-absolute links (served for any missing path)
 page("404.html", f"Page not found | {STUDIO}", "Page not found.", NOTFOUND, "/404.html", noindex=True)
 p404 = ROOT / "404.html"
-t = p404.read_text().replace('href="favicon.png"', 'href="/favicon.png"').replace('href="assets/', 'href="/assets/').replace('src="assets/', 'src="/assets/').replace('href="index.html', 'href="/index.html').replace('href="contact/', 'href="/contact/').replace('href="privacy-policy/index.html"', 'href="/privacy-policy/"').replace('href="mailto', 'href="mailto')
+t = p404.read_text().replace('href="favicon.png"', 'href="/favicon.png"').replace('href="assets/', 'href="/assets/').replace('src="assets/', 'src="/assets/').replace('href="index.html', 'href="/index.html').replace('href="contact/', 'href="/contact/').replace('href="merch/', 'href="/merch/').replace('href="privacy-policy/index.html"', 'href="/privacy-policy/"').replace('href="mailto', 'href="mailto')
 p404.write_text(t)
 print("built", sum(1 for _ in ROOT.rglob("*.html")), "html files")

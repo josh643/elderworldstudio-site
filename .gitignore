@@ -4,3 +4,4 @@ shots/
 node_modules/
 .wrangler/
 dns-backup-*.json
+__pycache__/
