@@ -28,7 +28,7 @@ def page(path, title, desc, body, canonical, current="", noindex=False):
 <meta name="description" content="{desc}">
 {robots}
 <link rel="canonical" href="{DOMAIN}{canonical}">
-<link rel="icon" type="image/png" href="{P}favicon.png?v=2">
+<link rel="icon" type="image/png" href="{P}favicon.png?v=3">
 <meta property="og:title" content="{title}">
 <meta property="og:description" content="{desc}">
 <meta property="og:type" content="website">
@@ -43,7 +43,7 @@ def page(path, title, desc, body, canonical, current="", noindex=False):
 <a class="skip" href="#main">Skip to content</a>
 <header class="site-header">
  <div class="wrap">
-  <a class="brand" href="{P}index.html"><img src="{P}assets/img/logo-gold-64.png?v=2" width="36" height="36" alt=""><span>{STUDIO}</span></a>
+  <a class="brand" href="{P}index.html"><img src="{P}assets/img/logo-gold-64.png?v=3" width="36" height="36" alt=""><span>{STUDIO}</span></a>
   <nav class="nav" aria-label="Main">{navhtml}</nav>
  </div>
 </header>
@@ -66,7 +66,7 @@ def page(path, title, desc, body, canonical, current="", noindex=False):
 HOME = f"""
 <section class="hero">
  <div class="wrap">
-  <img class="logo" src="{{P}}assets/img/logo-gold.png?v=2" width="256" height="256" alt="Elder World Studio crest: crossed swords over a shield">
+  <img class="logo" src="{{P}}assets/img/logo-gold.png?v=3" width="256" height="256" alt="Elder World Studio crest: crossed swords over a shield">
   <h1>Forging Digital Realms</h1>
   <p>{STUDIO} is a game development studio that blends the enchanting aesthetics of medieval worlds with the power of modern technology. We make PC and mobile games, and assets for other developers.</p>
   <div class="btns"><a class="btn btn-primary" href="#games">View Our Games</a><a class="btn btn-ghost" href="{{P}}contact/index.html">Get in Touch</a></div>
@@ -353,7 +353,7 @@ def _merch_body():
     return f"""
 <section class="hero merch-hero">
  <div class="wrap">
-  <img class="logo" src="{{P}}assets/img/logo-gold.png?v=2" width="256" height="297" alt="Elder World Studio crest">
+  <img class="logo" src="{{P}}assets/img/logo-gold.png?v=3" width="256" height="297" alt="Elder World Studio crest">
   <h1>Studio Merch</h1>
   <p>Wear the worlds we build. Every order helps fund development of Omnivael, Star Wayfarer and Chronicles of the Realm.</p>
   {top}
