@@ -318,6 +318,7 @@ for p in ["privacy-policy/index.html", "privacy/index.html", "privacy-policy.htm
 import html as _h, sys as _sys
 _sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 import merch_config as MC
+MERCH_IMG_V = "2"  # bump when the merch mockup images change (cache-bust)
 def _merch_body():
     live = bool(MC.STORE_URL)
     cards = []
@@ -333,7 +334,7 @@ def _merch_body():
             tag = '<span class="tag soon">Coming soon</span>'
             btn = f'<a class="btn btn-ghost" href="{mail}">Notify me</a>'
         cards.append(f"""   <article class="card merch" id="{it['id']}">
-    <img class="thumb sq" src="{{P}}assets/img/merch/{it['img']}" width="900" height="900" alt="{_h.escape(it['name'])} preview" loading="lazy">
+    <img class="thumb sq" src="{{P}}assets/img/merch/{it['img']}?v={MERCH_IMG_V}" width="900" height="900" alt="{_h.escape(it['name'])} preview" loading="lazy">
     <div class="body">
      {tag}
      <h3>{_h.escape(it['name'])}</h3>
