@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Services: Websites, AI Tools and Custom Software | Elder World Studio Inc</title>
+<meta name="description" content="Elder World Studio Inc builds websites, AI chat assistants, automation and custom software for small businesses in Memphis and beyond. Start with a free demo.">
+<meta name="robots" content="index,follow">
+<link rel="canonical" href="https://elderworldstudio.com/services/">
+<link rel="icon" type="image/png" href="../favicon.png?v=3">
+<meta property="og:title" content="Services: Websites, AI Tools and Custom Software | Elder World Studio Inc">
+<meta property="og:description" content="Elder World Studio Inc builds websites, AI chat assistants, automation and custom software for small businesses in Memphis and beyond. Start with a free demo.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Elder World Studio Inc">
+<meta property="og:url" content="https://elderworldstudio.com/services/">
+<meta property="og:image" content="https://elderworldstudio.com/assets/img/hero-bg.jpg">
+<meta name="theme-color" content="#1a1a1a">
+<link rel="preload" href="../assets/fonts/cinzel.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="../assets/css/site.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="site-header">
+ <div class="wrap">
+  <a class="brand" href="../index.html"><img src="../assets/img/logo-gold-64.png?v=3" width="36" height="36" alt=""><span>Elder World Studio Inc</span></a>
+  <nav class="nav" aria-label="Main"><a href="../index.html">Home</a><a href="../index.html#games">Games</a><a href="../index.html#tools">Assets</a><a href="../merch/index.html">Merch</a><a href="../services/index.html" aria-current="page">Services</a><a href="../contact/index.html">Contact</a><a href="../privacy-policy/index.html">Privacy Policy</a></nav>
+ </div>
+</header>
+<main id="main">
+
+<div class="page"><div class="wrap">
+ <div class="page-head"><h1>Services</h1><p class="meta">Websites, AI tools and custom software for small businesses &middot; based in Memphis, TN</p></div>
+ <div class="panel" style="margin-bottom:24px"><h3 style="color:var(--accent)">Free demo first</h3>
+  <p>Tell us what you need. We build a quick, free demo of it for your business and share it by link. You only decide on anything after you&rsquo;ve seen it working. No pressure and no obligation.</p></div>
+ <div class="grid contact-grid">
+  <div class="panel"><h3>Websites</h3><p>New sites, refreshes and fixes: mobile-friendly pages, online booking, menus, quote forms and simple online stores.</p></div>
+  <div class="panel"><h3>AI tools &amp; chat assistants</h3><p>A chat assistant on your site that answers common questions, takes requests and hands real leads to you, powered by our own ElderAI.</p></div>
+  <div class="panel"><h3>Automation</h3><p>Stop retyping things. We connect forms, email, spreadsheets and the tools you already use so routine work happens on its own.</p></div>
+  <div class="panel"><h3>Custom software &amp; dashboards</h3><p>Internal tools, client portals and dashboards that replace paper forms and messy spreadsheets.</p></div>
+ </div>
+ <h2 id="request" style="margin-top:40px">Request a free demo</h2>
+ <div id="form-status" class="panel" hidden style="margin-bottom:16px"></div>
+ <form class="panel lead-form" method="post" action="/api/lead">
+  <label>Your name *<input name="name" required maxlength="100" autocomplete="name"></label>
+  <label>Email *<input name="email" type="email" required maxlength="200" autocomplete="email"></label>
+  <label>Phone (optional)<input name="phone" type="tel" maxlength="40" autocomplete="tel"></label>
+  <label>Business name *<input name="business" required maxlength="150" autocomplete="organization"></label>
+  <label>What do you need? *<select name="type" required><option>Website</option><option>AI tool</option><option>Custom software</option><option selected>Not sure</option></select></label>
+  <label>Tell us about it *<textarea name="description" required maxlength="4000" rows="6" placeholder="What does your business do, and what would you like to fix or build?"></textarea></label>
+  <label>Budget (optional)<input name="budget" maxlength="60" placeholder="e.g. under $500, not sure yet"></label>
+  <div class="hp" aria-hidden="true"><label>Leave this empty<input name="website_url" tabindex="-1" autocomplete="off"></label></div>
+  <input type="hidden" name="t" id="lead-t" value="">
+  <div class="cf-turnstile" data-sitekey="0x4AAAAAAFS0QVr90yy4iuW9" data-theme="dark"></div>
+  <button class="btn btn-primary" type="submit">Request my free demo</button>
+  <p class="meta">We reply by email, usually within one business day. We only use your details to answer your request (see our <a href="../privacy-policy/index.html">Privacy Policy</a>).</p>
+ </form>
+</div></div>
+<style>.lead-form{display:grid;gap:14px;max-width:640px}.lead-form label{display:grid;gap:6px;font-weight:600}.lead-form input,.lead-form select,.lead-form textarea{font:inherit;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:#0b0d12;color:inherit}.lead-form .hp{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}</style>
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+<script>document.getElementById('lead-t').value=Date.now();(function(){var q=new URLSearchParams(location.search),s=document.getElementById('form-status');if(!q.has('sent'))return;s.hidden=false;s.textContent=q.get('sent')==='1'?'Thanks! Your request was sent. We will reply by email soon.':('Sorry, that did not go through: '+(q.get('e')||'please try again')+' You can also email annaews@agentmail.to.');})();</script>
+
+</main>
+<footer class="site-footer">
+ <div class="wrap">
+  <div>&copy; 2026 Elder World Studio Inc. All rights reserved.</div>
+  <nav aria-label="Footer"><a href="../index.html#games">Games</a><a href="../services/index.html">Services</a><a href="../merch/index.html">Merch</a><a href="../contact/index.html">Contact</a><a href="../privacy-policy/index.html">Privacy Policy</a><a href="mailto:unity@elderworldsstudio.com">unity@elderworldsstudio.com</a></nav>
+ </div>
+</footer>
+</body>
+</html>

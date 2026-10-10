@@ -22,7 +22,7 @@ def page(path, title, desc, body, canonical, current="", noindex=False):
     depth = path.count("/")  # e.g. "privacy-policy/index.html" -> 1
     P = "../" * depth
     nav = [("index.html", "Home", "home"), ("index.html#games", "Games", "games"),
-           ("index.html#tools", "Assets", "tools"), ("merch/index.html", "Merch", "merch"), ("contact/index.html", "Contact", "contact"),
+           ("index.html#tools", "Assets", "tools"), ("merch/index.html", "Merch", "merch"), ("services/index.html", "Services", "services"), ("contact/index.html", "Contact", "contact"),
            ("privacy-policy/index.html", "Privacy Policy", "privacy")]
     navhtml = "".join(f'<a href="{P}{h}"{" aria-current=\"page\"" if k == current else ""}>{t}</a>' for h, t, k in nav)
     robots = '<meta name="robots" content="noindex">' if noindex else '<meta name="robots" content="index,follow">'
@@ -60,7 +60,7 @@ def page(path, title, desc, body, canonical, current="", noindex=False):
 <footer class="site-footer">
  <div class="wrap">
   <div>&copy; 2026 {STUDIO}. All rights reserved.</div>
-  <nav aria-label="Footer"><a href="{P}index.html#games">Games</a><a href="{P}merch/index.html">Merch</a><a href="{P}contact/index.html">Contact</a><a href="{P}privacy-policy/index.html">Privacy Policy</a><a href="mailto:{EMAIL}">{EMAIL}</a></nav>
+  <nav aria-label="Footer"><a href="{P}index.html#games">Games</a><a href="{P}services/index.html">Services</a><a href="{P}merch/index.html">Merch</a><a href="{P}contact/index.html">Contact</a><a href="{P}privacy-policy/index.html">Privacy Policy</a><a href="mailto:{EMAIL}">{EMAIL}</a></nav>
  </div>
 </footer>
 </body>
@@ -142,6 +142,11 @@ HOME = f"""
    <p>Questions, feedback, bug reports or business enquiries? We read every message.</p>
    <a class="btn btn-primary" href="{{P}}contact/index.html">Contact Us</a>
   </div>
+  <div class="panel center">
+   <h3>Need a Website or AI Tool?</h3>
+   <p>We also build websites, AI chat assistants, automations and custom software for small businesses. We start with a free demo.</p>
+   <a class="btn btn-primary" href="{{P}}services/index.html">See Services</a>
+  </div>
  </div>
 </section>
 """
@@ -155,6 +160,10 @@ CONTACT = f"""
    <p>For player support, bug reports, privacy requests and business enquiries, email us:</p>
    <p class="email"><a href="mailto:{EMAIL}">{EMAIL}</a></p>
    <p class="meta">Please include the game name and your device or platform for support requests.</p>
+  </div>
+  <div class="panel">
+   <h3>Websites, AI tools &amp; software</h3>
+   <p>Want us to build something for your business? Tell us about it on our <a class="link" href="{{P}}services/index.html#request">Services page</a> and we&rsquo;ll start with a free demo.</p>
   </div>
   <div class="panel">
    <h3>Privacy &amp; data requests</h3>
@@ -240,7 +249,7 @@ POLICY = f"""
   <h3>When you contact us</h3>
   <p>If you email us, we receive your email address, your name if you include it, and whatever you choose to write (for example a bug report). We use this only to reply and help you.</p>
   <h3>This website</h3>
-  <p>This website is a static site. It uses no cookies, no analytics, no advertising and no contact forms, and its fonts and images are served from this site itself. Like any website, our hosting provider automatically processes basic technical request data (such as IP address, browser type and the page requested) in order to deliver pages and protect the site from abuse. We do not use this data to identify or track you.</p>
+  <p>This website is a static site. It uses no cookies, no analytics and no advertising, and its fonts and images are served from this site itself. Like any website, our hosting provider automatically processes basic technical request data (such as IP address, browser type and the page requested) in order to deliver pages and protect the site from abuse. We do not use this data to identify or track you. If you use the request form on our Services page, the details you enter (name, email, optional phone, business, and your message) are emailed to us and used only to reply to your request; the form uses Cloudflare Turnstile to block spam. Ask us any time and we&rsquo;ll delete it.</p>
 
   <h2 id="use">5. How we use information</h2>
   <ul>
@@ -320,6 +329,40 @@ page("index.html", f"{STUDIO} | Games and Developer Assets", f"{STUDIO} makes PC
 page("contact/index.html", f"Contact | {STUDIO}", f"Contact {STUDIO} for support, privacy requests and business enquiries.", CONTACT, "/contact/", "contact")
 for p in ["privacy-policy/index.html", "privacy/index.html", "privacy-policy.html", "privacy.html", "star-wayfarer/privacy/index.html", "star-wayfarer/privacy-policy/index.html"]:
     page(p, f"Privacy Policy | {STUDIO}", PDESC, POLICY, "/privacy-policy/", "privacy")
+
+SERVICES = f"""
+<div class="page"><div class="wrap">
+ <div class="page-head"><h1>Services</h1><p class="meta">Websites, AI tools and custom software for small businesses &middot; based in Memphis, TN</p></div>
+ <div class="panel" style="margin-bottom:24px"><h3 style="color:var(--accent)">Free demo first</h3>
+  <p>Tell us what you need. We build a quick, free demo of it for your business and share it by link. You only decide on anything after you&rsquo;ve seen it working. No pressure and no obligation.</p></div>
+ <div class="grid contact-grid">
+  <div class="panel"><h3>Websites</h3><p>New sites, refreshes and fixes: mobile-friendly pages, online booking, menus, quote forms and simple online stores.</p></div>
+  <div class="panel"><h3>AI tools &amp; chat assistants</h3><p>A chat assistant on your site that answers common questions, takes requests and hands real leads to you, powered by our own ElderAI.</p></div>
+  <div class="panel"><h3>Automation</h3><p>Stop retyping things. We connect forms, email, spreadsheets and the tools you already use so routine work happens on its own.</p></div>
+  <div class="panel"><h3>Custom software &amp; dashboards</h3><p>Internal tools, client portals and dashboards that replace paper forms and messy spreadsheets.</p></div>
+ </div>
+ <h2 id="request" style="margin-top:40px">Request a free demo</h2>
+ <div id="form-status" class="panel" hidden style="margin-bottom:16px"></div>
+ <form class="panel lead-form" method="post" action="/api/lead">
+  <label>Your name *<input name="name" required maxlength="100" autocomplete="name"></label>
+  <label>Email *<input name="email" type="email" required maxlength="200" autocomplete="email"></label>
+  <label>Phone (optional)<input name="phone" type="tel" maxlength="40" autocomplete="tel"></label>
+  <label>Business name *<input name="business" required maxlength="150" autocomplete="organization"></label>
+  <label>What do you need? *<select name="type" required><option>Website</option><option>AI tool</option><option>Custom software</option><option selected>Not sure</option></select></label>
+  <label>Tell us about it *<textarea name="description" required maxlength="4000" rows="6" placeholder="What does your business do, and what would you like to fix or build?"></textarea></label>
+  <label>Budget (optional)<input name="budget" maxlength="60" placeholder="e.g. under $500, not sure yet"></label>
+  <div class="hp" aria-hidden="true"><label>Leave this empty<input name="website_url" tabindex="-1" autocomplete="off"></label></div>
+  <input type="hidden" name="t" id="lead-t" value="">
+  <div class="cf-turnstile" data-sitekey="0x4AAAAAAFS0QVr90yy4iuW9" data-theme="dark"></div>
+  <button class="btn btn-primary" type="submit">Request my free demo</button>
+  <p class="meta">We reply by email, usually within one business day. We only use your details to answer your request (see our <a href="{{P}}privacy-policy/index.html">Privacy Policy</a>).</p>
+ </form>
+</div></div>
+<style>.lead-form{{display:grid;gap:14px;max-width:640px}}.lead-form label{{display:grid;gap:6px;font-weight:600}}.lead-form input,.lead-form select,.lead-form textarea{{font:inherit;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:#0b0d12;color:inherit}}.lead-form .hp{{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}}</style>
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+<script>document.getElementById('lead-t').value=Date.now();(function(){{var q=new URLSearchParams(location.search),s=document.getElementById('form-status');if(!q.has('sent'))return;s.hidden=false;s.textContent=q.get('sent')==='1'?'Thanks! Your request was sent. We will reply by email soon.':('Sorry, that did not go through: '+(q.get('e')||'please try again')+' You can also email annaews@agentmail.to.');}})();</script>
+"""
+page("services/index.html", f"Services: Websites, AI Tools and Custom Software | {STUDIO}", f"{STUDIO} builds websites, AI chat assistants, automation and custom software for small businesses in Memphis and beyond. Start with a free demo.", SERVICES, "/services/", "services")
 
 # ---- Merch page (store links live in tools/merch_config.py) ----
 import html as _h, sys as _sys
