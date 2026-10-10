@@ -7,9 +7,16 @@ DOMAIN = "https://elderworldstudio.com"
 STUDIO = "Elder World Studio Inc"
 EMAIL = "unity@elderworldsstudio.com"
 EFFECTIVE = "October 8, 2026"
-PLAY_SW = "https://play.google.com/store/apps/details?id=com.elderworlds.starwayfarer"
-STEAM_OMNI = "https://store.steampowered.com/app/4121760"
-STEAM_COTR = "https://store.steampowered.com/app/2559510"
+# Attribution (see /workspace/marketing/attribution.md): outbound store links from our own site carry utm_source=website.
+def utm(url, campaign, source="website", medium="site", content=None):
+    q = f"utm_source={source}&utm_medium={medium}&utm_campaign={campaign}" + (f"&utm_content={content}" if content else "")
+    return url + ("&" if "?" in url else "?") + q
+def play_ref(url, campaign, source="website", medium="site"):
+    from urllib.parse import quote
+    return url + "&referrer=" + quote(f"utm_source={source}&utm_medium={medium}&utm_campaign={campaign}", safe="")
+PLAY_SW = play_ref("https://play.google.com/store/apps/details?id=com.elderworlds.starwayfarer", "star-wayfarer")
+STEAM_OMNI = utm("https://store.steampowered.com/app/4121760/", "omnivael")
+STEAM_COTR = utm("https://store.steampowered.com/app/2559510/", "chronicles")
 
 def page(path, title, desc, body, canonical, current="", noindex=False):
     depth = path.count("/")  # e.g. "privacy-policy/index.html" -> 1
@@ -324,6 +331,7 @@ def _merch_body():
     cards = []
     for it in MC.PRODUCTS:
         url = it.get("url") or MC.STORE_URL
+        url = utm(url, "merch", content=it["id"]) if url else url
         if live and url:
             tag = '<span class="tag live">Available now</span>'
             btn = f'<a class="btn btn-primary" href="{_h.escape(url)}" rel="noopener">Buy &middot; {_h.escape(it["price"])}</a>'
@@ -344,7 +352,7 @@ def _merch_body():
     </div>
    </article>""")
     if live:
-        top = f'<div class="btns"><a class="btn btn-primary" href="{_h.escape(MC.STORE_URL)}" rel="noopener">Visit the store</a></div>'
+        top = f'<div class="btns"><a class="btn btn-primary" href="{_h.escape(utm(MC.STORE_URL, "merch", content="store-home"))}" rel="noopener">Visit the store</a></div>'
         note = f'Orders are printed on demand and shipped by {_h.escape(MC.STORE_NAME)}, which also handles checkout, sales tax and order support.'
     else:
         from urllib.parse import quote
