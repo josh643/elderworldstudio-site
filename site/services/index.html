@@ -48,6 +48,7 @@
   <label>What do you need? *<select name="type" required><option>Website</option><option>AI tool</option><option>Custom software</option><option selected>Not sure</option></select></label>
   <label>Tell us about it *<textarea name="description" required maxlength="4000" rows="6" placeholder="What does your business do, and what would you like to fix or build?"></textarea></label>
   <label>Budget (optional)<input name="budget" maxlength="60" placeholder="e.g. under $500, not sure yet"></label>
+  <label class="sms-opt"><input type="checkbox" name="sms_optin" value="yes"> <span>OK to text me about my request. Msg&amp;data rates may apply. Reply STOP to opt out. <small>(Optional, not required to get a demo. Up to 4 msgs per request. Reply HELP for help. <a class="link" href="../sms-terms/index.html">SMS Terms</a> &middot; <a class="link" href="../privacy-policy/index.html#sms">Privacy Policy</a>)</small></span></label>
   <div class="hp" aria-hidden="true"><label>Leave this empty<input name="website_url" tabindex="-1" autocomplete="off"></label></div>
   <input type="hidden" name="t" id="lead-t" value="">
   <div class="cf-turnstile" data-sitekey="0x4AAAAAAFS0QVr90yy4iuW9" data-theme="dark"></div>
@@ -55,7 +56,7 @@
   <p class="meta">We reply by email, usually within one business day. We only use your details to answer your request (see our <a href="../privacy-policy/index.html">Privacy Policy</a>).</p>
  </form>
 </div></div>
-<style>.lead-form{display:grid;gap:14px;max-width:640px}.lead-form label{display:grid;gap:6px;font-weight:600}.lead-form input,.lead-form select,.lead-form textarea{font:inherit;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:#0b0d12;color:inherit}.lead-form .hp{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}</style>
+<style>.lead-form{display:grid;gap:14px;max-width:640px}.lead-form label{display:grid;gap:6px;font-weight:600}.lead-form input,.lead-form select,.lead-form textarea{font:inherit;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:#0b0d12;color:inherit}.lead-form .sms-opt{display:flex;gap:10px;align-items:flex-start;font-weight:400}.lead-form .sms-opt input{width:auto;margin-top:4px}.lead-form .hp{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}</style>
 <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 <script>document.getElementById('lead-t').value=Date.now();(function(){var q=new URLSearchParams(location.search),s=document.getElementById('form-status');if(!q.has('sent'))return;s.hidden=false;s.textContent=q.get('sent')==='1'?'Thanks! Your request was sent. We will reply by email soon.':('Sorry, that did not go through: '+(q.get('e')||'please try again')+' You can also email annaews@agentmail.to.');})();</script>
 

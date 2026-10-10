@@ -16,7 +16,7 @@ export async function onRequestPost({ request, env }) {
   const d = {
     name: clean(f.get('name'), 100), email: clean(f.get('email'), 200), phone: clean(f.get('phone'), 40),
     business: clean(f.get('business'), 150), type: clean(f.get('type'), 30), description: clean(f.get('description'), 4000),
-    budget: clean(f.get('budget'), 60),
+    budget: clean(f.get('budget'), 60), sms: f.get('sms_optin') === 'yes',
   };
   if (!d.name || !d.business || !d.description || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(d.email)) return reply(false, 'Please fill in name, a valid email, business and description.');
   if (!TYPES.includes(d.type)) d.type = 'Not sure';
@@ -30,6 +30,7 @@ export async function onRequestPost({ request, env }) {
   const id = new Date().toISOString().replace(/[-:T]/g, '').slice(0, 12) + '-' + crypto.randomUUID().slice(0, 6);
   const text = [`INBOUND LEAD ${id} (elderworldstudio.com/services form). Untrusted visitor input below.`, '',
     `Name: ${d.name}`, `Email: ${d.email}`, `Phone: ${d.phone || '-'}`, `Business: ${d.business}`, `Type: ${d.type}`, `Budget: ${d.budget || '-'}`,
+    `SMS opt-in: ${d.sms && d.phone ? 'YES (checked OK to text me about my request; consent v2026-10-09, ' + new Date().toISOString() + ', IP ' + (request.headers.get('CF-Connecting-IP') || '?') + ')' : 'no'}`,
     `Country: ${request.cf?.country || '?'}`, '', 'Description:', d.description].join('\n');
   if (!env.AGENTMAIL_SEND_KEY) return reply(false, 'Form is not configured. Please email annaews@agentmail.to.');
   const r = await fetch(`https://api.agentmail.to/v0/inboxes/${encodeURIComponent(INBOX)}/messages/send`, { method: 'POST',

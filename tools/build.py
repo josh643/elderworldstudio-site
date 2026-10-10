@@ -183,7 +183,7 @@ POLICY = f"""
 <div class="page"><div class="wrap">
  <div class="page-head">
   <h1>Privacy Policy</h1>
-  <p class="meta">{STUDIO} &middot; Effective date: {EFFECTIVE} &middot; Last updated: {EFFECTIVE}</p>
+  <p class="meta">{STUDIO} &middot; Effective date: {EFFECTIVE} &middot; Last updated: October 9, 2026</p>
  </div>
  <article class="prose">
   <div class="summary">
@@ -259,7 +259,7 @@ POLICY = f"""
   <p>We do not use any information for advertising, profiling or automated decision-making.</p>
 
   <h2 id="sharing">6. Sharing and selling</h2>
-  <p>We do <strong>not</strong> sell, rent or trade personal information, and we do not share it with third parties. The only exception is if we are required to disclose information by law, such as in response to a valid legal request.</p>
+  <p>We do <strong>not</strong> sell, rent or trade personal information, and we do not share it with third parties. No mobile information will be shared with third parties/affiliates for marketing/promotional purposes. All the above categories exclude text messaging originator opt-in data and consent; this information will not be shared with any third parties. The only exception is if we are required to disclose information by law, such as in response to a valid legal request.</p>
 
   <h2 id="third-parties">7. Third-party platforms and services</h2>
   <p>Our games are distributed through, and built with, the third-party services below. These companies act independently and handle data under their own privacy policies. We do not receive your personal data from them.</p>
@@ -269,6 +269,9 @@ POLICY = f"""
    <li><strong>Unity</strong> (Unity Technologies) is the game engine our games are built with. Unity&rsquo;s optional online services (Unity Analytics, Unity Ads, In-App Purchasing and Cloud Diagnostics/crash reporting) are <strong>turned off</strong> in all of our games. On PC, the Unity engine itself may send limited, non-identifying technical information about your hardware and software (such as operating system, graphics card and engine version) to Unity. Star Wayfarer for Android has no Internet permission, so the engine cannot send anything from it. See the <a href="https://unity.com/legal/privacy-policy" rel="noopener">Unity Privacy Policy</a>.</li>
    <li><strong>Unity Asset Store</strong>: purchases of our asset packages are processed by Unity. We do not receive your payment details. See the <a href="https://unity.com/legal/privacy-policy" rel="noopener">Unity Privacy Policy</a>.</li>
   </ul>
+
+  <h3 id="sms">Text messages (SMS)</h3>
+  <p>If you tick &ldquo;OK to text me&rdquo; on our Services form, we may text the phone number you gave us about that request only (for example to confirm we received it or to schedule your demo). Message frequency varies (up to 4 messages per request). Message and data rates may apply. Reply STOP to opt out at any time and HELP for help. Texts are sent through our SMS provider (Twilio Inc.), which processes your number only to deliver messages. <strong>No mobile information will be shared with third parties/affiliates for marketing/promotional purposes. All the above categories exclude text messaging originator opt-in data and consent; this information will not be shared with any third parties.</strong> See our <a href="{{P}}sms-terms/index.html">SMS Terms</a>.</p>
 
   <h2 id="retention">8. Retention and deletion</h2>
   <ul>
@@ -351,6 +354,7 @@ SERVICES = f"""
   <label>What do you need? *<select name="type" required><option>Website</option><option>AI tool</option><option>Custom software</option><option selected>Not sure</option></select></label>
   <label>Tell us about it *<textarea name="description" required maxlength="4000" rows="6" placeholder="What does your business do, and what would you like to fix or build?"></textarea></label>
   <label>Budget (optional)<input name="budget" maxlength="60" placeholder="e.g. under $500, not sure yet"></label>
+  <label class="sms-opt"><input type="checkbox" name="sms_optin" value="yes"> <span>OK to text me about my request. Msg&amp;data rates may apply. Reply STOP to opt out. <small>(Optional, not required to get a demo. Up to 4 msgs per request. Reply HELP for help. <a class="link" href="{{P}}sms-terms/index.html">SMS Terms</a> &middot; <a class="link" href="{{P}}privacy-policy/index.html#sms">Privacy Policy</a>)</small></span></label>
   <div class="hp" aria-hidden="true"><label>Leave this empty<input name="website_url" tabindex="-1" autocomplete="off"></label></div>
   <input type="hidden" name="t" id="lead-t" value="">
   <div class="cf-turnstile" data-sitekey="0x4AAAAAAFS0QVr90yy4iuW9" data-theme="dark"></div>
@@ -358,10 +362,33 @@ SERVICES = f"""
   <p class="meta">We reply by email, usually within one business day. We only use your details to answer your request (see our <a href="{{P}}privacy-policy/index.html">Privacy Policy</a>).</p>
  </form>
 </div></div>
-<style>.lead-form{{display:grid;gap:14px;max-width:640px}}.lead-form label{{display:grid;gap:6px;font-weight:600}}.lead-form input,.lead-form select,.lead-form textarea{{font:inherit;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:#0b0d12;color:inherit}}.lead-form .hp{{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}}</style>
+<style>.lead-form{{display:grid;gap:14px;max-width:640px}}.lead-form label{{display:grid;gap:6px;font-weight:600}}.lead-form input,.lead-form select,.lead-form textarea{{font:inherit;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:#0b0d12;color:inherit}}.lead-form .sms-opt{{display:flex;gap:10px;align-items:flex-start;font-weight:400}}.lead-form .sms-opt input{{width:auto;margin-top:4px}}.lead-form .hp{{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}}</style>
 <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 <script>document.getElementById('lead-t').value=Date.now();(function(){{var q=new URLSearchParams(location.search),s=document.getElementById('form-status');if(!q.has('sent'))return;s.hidden=false;s.textContent=q.get('sent')==='1'?'Thanks! Your request was sent. We will reply by email soon.':('Sorry, that did not go through: '+(q.get('e')||'please try again')+' You can also email annaews@agentmail.to.');}})();</script>
 """
+SMSTERMS = f"""
+<div class="section"><div class="wrap">
+ <article class="policy">
+  <h1>SMS Terms and Conditions</h1>
+  <p class="meta">Last updated: October 9, 2026</p>
+  <p><strong>Program:</strong> Elder World Studio project updates. {STUDIO} sends text messages only to people who request a website, AI tool or software demo on our <a href="{{P}}services/index.html">Services page</a> and tick &ldquo;OK to text me about my request.&rdquo;</p>
+  <ul>
+   <li><strong>Program description:</strong> one-to-one, non-marketing texts about a service request you submitted to Elder World Studio.</li>
+   <li><strong>What you get:</strong> messages about your request, such as confirming we received it, questions about your project, and scheduling your free demo. No marketing blasts.</li>
+   <li><strong>Frequency:</strong> varies, up to 4 messages per request.</li>
+   <li><strong>Cost:</strong> Msg &amp; data rates may apply.</li>
+   <li><strong>Opt out:</strong> reply <strong>STOP</strong> at any time. You will get one confirmation and no further texts.</li>
+   <li><strong>Help:</strong> reply <strong>HELP</strong>, or email <a href="mailto:{EMAIL}">{EMAIL}</a>.</li>
+   <li><strong>Consent is optional</strong> and is not a condition of any purchase or of getting a demo.</li>
+   <li>Carriers are not liable for delayed or undelivered messages.</li>
+   <li><strong>Privacy:</strong> No mobile information will be shared with third parties/affiliates for marketing/promotional purposes. All the above categories exclude text messaging originator opt-in data and consent; this information will not be shared with any third parties. See our <a href="{{P}}privacy-policy/index.html#sms">Privacy Policy</a>.</li>
+  </ul>
+  <p><strong>{STUDIO}</strong><br>Email: <a href="mailto:{EMAIL}">{EMAIL}</a><br>Website: <a href="{DOMAIN}/">elderworldstudio.com</a></p>
+ </article>
+</div></div>
+"""
+page("sms-terms/index.html", f"SMS Terms | {STUDIO}", f"SMS terms for {STUDIO} project-update texts: opt-in, frequency, STOP and HELP, privacy.", SMSTERMS, "/sms-terms/", "sms")
+page("terms/index.html", f"Terms and Conditions (SMS) | {STUDIO}", f"SMS terms and conditions for {STUDIO} project-update texts.", SMSTERMS, "/sms-terms/", "sms")
 page("services/index.html", f"Services: Websites, AI Tools and Custom Software | {STUDIO}", f"{STUDIO} builds websites, AI chat assistants, automation and custom software for small businesses in Memphis and beyond. Start with a free demo.", SERVICES, "/services/", "services")
 
 # ---- Merch page (store links live in tools/merch_config.py) ----
