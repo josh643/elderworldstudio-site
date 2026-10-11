@@ -15,6 +15,10 @@ def play_ref(url, campaign, source="website", medium="site"):
     from urllib.parse import quote
     return url + "&referrer=" + quote(f"utm_source={source}&utm_medium={medium}&utm_campaign={campaign}", safe="")
 PLAY_SW = play_ref("https://play.google.com/store/apps/details?id=com.elderworlds.starwayfarer", "star-wayfarer")
+PLAY_TEST_ASTRO = "https://play.google.com/apps/testing/com.elderworldstudio.astrododge"
+PLAY_TEST_STACK = "https://play.google.com/apps/testing/com.elderworldstudio.stacktower"
+EWS_TESTERS_GROUP = "https://groups.google.com/g/ews-testers"
+EWS_TESTERS_EMAIL = "ews-testers@googlegroups.com"
 STEAM_OMNI = utm("https://store.steampowered.com/app/4121760/", "omnivael")
 STEAM_COTR = utm("https://store.steampowered.com/app/2559510/", "chronicles")
 
@@ -22,7 +26,7 @@ def page(path, title, desc, body, canonical, current="", noindex=False):
     depth = path.count("/")  # e.g. "privacy-policy/index.html" -> 1
     P = "../" * depth
     nav = [("index.html", "Home", "home"), ("index.html#games", "Games", "games"),
-           ("index.html#tools", "Assets", "tools"), ("merch/index.html", "Merch", "merch"), ("services/index.html", "Services", "services"), ("contact/index.html", "Contact", "contact"),
+           ("index.html#tools", "Assets", "tools"), ("testers/index.html", "Testers", "testers"), ("merch/index.html", "Merch", "merch"), ("services/index.html", "Services", "services"), ("contact/index.html", "Contact", "contact"),
            ("privacy-policy/index.html", "Privacy Policy", "privacy")]
     navhtml = "".join(f'<a href="{P}{h}"{" aria-current=\"page\"" if k == current else ""}>{t}</a>' for h, t, k in nav)
     robots = '<meta name="robots" content="noindex">' if noindex else '<meta name="robots" content="index,follow">'
@@ -62,7 +66,7 @@ def page(path, title, desc, body, canonical, current="", noindex=False):
 <footer class="site-footer">
  <div class="wrap">
   <div>&copy; 2026 {STUDIO}. All rights reserved.</div>
-  <nav aria-label="Footer"><a href="{P}index.html#games">Games</a><a href="{P}services/index.html">Services</a><a href="{P}merch/index.html">Merch</a><a href="{P}contact/index.html">Contact</a><a href="{P}privacy-policy/index.html">Privacy Policy</a><a href="mailto:{EMAIL}">{EMAIL}</a></nav>
+  <nav aria-label="Footer"><a href="{P}index.html#games">Games</a><a href="{P}testers/index.html">Testers</a><a href="{P}services/index.html">Services</a><a href="{P}merch/index.html">Merch</a><a href="{P}contact/index.html">Contact</a><a href="{P}privacy-policy/index.html">Privacy Policy</a><a href="mailto:{EMAIL}">{EMAIL}</a></nav>
  </div>
 </footer>
 </body>
@@ -392,6 +396,99 @@ SMSTERMS = f"""
 page("sms-terms/index.html", f"SMS Terms | {STUDIO}", f"SMS terms for {STUDIO} project-update texts: opt-in, frequency, STOP and HELP, privacy.", SMSTERMS, "/sms-terms/", "sms")
 page("terms/index.html", f"Terms and Conditions (SMS) | {STUDIO}", f"SMS terms and conditions for {STUDIO} project-update texts.", SMSTERMS, "/sms-terms/", "sms")
 page("services/index.html", f"Services: Websites, AI Tools and Custom Software | {STUDIO}", f"{STUDIO} builds websites, AI chat assistants, automation and custom software for small businesses in Memphis and beyond. Start with a free demo.", SERVICES, "/services/", "services")
+
+
+# ---- Public Android testers (Google Play closed/open testing) ----
+TESTERS = f"""
+<section class="hero">
+ <div class="wrap">
+  <img class="logo" src="{{P}}assets/img/brand/ews-mark.svg?v=4" width="256" height="256" alt="Elder World Studio logo">
+  <h1>Become a Public Tester</h1>
+  <p>Help Elder World Studio shape our Android games before launch. Join the free tester group, opt in on Google Play, and tell us what breaks, what feels great, and what you want next.</p>
+  <div class="btns">
+   <a class="btn btn-primary" href="{EWS_TESTERS_GROUP}" rel="noopener">Join ews-testers</a>
+   <a class="btn btn-ghost" href="#games">See the games</a>
+  </div>
+ </div>
+</section>
+
+<section class="block" id="how">
+ <div class="wrap">
+  <div class="center"><h2>How it works</h2><p class="lead">Three free steps. Android + a Google account only. No paid ads, no payment required.</p></div>
+  <div class="grid cards">
+   <article class="card"><div class="body">
+    <span class="tag soon">Step 1</span>
+    <h3>Join the Google Group</h3>
+    <p>Join <strong>{EWS_TESTERS_EMAIL}</strong>. Play uses this public group to decide who can install our closed tests.</p>
+    <div class="actions"><a class="btn btn-primary" href="{EWS_TESTERS_GROUP}" rel="noopener">Join the group</a></div>
+   </div></article>
+   <article class="card"><div class="body">
+    <span class="tag soon">Step 2</span>
+    <h3>Opt in on Google Play</h3>
+    <p>Open each game&rsquo;s Play testing link below, accept the tester invitation, then install from the Play Store.</p>
+    <div class="actions"><a class="btn btn-ghost" href="#games">Jump to games</a></div>
+   </div></article>
+   <article class="card"><div class="body">
+    <span class="tag soon">Step 3</span>
+    <h3>Play and send feedback</h3>
+    <p>Crash? Confusing UI? A feature you love? Email <a href="mailto:{EMAIL}">{EMAIL}</a> with the game name and your device. We read every note.</p>
+   </div></article>
+  </div>
+ </div>
+</section>
+
+<section class="block alt" id="games">
+ <div class="wrap">
+  <div class="center"><h2>Games open for testers</h2><p class="lead">Tap Join test, then install. Links need the Google account that joined the group.</p></div>
+  <div class="grid cards">
+   <article class="card"><div class="body">
+    <span class="tag live">Open for testers</span>
+    <h3>Astro Dodge</h3>
+    <p>Neon arcade dodger. Steer through asteroids, chase high scores, play offline. Shows ads in the test build.</p>
+    <div class="actions"><a class="btn btn-primary" href="{PLAY_TEST_ASTRO}" rel="noopener">Join Astro Dodge test</a></div>
+   </div></article>
+   <article class="card"><div class="body">
+    <span class="tag live">Open for testers</span>
+    <h3>Stack Tower</h3>
+    <p>Timing and precision. Drop moving blocks, keep the tower climbing, beat your best score. Shows ads in the test build.</p>
+    <div class="actions"><a class="btn btn-primary" href="{PLAY_TEST_STACK}" rel="noopener">Join Stack Tower test</a></div>
+   </div></article>
+   <article class="card"><div class="body">
+    <span class="tag soon">Coming soon</span>
+    <h3>More EWS Android games</h3>
+    <p>Color Gate, Neon Snake, Brick Blitz, Crystal Merge, Gem Hopper, Void Flip and Omnivael Wayfarer&rsquo;s Life will land here as their Play apps open for testing.</p>
+   </div></article>
+  </div>
+ </div>
+</section>
+
+<section class="block" id="honest">
+ <div class="wrap grid two">
+  <div>
+   <h2>What testers actually do</h2>
+   <p class="lead">This is unpaid, optional, and honest about what we need.</p>
+   <ul class="prose" style="color:var(--soft);padding-left:1.2em">
+    <li>Install early Android builds from Google Play closed testing.</li>
+    <li>Play for a few minutes (or longer if you enjoy it).</li>
+    <li>Tell us about crashes, confusing screens, balance issues, or anything that feels off.</li>
+    <li>You can leave the group or opt out of a test any time in Play Console / Play Store.</li>
+   </ul>
+  </div>
+  <div class="panel">
+   <h3>What we will not do</h3>
+   <ul style="color:var(--soft);padding-left:1.2em;margin:0">
+    <li>We will not charge you to test.</li>
+    <li>We will not require a review or rating.</li>
+    <li>We will not run paid ads to recruit testers.</li>
+    <li>Test builds may show ads (Unity Ads test mode or live ads later). Say so if that is a problem for you.</li>
+    <li>Builds can be rough, incomplete, or wipe progress between versions.</li>
+   </ul>
+   <p class="meta" style="margin-top:16px">Questions? <a href="mailto:{EMAIL}">{EMAIL}</a> &middot; <a href="{{P}}privacy-policy/index.html">Privacy Policy</a></p>
+  </div>
+ </div>
+</section>
+"""
+page("testers/index.html", f"Public Testers | {STUDIO}", f"Join Elder World Studio's free public Android testers. Opt in on Google Play for Astro Dodge, Stack Tower, and more EWS games.", TESTERS, "/testers/", "testers")
 
 # ---- Merch page (store links live in tools/merch_config.py) ----
 import html as _h, sys as _sys
