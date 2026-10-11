@@ -5,7 +5,7 @@ import os, pathlib
 ROOT = pathlib.Path(__file__).resolve().parent.parent / "site"
 DOMAIN = "https://elderworldstudio.com"
 STUDIO = "Elder World Studio Inc"
-EMAIL = "unity@elderworldsstudio.com"
+EMAIL = "annaews@agentmail.to"
 EFFECTIVE = "October 8, 2026"
 # Attribution (see /workspace/marketing/attribution.md): outbound store links from our own site carry utm_source=website.
 def utm(url, campaign, source="website", medium="site", content=None):

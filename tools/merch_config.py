@@ -4,7 +4,7 @@
 Then run: tools/deploy-cf.sh   (rebuilds and deploys)."""
 STORE_URL = None
 STORE_NAME = "Fourthwall"
-NOTIFY_EMAIL = "unity@elderworldsstudio.com"
+NOTIFY_EMAIL = "annaews@agentmail.to"
 PRODUCTS = [
     {"id": "crest-tee", "name": "Elder World Crest Tee", "price": "$26", "game": "Elder World Studio",
      "img": "crest-tee.jpg", "desc": "Our gold crest and \u201cForging Digital Realms\u201d on a soft black Bella+Canvas tee.", "url": None},
