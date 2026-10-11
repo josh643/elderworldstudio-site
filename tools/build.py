@@ -17,8 +17,8 @@ def play_ref(url, campaign, source="website", medium="site"):
 PLAY_SW = play_ref("https://play.google.com/store/apps/details?id=com.elderworlds.starwayfarer", "star-wayfarer")
 PLAY_TEST_ASTRO = "https://play.google.com/apps/testing/com.elderworldstudio.astrododge"
 PLAY_TEST_STACK = "https://play.google.com/apps/testing/com.elderworldstudio.stacktower"
-EWS_TESTERS_GROUP = "https://groups.google.com/g/ews-testers"
-EWS_TESTERS_EMAIL = "ews-testers@googlegroups.com"
+EWS_TESTERS_GROUP = "https://groups.google.com/g/ews_testers"
+EWS_TESTERS_EMAIL = "ews_testers@googlegroups.com"
 STEAM_OMNI = utm("https://store.steampowered.com/app/4121760/", "omnivael")
 STEAM_COTR = utm("https://store.steampowered.com/app/2559510/", "chronicles")
 
@@ -277,7 +277,7 @@ POLICY = f"""
   </ul>
 
   <h3 id="sms">Text messages (SMS)</h3>
-  <p>If you tick &ldquo;OK to text me&rdquo; on our Services form, we may text the phone number you gave us about that request only (for example to confirm we received it or to schedule your demo). Message frequency varies (up to 4 messages per request). Message and data rates may apply. Reply STOP to opt out at any time and HELP for help. Texts are sent through our SMS provider (Twilio Inc.), which processes your number only to deliver messages. <strong>No mobile information will be shared with third parties/affiliates for marketing/promotional purposes. All the above categories exclude text messaging originator opt-in data and consent; this information will not be shared with any third parties.</strong> See our <a href="{{P}}sms-terms/index.html">SMS Terms</a>.</p>
+  <p>If you tick the optional SMS consent checkbox on our Services form, we may text the phone number you gave us about that request only (for example to confirm we received it or to schedule your demo). Message frequency varies (up to 4 messages per request). Message and data rates may apply. Reply STOP to opt out at any time and HELP for help. Texts are sent through our SMS provider (Twilio Inc.), which processes your number only to deliver messages. <strong>No mobile information will be shared with third parties/affiliates for marketing/promotional purposes. All the above categories exclude text messaging originator opt-in data and consent; this information will not be shared with any third parties.</strong> See our <a href="{{P}}sms-terms/index.html">SMS Terms</a>.</p>
 
   <h2 id="retention">8. Retention and deletion</h2>
   <ul>
@@ -360,7 +360,7 @@ SERVICES = f"""
   <label>What do you need? *<select name="type" required><option>Website</option><option>AI tool</option><option>Custom software</option><option selected>Not sure</option></select></label>
   <label>Tell us about it *<textarea name="description" required maxlength="4000" rows="6" placeholder="What does your business do, and what would you like to fix or build?"></textarea></label>
   <label>Budget (optional)<input name="budget" maxlength="60" placeholder="e.g. under $500, not sure yet"></label>
-  <label class="sms-opt"><input type="checkbox" name="sms_optin" value="yes"> <span>OK to text me about my request. Msg&amp;data rates may apply. Reply STOP to opt out. <small>(Optional, not required to get a demo. Up to 4 msgs per request. Reply HELP for help. <a class="link" href="{{P}}sms-terms/index.html">SMS Terms</a> &middot; <a class="link" href="{{P}}privacy-policy/index.html#sms">Privacy Policy</a>)</small></span></label>
+  <label class="sms-opt"><input type="checkbox" name="sms_optin" value="yes"> <span>By checking this box, I agree to receive text messages from Elder World Studio about my service request (confirmations, project questions, and demo scheduling). Up to 4 msgs per request. Message and data rates may apply. Reply STOP to opt out and HELP for help. Optional &mdash; not required to get a demo. <a class="link" href="{{P}}sms-terms/index.html">SMS Terms</a> &middot; <a class="link" href="{{P}}privacy-policy/index.html#sms">Privacy Policy</a></span></label>
   <div class="hp" aria-hidden="true"><label>Leave this empty<input name="website_url" tabindex="-1" autocomplete="off"></label></div>
   <input type="hidden" name="t" id="lead-t" value="">
   <div class="cf-turnstile" data-sitekey="0x4AAAAAAFS0QVr90yy4iuW9" data-theme="dark"></div>
@@ -376,8 +376,8 @@ SMSTERMS = f"""
 <div class="section"><div class="wrap">
  <article class="policy">
   <h1>SMS Terms and Conditions</h1>
-  <p class="meta">Last updated: October 9, 2026</p>
-  <p><strong>Program:</strong> Elder World Studio project updates. {STUDIO} sends text messages only to people who request a website, AI tool or software demo on our <a href="{{P}}services/index.html">Services page</a> and tick &ldquo;OK to text me about my request.&rdquo;</p>
+  <p class="meta">Last updated: October 11, 2026</p>
+  <p><strong>Program:</strong> Elder World Studio project updates. {STUDIO} sends text messages only to people who request a website, AI tool or software demo on our <a href="{{P}}services/index.html">Services page</a> and tick the optional SMS consent checkbox (messages about your service request; up to 4 msgs per request; Message and data rates may apply; Reply STOP to opt out and HELP for help).</p>
   <ul>
    <li><strong>Program description:</strong> one-to-one, non-marketing texts about a service request you submitted to Elder World Studio.</li>
    <li><strong>What you get:</strong> messages about your request, such as confirming we received it, questions about your project, and scheduling your free demo. No marketing blasts.</li>
@@ -406,7 +406,7 @@ TESTERS = f"""
   <h1>Become a Public Tester</h1>
   <p>Help Elder World Studio shape our Android games before launch. Join the free tester group, opt in on Google Play, and tell us what breaks, what feels great, and what you want next.</p>
   <div class="btns">
-   <a class="btn btn-primary" href="{EWS_TESTERS_GROUP}" rel="noopener">Join ews-testers</a>
+   <a class="btn btn-primary" href="{EWS_TESTERS_GROUP}" rel="noopener">Join ews_testers</a>
    <a class="btn btn-ghost" href="#games">See the games</a>
   </div>
  </div>
