@@ -92,7 +92,7 @@ HOME = f"""
      <span class="tag live">On Google Play</span>
      <h3>Star Wayfarer</h3>
      <p>An open space adventure built for mobile. Fly, trade, mine and fight across the stars, walk your own ship, land on planets, and build your crew, fleet and empire. Free to play, with no pay-to-win.</p>
-     <div class="actions"><a class="btn btn-primary" href="{PLAY_SW}" rel="noopener">Get it on Google Play</a><a class="link" href="{{P}}star-wayfarer/privacy/index.html">Privacy</a></div>
+     <div class="actions"><!-- PLAY-RESTORE: when the Play listing is public, replace the span below with: <a class="btn btn-primary" href="(PLAY_SW from build.py)" rel="noopener">Get it on Google Play</a> --><span class="btn btn-primary" aria-disabled="true" style="cursor:default;opacity:.85">Coming soon to Google Play</span><a class="link" href="{{P}}star-wayfarer/privacy/index.html">Privacy</a></div>
     </div>
    </article>
    <article class="card">
@@ -173,7 +173,7 @@ CONTACT = f"""
   </div>
   <div class="panel">
    <h3>Find our games</h3>
-   <p><a class="link" href="{PLAY_SW}" rel="noopener">Star Wayfarer on Google Play</a><br>
+   <p><!-- PLAY-RESTORE: <a class="link" href="(PLAY_SW from build.py)" rel="noopener">Star Wayfarer on Google Play</a> -->Star Wayfarer: coming soon to Google Play<br>
    <a class="link" href="{STEAM_OMNI}" rel="noopener">Omnivael: Wayfarers Life on Steam</a><br>
    <a class="link" href="{STEAM_COTR}" rel="noopener">Chronicles of the Realm on Steam</a></p>
   </div>
