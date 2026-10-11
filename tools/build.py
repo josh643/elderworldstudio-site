@@ -45,9 +45,8 @@ def page(path, title, desc, body, canonical, current="", noindex=False):
 <meta property="og:site_name" content="{STUDIO}">
 <meta property="og:url" content="{DOMAIN}{canonical}">
 <meta property="og:image" content="{DOMAIN}/assets/img/brand/ews-og.png?v=4">
-<meta name="theme-color" content="#1a1a1a">
-<link rel="preload" href="{P}assets/fonts/cinzel.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="{P}assets/css/site.css">
+<link rel="preload" href="{P}assets/fonts/michroma.woff" as="font" type="font/woff" crossorigin>
+<link rel="stylesheet" href="{P}assets/css/site.css?v=4">
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
@@ -365,7 +364,7 @@ SERVICES = f"""
   <p class="meta">We reply by email, usually within one business day. We only use your details to answer your request (see our <a href="{{P}}privacy-policy/index.html">Privacy Policy</a>).</p>
  </form>
 </div></div>
-<style>.lead-form{{display:grid;gap:14px;max-width:640px}}.lead-form label{{display:grid;gap:6px;font-weight:600}}.lead-form input,.lead-form select,.lead-form textarea{{font:inherit;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:#0b0d12;color:inherit}}.lead-form .sms-opt{{display:flex;gap:10px;align-items:flex-start;font-weight:400}}.lead-form .sms-opt input{{width:auto;margin-top:4px}}.lead-form .hp{{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}}</style>
+<style>.lead-form{{display:grid;gap:14px;max-width:640px}}.lead-form label{{display:grid;gap:6px;font-weight:600}}.lead-form input,.lead-form select,.lead-form textarea{{font:inherit;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:#130B22;color:inherit}}.lead-form .sms-opt{{display:flex;gap:10px;align-items:flex-start;font-weight:400}}.lead-form .sms-opt input{{width:auto;margin-top:4px}}.lead-form .hp{{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}}</style>
 <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 <script>document.getElementById('lead-t').value=Date.now();(function(){{var q=new URLSearchParams(location.search),s=document.getElementById('form-status');if(!q.has('sent'))return;s.hidden=false;s.textContent=q.get('sent')==='1'?'Thanks! Your request was sent. We will reply by email soon.':('Sorry, that did not go through: '+(q.get('e')||'please try again')+' You can also email annaews@agentmail.to.');}})();</script>
 """
