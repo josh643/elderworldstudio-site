@@ -15,6 +15,10 @@ def play_ref(url, campaign, source="website", medium="site"):
     from urllib.parse import quote
     return url + "&referrer=" + quote(f"utm_source={source}&utm_medium={medium}&utm_campaign={campaign}", safe="")
 PLAY_SW = play_ref("https://play.google.com/store/apps/details?id=com.elderworlds.starwayfarer", "star-wayfarer")
+PLAY_TEST_ASTRO = "https://play.google.com/apps/testing/com.elderworldstudio.astrododge"
+PLAY_TEST_STACK = "https://play.google.com/apps/testing/com.elderworldstudio.stacktower"
+EWS_TESTERS_GROUP = "https://groups.google.com/g/ews_testers"
+EWS_TESTERS_EMAIL = "ews_testers@googlegroups.com"
 STEAM_OMNI = utm("https://store.steampowered.com/app/4121760/", "omnivael")
 STEAM_COTR = utm("https://store.steampowered.com/app/2559510/", "chronicles")
 
@@ -22,7 +26,7 @@ def page(path, title, desc, body, canonical, current="", noindex=False):
     depth = path.count("/")  # e.g. "privacy-policy/index.html" -> 1
     P = "../" * depth
     nav = [("index.html", "Home", "home"), ("index.html#games", "Games", "games"),
-           ("index.html#tools", "Assets", "tools"), ("merch/index.html", "Merch", "merch"), ("services/index.html", "Services", "services"), ("contact/index.html", "Contact", "contact"),
+           ("index.html#tools", "Assets", "tools"), ("testers/index.html", "Testers", "testers"), ("merch/index.html", "Merch", "merch"), ("services/index.html", "Services", "services"), ("contact/index.html", "Contact", "contact"),
            ("privacy-policy/index.html", "Privacy Policy", "privacy")]
     navhtml = "".join(f'<a href="{P}{h}"{" aria-current=\"page\"" if k == current else ""}>{t}</a>' for h, t, k in nav)
     robots = '<meta name="robots" content="noindex">' if noindex else '<meta name="robots" content="index,follow">'
@@ -35,22 +39,24 @@ def page(path, title, desc, body, canonical, current="", noindex=False):
 <meta name="description" content="{desc}">
 {robots}
 <link rel="canonical" href="{DOMAIN}{canonical}">
-<link rel="icon" type="image/png" href="{P}favicon.png?v=3">
+<link rel="icon" type="image/svg+xml" href="{P}assets/img/brand/ews-mark.svg?v=4">
+<link rel="icon" type="image/png" sizes="32x32" href="{P}favicon.png?v=4">
+<link rel="apple-touch-icon" href="{P}apple-touch-icon.png?v=4">
+<meta name="theme-color" content="#0A0614">
 <meta property="og:title" content="{title}">
 <meta property="og:description" content="{desc}">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="{STUDIO}">
 <meta property="og:url" content="{DOMAIN}{canonical}">
-<meta property="og:image" content="{DOMAIN}/assets/img/hero-bg.jpg">
-<meta name="theme-color" content="#1a1a1a">
-<link rel="preload" href="{P}assets/fonts/cinzel.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="{P}assets/css/site.css">
+<meta property="og:image" content="{DOMAIN}/assets/img/brand/ews-og.png?v=4">
+<link rel="preload" href="{P}assets/fonts/michroma.woff" as="font" type="font/woff" crossorigin>
+<link rel="stylesheet" href="{P}assets/css/site.css?v=4">
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
 <header class="site-header">
  <div class="wrap">
-  <a class="brand" href="{P}index.html"><img src="{P}assets/img/logo-gold-64.png?v=3" width="36" height="36" alt=""><span>{STUDIO}</span></a>
+  <a class="brand" href="{P}index.html"><img src="{P}assets/img/brand/ews-mark.svg?v=4" width="36" height="36" alt=""><span>{STUDIO}</span></a>
   <nav class="nav" aria-label="Main">{navhtml}</nav>
  </div>
 </header>
@@ -60,7 +66,7 @@ def page(path, title, desc, body, canonical, current="", noindex=False):
 <footer class="site-footer">
  <div class="wrap">
   <div>&copy; 2026 {STUDIO}. All rights reserved.</div>
-  <nav aria-label="Footer"><a href="{P}index.html#games">Games</a><a href="{P}services/index.html">Services</a><a href="{P}merch/index.html">Merch</a><a href="{P}contact/index.html">Contact</a><a href="{P}privacy-policy/index.html">Privacy Policy</a><a href="mailto:{EMAIL}">{EMAIL}</a></nav>
+  <nav aria-label="Footer"><a href="{P}index.html#games">Games</a><a href="{P}testers/index.html">Testers</a><a href="{P}services/index.html">Services</a><a href="{P}merch/index.html">Merch</a><a href="{P}contact/index.html">Contact</a><a href="{P}privacy-policy/index.html">Privacy Policy</a><a href="mailto:{EMAIL}">{EMAIL}</a></nav>
  </div>
 </footer>
 </body>
@@ -73,7 +79,7 @@ def page(path, title, desc, body, canonical, current="", noindex=False):
 HOME = f"""
 <section class="hero">
  <div class="wrap">
-  <img class="logo" src="{{P}}assets/img/logo-gold.png?v=3" width="256" height="256" alt="Elder World Studio crest: crossed swords over a shield">
+  <img class="logo" src="{{P}}assets/img/brand/ews-mark.svg?v=4" width="256" height="256" alt="Elder World Studio logo">
   <h1>Forging Digital Realms</h1>
   <p>{STUDIO} is a game development studio that blends the enchanting aesthetics of medieval worlds with the power of modern technology. We make PC and mobile games, and assets for other developers.</p>
   <div class="btns"><a class="btn btn-primary" href="#games">View Our Games</a><a class="btn btn-ghost" href="{{P}}contact/index.html">Get in Touch</a></div>
@@ -90,7 +96,7 @@ HOME = f"""
      <span class="tag live">On Google Play</span>
      <h3>Star Wayfarer</h3>
      <p>An open space adventure built for mobile. Fly, trade, mine and fight across the stars, walk your own ship, land on planets, and build your crew, fleet and empire. Free to play, with no pay-to-win.</p>
-     <div class="actions"><a class="btn btn-primary" href="{PLAY_SW}" rel="noopener">Get it on Google Play</a><a class="link" href="{{P}}star-wayfarer/privacy/index.html">Privacy</a></div>
+     <div class="actions"><!-- PLAY-RESTORE: when the Play listing is public, replace the span below with: <a class="btn btn-primary" href="(PLAY_SW from build.py)" rel="noopener">Get it on Google Play</a> --><span class="btn btn-primary" aria-disabled="true" style="cursor:default;opacity:.85">Coming soon to Google Play</span><a class="link" href="{{P}}star-wayfarer/privacy/index.html">Privacy</a></div>
     </div>
    </article>
    <article class="card">
@@ -171,7 +177,7 @@ CONTACT = f"""
   </div>
   <div class="panel">
    <h3>Find our games</h3>
-   <p><a class="link" href="{PLAY_SW}" rel="noopener">Star Wayfarer on Google Play</a><br>
+   <p><!-- PLAY-RESTORE: <a class="link" href="(PLAY_SW from build.py)" rel="noopener">Star Wayfarer on Google Play</a> -->Star Wayfarer: coming soon to Google Play<br>
    <a class="link" href="{STEAM_OMNI}" rel="noopener">Omnivael: Wayfarers Life on Steam</a><br>
    <a class="link" href="{STEAM_COTR}" rel="noopener">Chronicles of the Realm on Steam</a></p>
   </div>
@@ -271,7 +277,7 @@ POLICY = f"""
   </ul>
 
   <h3 id="sms">Text messages (SMS)</h3>
-  <p>If you tick &ldquo;OK to text me&rdquo; on our Services form, we may text the phone number you gave us about that request only (for example to confirm we received it or to schedule your demo). Message frequency varies (up to 4 messages per request). Message and data rates may apply. Reply STOP to opt out at any time and HELP for help. Texts are sent through our SMS provider (Twilio Inc.), which processes your number only to deliver messages. <strong>No mobile information will be shared with third parties/affiliates for marketing/promotional purposes. All the above categories exclude text messaging originator opt-in data and consent; this information will not be shared with any third parties.</strong> See our <a href="{{P}}sms-terms/index.html">SMS Terms</a>.</p>
+  <p>If you tick the optional SMS consent checkbox on our Services form, we may text the phone number you gave us about that request only (for example to confirm we received it or to schedule your demo). Message frequency varies (up to 4 messages per request). Message and data rates may apply. Reply STOP to opt out at any time and HELP for help. Texts are sent through our SMS provider (Twilio Inc.), which processes your number only to deliver messages. <strong>No mobile information will be shared with third parties/affiliates for marketing/promotional purposes. All the above categories exclude text messaging originator opt-in data and consent; this information will not be shared with any third parties.</strong> See our <a href="{{P}}sms-terms/index.html">SMS Terms</a>.</p>
 
   <h2 id="retention">8. Retention and deletion</h2>
   <ul>
@@ -354,7 +360,7 @@ SERVICES = f"""
   <label>What do you need? *<select name="type" required><option>Website</option><option>AI tool</option><option>Custom software</option><option selected>Not sure</option></select></label>
   <label>Tell us about it *<textarea name="description" required maxlength="4000" rows="6" placeholder="What does your business do, and what would you like to fix or build?"></textarea></label>
   <label>Budget (optional)<input name="budget" maxlength="60" placeholder="e.g. under $500, not sure yet"></label>
-  <label class="sms-opt"><input type="checkbox" name="sms_optin" value="yes"> <span>OK to text me about my request. Msg&amp;data rates may apply. Reply STOP to opt out. <small>(Optional, not required to get a demo. Up to 4 msgs per request. Reply HELP for help. <a class="link" href="{{P}}sms-terms/index.html">SMS Terms</a> &middot; <a class="link" href="{{P}}privacy-policy/index.html#sms">Privacy Policy</a>)</small></span></label>
+  <label class="sms-opt"><input type="checkbox" name="sms_optin" value="yes"> <span>By checking this box, I agree to receive text messages from Elder World Studio about my service request (confirmations, project questions, and demo scheduling). Up to 4 msgs per request. Message and data rates may apply. Reply STOP to opt out and HELP for help. Optional &mdash; not required to get a demo. <a class="link" href="{{P}}sms-terms/index.html">SMS Terms</a> &middot; <a class="link" href="{{P}}privacy-policy/index.html#sms">Privacy Policy</a></span></label>
   <div class="hp" aria-hidden="true"><label>Leave this empty<input name="website_url" tabindex="-1" autocomplete="off"></label></div>
   <input type="hidden" name="t" id="lead-t" value="">
   <div class="cf-turnstile" data-sitekey="0x4AAAAAAFS0QVr90yy4iuW9" data-theme="dark"></div>
@@ -362,7 +368,7 @@ SERVICES = f"""
   <p class="meta">We reply by email, usually within one business day. We only use your details to answer your request (see our <a href="{{P}}privacy-policy/index.html">Privacy Policy</a>).</p>
  </form>
 </div></div>
-<style>.lead-form{{display:grid;gap:14px;max-width:640px}}.lead-form label{{display:grid;gap:6px;font-weight:600}}.lead-form input,.lead-form select,.lead-form textarea{{font:inherit;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:#0b0d12;color:inherit}}.lead-form .sms-opt{{display:flex;gap:10px;align-items:flex-start;font-weight:400}}.lead-form .sms-opt input{{width:auto;margin-top:4px}}.lead-form .hp{{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}}</style>
+<style>.lead-form{{display:grid;gap:14px;max-width:640px}}.lead-form label{{display:grid;gap:6px;font-weight:600}}.lead-form input,.lead-form select,.lead-form textarea{{font:inherit;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:#130B22;color:inherit}}.lead-form .sms-opt{{display:flex;gap:10px;align-items:flex-start;font-weight:400}}.lead-form .sms-opt input{{width:auto;margin-top:4px}}.lead-form .hp{{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}}</style>
 <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 <script>document.getElementById('lead-t').value=Date.now();(function(){{var q=new URLSearchParams(location.search),s=document.getElementById('form-status');if(!q.has('sent'))return;s.hidden=false;s.textContent=q.get('sent')==='1'?'Thanks! Your request was sent. We will reply by email soon.':('Sorry, that did not go through: '+(q.get('e')||'please try again')+' You can also email annaews@agentmail.to.');}})();</script>
 """
@@ -370,8 +376,8 @@ SMSTERMS = f"""
 <div class="section"><div class="wrap">
  <article class="policy">
   <h1>SMS Terms and Conditions</h1>
-  <p class="meta">Last updated: October 9, 2026</p>
-  <p><strong>Program:</strong> Elder World Studio project updates. {STUDIO} sends text messages only to people who request a website, AI tool or software demo on our <a href="{{P}}services/index.html">Services page</a> and tick &ldquo;OK to text me about my request.&rdquo;</p>
+  <p class="meta">Last updated: October 11, 2026</p>
+  <p><strong>Program:</strong> Elder World Studio project updates. {STUDIO} sends text messages only to people who request a website, AI tool or software demo on our <a href="{{P}}services/index.html">Services page</a> and tick the optional SMS consent checkbox (messages about your service request; up to 4 msgs per request; Message and data rates may apply; Reply STOP to opt out and HELP for help).</p>
   <ul>
    <li><strong>Program description:</strong> one-to-one, non-marketing texts about a service request you submitted to Elder World Studio.</li>
    <li><strong>What you get:</strong> messages about your request, such as confirming we received it, questions about your project, and scheduling your free demo. No marketing blasts.</li>
@@ -390,6 +396,99 @@ SMSTERMS = f"""
 page("sms-terms/index.html", f"SMS Terms | {STUDIO}", f"SMS terms for {STUDIO} project-update texts: opt-in, frequency, STOP and HELP, privacy.", SMSTERMS, "/sms-terms/", "sms")
 page("terms/index.html", f"Terms and Conditions (SMS) | {STUDIO}", f"SMS terms and conditions for {STUDIO} project-update texts.", SMSTERMS, "/sms-terms/", "sms")
 page("services/index.html", f"Services: Websites, AI Tools and Custom Software | {STUDIO}", f"{STUDIO} builds websites, AI chat assistants, automation and custom software for small businesses in Memphis and beyond. Start with a free demo.", SERVICES, "/services/", "services")
+
+
+# ---- Public Android testers (Google Play closed/open testing) ----
+TESTERS = f"""
+<section class="hero">
+ <div class="wrap">
+  <img class="logo" src="{{P}}assets/img/brand/ews-mark.svg?v=4" width="256" height="256" alt="Elder World Studio logo">
+  <h1>Become a Public Tester</h1>
+  <p>Help Elder World Studio shape our Android games before launch. Join the free tester group, opt in on Google Play, and tell us what breaks, what feels great, and what you want next.</p>
+  <div class="btns">
+   <a class="btn btn-primary" href="{EWS_TESTERS_GROUP}" rel="noopener">Join ews_testers</a>
+   <a class="btn btn-ghost" href="#games">See the games</a>
+  </div>
+ </div>
+</section>
+
+<section class="block" id="how">
+ <div class="wrap">
+  <div class="center"><h2>How it works</h2><p class="lead">Three free steps. Android + a Google account only. No paid ads, no payment required.</p></div>
+  <div class="grid cards">
+   <article class="card"><div class="body">
+    <span class="tag soon">Step 1</span>
+    <h3>Join the Google Group</h3>
+    <p>Join <strong>{EWS_TESTERS_EMAIL}</strong>. Play uses this public group to decide who can install our closed tests.</p>
+    <div class="actions"><a class="btn btn-primary" href="{EWS_TESTERS_GROUP}" rel="noopener">Join the group</a></div>
+   </div></article>
+   <article class="card"><div class="body">
+    <span class="tag soon">Step 2</span>
+    <h3>Opt in on Google Play</h3>
+    <p>Open each game&rsquo;s Play testing link below, accept the tester invitation, then install from the Play Store.</p>
+    <div class="actions"><a class="btn btn-ghost" href="#games">Jump to games</a></div>
+   </div></article>
+   <article class="card"><div class="body">
+    <span class="tag soon">Step 3</span>
+    <h3>Play and send feedback</h3>
+    <p>Crash? Confusing UI? A feature you love? Email <a href="mailto:{EMAIL}">{EMAIL}</a> with the game name and your device. We read every note.</p>
+   </div></article>
+  </div>
+ </div>
+</section>
+
+<section class="block alt" id="games">
+ <div class="wrap">
+  <div class="center"><h2>Games open for testers</h2><p class="lead">Tap Join test, then install. Links need the Google account that joined the group.</p></div>
+  <div class="grid cards">
+   <article class="card"><div class="body">
+    <span class="tag live">Open for testers</span>
+    <h3>Astro Dodge</h3>
+    <p>Neon arcade dodger. Steer through asteroids, chase high scores, play offline. Shows ads in the test build.</p>
+    <div class="actions"><a class="btn btn-primary" href="{PLAY_TEST_ASTRO}" rel="noopener">Join Astro Dodge test</a></div>
+   </div></article>
+   <article class="card"><div class="body">
+    <span class="tag live">Open for testers</span>
+    <h3>Stack Tower</h3>
+    <p>Timing and precision. Drop moving blocks, keep the tower climbing, beat your best score. Shows ads in the test build.</p>
+    <div class="actions"><a class="btn btn-primary" href="{PLAY_TEST_STACK}" rel="noopener">Join Stack Tower test</a></div>
+   </div></article>
+   <article class="card"><div class="body">
+    <span class="tag soon">Coming soon</span>
+    <h3>More EWS Android games</h3>
+    <p>Color Gate, Neon Snake, Brick Blitz, Crystal Merge, Gem Hopper, Void Flip and Omnivael Wayfarer&rsquo;s Life will land here as their Play apps open for testing.</p>
+   </div></article>
+  </div>
+ </div>
+</section>
+
+<section class="block" id="honest">
+ <div class="wrap grid two">
+  <div>
+   <h2>What testers actually do</h2>
+   <p class="lead">This is unpaid, optional, and honest about what we need.</p>
+   <ul class="prose" style="color:var(--soft);padding-left:1.2em">
+    <li>Install early Android builds from Google Play closed testing.</li>
+    <li>Play for a few minutes (or longer if you enjoy it).</li>
+    <li>Tell us about crashes, confusing screens, balance issues, or anything that feels off.</li>
+    <li>You can leave the group or opt out of a test any time in Play Console / Play Store.</li>
+   </ul>
+  </div>
+  <div class="panel">
+   <h3>What we will not do</h3>
+   <ul style="color:var(--soft);padding-left:1.2em;margin:0">
+    <li>We will not charge you to test.</li>
+    <li>We will not require a review or rating.</li>
+    <li>We will not run paid ads to recruit testers.</li>
+    <li>Test builds may show ads (Unity Ads test mode or live ads later). Say so if that is a problem for you.</li>
+    <li>Builds can be rough, incomplete, or wipe progress between versions.</li>
+   </ul>
+   <p class="meta" style="margin-top:16px">Questions? <a href="mailto:{EMAIL}">{EMAIL}</a> &middot; <a href="{{P}}privacy-policy/index.html">Privacy Policy</a></p>
+  </div>
+ </div>
+</section>
+"""
+page("testers/index.html", f"Public Testers | {STUDIO}", f"Join Elder World Studio's free public Android testers. Opt in on Google Play for Astro Dodge, Stack Tower, and more EWS games.", TESTERS, "/testers/", "testers")
 
 # ---- Merch page (store links live in tools/merch_config.py) ----
 import html as _h, sys as _sys
@@ -431,7 +530,7 @@ def _merch_body():
     return f"""
 <section class="hero merch-hero">
  <div class="wrap">
-  <img class="logo" src="{{P}}assets/img/logo-gold.png?v=3" width="256" height="297" alt="Elder World Studio crest">
+  <img class="logo" src="{{P}}assets/img/brand/ews-mark.svg?v=4" width="256" height="256" alt="Elder World Studio logo">
   <h1>Studio Merch</h1>
   <p>Wear the worlds we build. Every order helps fund development of Omnivael, Star Wayfarer and Chronicles of the Realm.</p>
   {top}
