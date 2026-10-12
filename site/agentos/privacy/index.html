@@ -1,0 +1,21 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>AgentOS Privacy Policy</title><link rel="stylesheet" href="/agentos/agentos.css"></head><body><div class="legal">
+<h1>AgentOS Privacy Policy</h1><p class="mut">Elder World Studio · Effective October 11, 2026 · DRAFT pending review</p>
+<p>AgentOS is an app by Elder World Studio ("we") that runs a team of AI agents on the GitHub repositories you connect. This policy explains what we collect and why.</p>
+<h2>What we collect</h2><ul><li><b>Account:</b> your email address, and if you use GitHub sign-in, your GitHub user ID, username and public profile name.</li>
+<li><b>Repository access:</b> the repositories you choose when you install the AgentOS GitHub App. We request read/write access to code and pull requests on those repositories only. We do not store your source code beyond the life of a task, except the diff and test output shown on your approval cards.</li>
+<li><b>Chat and task data:</b> your messages to the Coordinator, the tasks it creates, summaries, diffs, test results and review notes.</li>
+<li><b>Usage and billing:</b> AI usage per task, plan, and payment status. Card details are handled by our payment processor; we never see your full card number.</li>
+<li><b>Technical:</b> IP address and request logs, used for security and rate limiting.</li></ul>
+<h2>How we use it</h2><p>To run the service, enforce usage caps, bill you, keep the service secure, and support you. <b>We never use your code, chats or repository data to train AI models</b>, and our AI providers are contractually barred from training on data we send through their APIs.</p>
+<h2>Subprocessors</h2><table><tr><th>Provider</th><th>Purpose</th><th>Data</th></tr>
+<tr><td>Cloudflare, Inc.</td><td>Hosting, database, security</td><td>All service data</td></tr>
+<tr><td>OpenAI, L.L.C.</td><td>AI model processing for the Coordinator and agents</td><td>Chat messages, task specs, relevant code excerpts and diffs</td></tr>
+<tr><td>GitHub, Inc.</td><td>Sign-in, repository access, pull requests</td><td>Account and repository data</td></tr>
+<tr><td>Stripe, Inc.</td><td>Payments</td><td>Email, billing details</td></tr>
+<tr><td>Google LLC</td><td>Google Play distribution and in-app billing</td><td>Purchase records</td></tr>
+<tr><td>Resend, Inc.</td><td>Sign-in emails</td><td>Email address</td></tr>
+<tr><td>Elder World Studio servers (USA)</td><td>Isolated task sandboxes that check out your repo and run its tests</td><td>Repository contents during a task</td></tr></table>
+<h2>Security</h2><p>Each workspace is isolated. Secrets are encrypted at rest (AES-256-GCM). GitHub access uses short-lived tokens scoped to one repository per task. Agents work on branches and open pull requests; nothing is merged without your approval.</p>
+<h2>Retention and deletion</h2><p>Task sandboxes are deleted when a task ends. Account data is kept while your account is active and deleted within 30 days of an account deletion request. Uninstalling the GitHub App revokes repository access immediately.</p>
+<h2>Your rights</h2><p>You can access, export or delete your data by emailing <a href="mailto:annaews@agentmail.to">annaews@agentmail.to</a>. AgentOS is not directed at children under 13.</p>
+<h2>Changes</h2><p>We'll post updates here and notify you in the app for material changes.</p><p><a href="/agentos/">AgentOS</a> · <a href="/agentos/privacy/">Privacy</a> · <a href="/agentos/terms/">Terms</a></p></div></body></html>
