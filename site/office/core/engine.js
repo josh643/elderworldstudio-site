@@ -4,8 +4,8 @@
 //   onState?(snapshot), onFrame?(dt, t) }. Modules share things with ctx.provide(name, v) / ctx.use(name).
 import * as THREE from '../vendor/three.module.min.js?v=169';
 import { mergeGeometries } from '../vendor/jsm/utils/BufferGeometryUtils.js?v=169';
-import * as kit from './kit.js?v=25';
-const V = 25, GOLD = 0xd9b45a;
+import * as kit from './kit.js?v=26';
+const V = 26, GOLD = 0xd9b45a;
 const $ = (t, a = {}, h = '') => { const e = document.createElement(t); for (const k in a) e.setAttribute(k, a[k]); e.innerHTML = h; return e; };
 export const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
