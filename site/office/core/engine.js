@@ -4,8 +4,8 @@
 //   onState?(snapshot), onFrame?(dt, t) }. Modules share things with ctx.provide(name, v) / ctx.use(name).
 import * as THREE from '../vendor/three.module.min.js?v=169';
 import { mergeGeometries } from '../vendor/jsm/utils/BufferGeometryUtils.js?v=169';
-import * as kit from './kit.js?v=27';
-const V = 27, GOLD = 0xd9b45a;
+import * as kit from './kit.js?v=28';
+const V = 28, GOLD = 0xd9b45a;
 const $ = (t, a = {}, h = '') => { const e = document.createElement(t); for (const k in a) e.setAttribute(k, a[k]); e.innerHTML = h; return e; };
 export const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -75,7 +75,8 @@ export async function start(opts = {}) {
   const touch = matchMedia('(pointer: coarse)').matches && !matchMedia('(pointer: fine)').matches, xr = /OculusBrowser|Quest|Pico/i.test(navigator.userAgent);
   const verb = xr ? 'Trigger' : touch ? 'Tap' : 'Click or press E';   // device-aware prompt for in-world signs
   /* PUBLIC-CONTENT-RULES: public mode on the production host (or ?public=1 for QA): roles-only nameplates, generic screens, no telemetry, no task text */
-  const PUBLIC = /(^|\.)elderworldstudio\.com$/.test(location.hostname) || /[?&]public=1/.test(location.search);
+  let KIOSK = false; try { KIOSK = !!localStorage.getItem('ews-kiosk'); } catch {}
+const PUBLIC = /(^|\.)elderworldstudio\.com$/.test(location.hostname) || /[?&]public=1/.test(location.search);
   const ctx = { igpu, publicMode: PUBLIC,
     verb, touch, lod: 1,
     THREE, kit, scene, cam, rig, renderer: R, mat, get tier() { return tier; }, M, box, panel, image, textCanvas, label, site, roster, esc, root,
@@ -262,7 +263,7 @@ export async function start(opts = {}) {
   function pickAt(e) { const r = el.getBoundingClientRect(); ndc.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1); ray.setFromCamera(ndc, cam); const h = ray.intersectObjects(clickables, false)[0]; return h && h.distance < 30 ? h.object.userData.onPick : null; }
   tours.forEach(([k, t]) => { const b = $('button', { class: 'ob', type: 'button' }, 'Go to ' + esc(t)); b.onclick = () => goTo(k); srNav.append(b); });
   let card = null; function closeCard() { card?.remove(); card = null; }
-  function cardOf(html) { if (document.pointerLockElement) document.exitPointerLock(); closeCard(); card = $('section', { class: 'office-card', role: 'dialog', 'aria-modal': 'false' }, `<button class="x" type="button" aria-label="Close">×</button>${html}`); card.querySelector('.x').onclick = closeCard; root.append(card); tDom(card); const h = card.querySelector('h3'); if (h) { h.tabIndex = -1; h.focus(); } return card; }
+  function cardOf(html) { if (document.pointerLockElement) document.exitPointerLock(); closeCard(); card = $('section', { class: 'office-card', role: 'dialog', 'aria-modal': 'false' }, `<button class="x" type="button" aria-label="Close">×</button>${html}`); if (KIOSK) card.querySelectorAll('a[href]').forEach(a => { const u = new URL(a.href, location.href); if (u.hash && u.pathname === location.pathname) return; const s = document.createElement('span'); s.className = a.className + ' kiosk-url'; s.textContent = (a.textContent || '').trim() + ' · ' + u.host.replace(/^office-3d\./, '') + u.pathname; a.replaceWith(s); });   /* kiosk: links never navigate away from the office */ card.querySelector('.x').onclick = closeCard; root.append(card); tDom(card); const h = card.querySelector('h3'); if (h) { h.tabIndex = -1; h.focus(); } return card; }
   function close() { running = false; R.setAnimationLoop(null); root.remove(); document.documentElement.classList.remove('office-on'); R.dispose(); }
   document.querySelector('.skip')?.addEventListener('click', () => { if (opts.overlay) close(); });
   ctx.state = s => mods.forEach(m => { try { m.onState?.(s); } catch (e) { console.warn(e); } });

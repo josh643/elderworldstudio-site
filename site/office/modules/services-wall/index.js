@@ -1,7 +1,7 @@
 // Services wall (from the services page panels) + demo kiosk. Kiosk opens the receptionist's lead form if present.
 export default {
   setup(ctx, cfg, [x0, z0]) {
-    const { site, box, mat, panel, textCanvas, esc, M } = ctx, lead = () => (ctx.use('leadForm') || (() => location.href = '/services/#request'))();
+    const { site, box, mat, panel, textCanvas, esc, M } = ctx, lead = () => (ctx.use('leadForm') || (() => ctx.card('<h3>Book a demo</h3><p>Ask Freyja at the reception desk, or use the kiosk on her desk.</p>')))();
     const SHORT = { 'Demo first': 'We build a quick demo for your business first.', 'Websites': 'Mobile-friendly sites with booking, menus and quote forms.', 'AI tools & chat assistants': 'A chat assistant that answers customers 24/7.', 'Automation': 'Connect your forms, email and spreadsheets.', 'Custom software & dashboards': 'Portals and dashboards that replace paper forms.' };
     const short = (t, title) => SHORT[title] || String(t).split(/(?<=[.!?])\s/)[0];   /* hand-written one-liners, no truncation */
     const n = site.services.length, W = 2.75, gap = 0.2, span = n * (W + gap);
