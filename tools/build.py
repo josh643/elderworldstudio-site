@@ -547,6 +547,85 @@ def _merch_body():
 </section>
 """
 page("merch/index.html", f"Merch | {STUDIO}", f"Official {STUDIO} merch: crest tees and hoodies, Omnivael, Star Wayfarer and Chronicles of the Realm designs, mugs and stickers.", _merch_body(), "/merch/", "merch")
+# ---- Kiosk leasing page (staging only until Joshua publishes) ----
+KIOSK_IMG_V = "1"
+KIOSK_LD = """<script type="application/ld+json">{"@context":"https://schema.org","@type":"Product","name":"EWS Order Kiosk","brand":{"@type":"Organization","name":"Elder World Studio Inc"},"description":"Self-order kiosk for small businesses: mini PC, 19-inch touchscreen and 58mm ticket printer in a locking floor stand. Leased on a 12-month term.","image":"https://elderworldstudio.com/assets/img/kiosk/01-hero-capbar-shop.jpg","offers":[{"@type":"Offer","name":"Kiosk only","price":"149.00","priceCurrency":"USD","priceSpecification":{"@type":"UnitPriceSpecification","price":"149.00","priceCurrency":"USD","unitText":"MONTH"},"availability":"https://schema.org/PreOrder"},{"@type":"Offer","name":"Kiosk + Elder POS","price":"129.00","priceCurrency":"USD","priceSpecification":{"@type":"UnitPriceSpecification","price":"129.00","priceCurrency":"USD","unitText":"MONTH"},"availability":"https://schema.org/PreOrder"}]}</script>"""
+KIOSK = f"""
+<section class="hero kiosk-hero">
+ <div class="wrap">
+  <h1>Let customers order themselves</h1>
+  <p>The EWS Order Kiosk is a self-order station for your shop. Customers tap their order on a 19&Prime; touchscreen, grab a printed ticket, and pay at your register. Lease it for one simple monthly price.</p>
+  <div class="btns"><a class="btn btn-primary" href="#demo">Book a free demo</a><a class="btn btn-ghost" href="#plans">See plans</a></div>
+  <p class="meta" style="margin-top:14px"><strong>Launch offer:</strong> the deposit is waived for our first 3 stores.</p>
+ </div>
+</section>
+<section class="block"><div class="wrap">
+ <img class="kiosk-img" src="{{P}}assets/img/kiosk/01-hero-capbar-shop.jpg?v={KIOSK_IMG_V}" width="1600" height="1000" alt="EWS Order Kiosk on a locking floor stand inside a retail shop" fetchpriority="high">
+</div></section>
+<section class="block"><div class="wrap">
+ <div class="center"><h2>How it works</h2></div>
+ <div class="grid contact-grid">
+  <div class="panel"><h3>1. Customer orders</h3><p>Your menu or catalog on a bright 19&Prime; touchscreen. Big buttons, your logo, your colors.</p></div>
+  <div class="panel"><h3>2. Ticket prints</h3><p>A 58mm thermal printer in the stand prints an order ticket with the items and total.</p></div>
+  <div class="panel"><h3>3. Pay at the register</h3><p>The kiosk takes no payments. Customers bring the ticket to your counter and pay the way they always do.</p></div>
+ </div>
+</div></section>
+<section class="block"><div class="wrap">
+ <div class="grid contact-grid kiosk-two">
+  <img class="kiosk-img" src="{{P}}assets/img/kiosk/02-closeup-screen-and-ticket.jpg?v={KIOSK_IMG_V}" width="1600" height="1000" alt="Close-up of the kiosk order screen and a printed order ticket" loading="lazy">
+  <div class="panel"><h3>What&rsquo;s inside</h3><ul style="color:var(--soft);padding-left:1.2em;margin:0">
+   <li>Business-grade mini PC, locked inside the stand</li>
+   <li>19&Prime; 10-point touchscreen</li>
+   <li>Locking floor stand with a secure printer compartment</li>
+   <li>58mm thermal ticket printer</li>
+   <li>Remote updates: we keep the software current for you</li>
+   <li>Your store data is never changed or deleted by an update</li>
+  </ul></div>
+ </div>
+</div></section>
+<section class="block" id="plans"><div class="wrap">
+ <div class="center"><h2>Plans</h2><p class="lead">12-month lease, billed monthly. We own and maintain the hardware.</p></div>
+ <div class="grid contact-grid kiosk-plans">
+  <div class="panel"><h3>Kiosk only</h3><p class="price-big">$149<small>/mo</small></p><ul style="color:var(--soft);padding-left:1.2em">
+   <li>Use your own register or POS</li><li>$149 refundable deposit <em>(waived for our first 3 stores)</em></li><li>No per-sale fees</li><li>Remote updates included</li></ul>
+   <a class="btn btn-ghost" href="#demo" data-plan="Kiosk only">Book a demo</a></div>
+  <div class="panel plan-best"><span class="tag live">Best value</span><h3>Kiosk + Elder POS</h3><p class="price-big">$129<small>/mo</small></p><ul style="color:var(--soft);padding-left:1.2em">
+   <li>Includes the Elder POS register system</li><li>Scan the ticket&rsquo;s QR code to ring it up instantly</li><li>$1 per card or scan-to-pay sale</li><li>No fee on cash sales</li><li>Remote updates included</li></ul>
+   <a class="btn btn-primary" href="#demo" data-plan="Kiosk + Elder POS">Book a demo</a></div>
+ </div>
+ <img class="kiosk-img" style="margin-top:24px" src="{{P}}assets/img/kiosk/04-kiosk-only-vs-kiosk-plus-elderpos.jpg?v={KIOSK_IMG_V}" width="1600" height="923" alt="Side-by-side comparison of the Kiosk only and Kiosk plus Elder POS plans" loading="lazy">
+ <p class="meta center" style="margin-top:12px">Prices in USD, before tax. Lease terms are set out in the written lease agreement you sign.</p>
+</div></section>
+<section class="block"><div class="wrap">
+ <div class="grid contact-grid kiosk-two">
+  <div class="panel"><h3>Made for your brand</h3><p>Barbershops, cafes, boutiques, food trucks and more. We set up the kiosk with your logo, items and prices before it arrives.</p></div>
+  <img class="kiosk-img" src="{{P}}assets/img/kiosk/03-white-label-generic.jpg?v={KIOSK_IMG_V}" width="1600" height="1000" alt="White-label kiosk with a generic shop brand" loading="lazy">
+ </div>
+</div></section>
+<section class="block" id="demo"><div class="wrap">
+ <h2>Book a free demo</h2>
+ <div id="form-status" class="panel" hidden style="margin-bottom:16px"></div>
+ <form class="panel lead-form" method="post" action="/api/lead">
+  <input type="hidden" name="src" value="kiosk">
+  <label>Your name *<input name="name" required maxlength="100" autocomplete="name"></label>
+  <label>Email *<input name="email" type="email" required maxlength="200" autocomplete="email"></label>
+  <label>Phone (optional)<input name="phone" type="tel" maxlength="40" autocomplete="tel"></label>
+  <label>Business name *<input name="business" required maxlength="150" autocomplete="organization"></label>
+  <label>Plan you&rsquo;re interested in *<select name="type" id="kiosk-plan" required><option>Kiosk only</option><option>Kiosk + Elder POS</option><option selected>Kiosk (not sure which plan)</option></select></label>
+  <label>Tell us about your shop *<textarea name="description" required maxlength="4000" rows="5" placeholder="What do you sell, and how many registers or kiosks do you need?"></textarea></label>
+  <div class="hp" aria-hidden="true"><label>Leave this empty<input name="website_url" tabindex="-1" autocomplete="off"></label></div>
+  <input type="hidden" name="t" id="lead-t" value="">
+  <div class="cf-turnstile" data-sitekey="0x4AAAAAAFS0QVr90yy4iuW9" data-theme="dark"></div>
+  <button class="btn btn-primary" type="submit">Book my free demo</button>
+  <p class="meta">We reply by email, usually within one business day. We only use your details to answer your request (see our <a href="{{P}}privacy-policy/index.html">Privacy Policy</a>).</p>
+ </form>
+</div></section>
+<style>.kiosk-img{{width:100%;height:auto;border-radius:16px;display:block}}.kiosk-two{{align-items:center}}.price-big{{font-size:2.4rem;font-weight:700;margin:6px 0}}.price-big small{{font-size:1rem;color:var(--soft)}}.plan-best{{outline:2px solid var(--accent)}}.lead-form{{display:grid;gap:14px;max-width:640px}}.lead-form label{{display:grid;gap:6px;font-weight:600}}.lead-form input,.lead-form select,.lead-form textarea{{font:inherit;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:#130B22;color:inherit}}.lead-form .hp{{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}}</style>
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+<script>document.getElementById('lead-t').value=Date.now();document.querySelectorAll('[data-plan]').forEach(function(a){{a.addEventListener('click',function(){{document.getElementById('kiosk-plan').value=a.dataset.plan;}});}});(function(){{var q=new URLSearchParams(location.search),s=document.getElementById('form-status');if(!q.has('sent'))return;s.hidden=false;s.textContent=q.get('sent')==='1'?'Thanks! Your demo request was sent. We will reply by email soon.':('Sorry, that did not go through: '+(q.get('e')||'please try again')+' You can also email annaews@agentmail.to.');}})();</script>
+{KIOSK_LD}
+"""
+page("kiosk/index.html", f"Self-Order Kiosk Leasing for Small Businesses | {STUDIO}", "Lease the EWS Order Kiosk: 19-inch touchscreen, mini PC and ticket printer in a locking stand. From $129/mo with Elder POS or $149/mo kiosk only. Book a free demo.", KIOSK, "/kiosk/")
 # 404 uses root-absolute links (served for any missing path)
 page("404.html", f"Page not found | {STUDIO}", "Page not found.", NOTFOUND, "/404.html", noindex=True)
 p404 = ROOT / "404.html"
