@@ -1,9 +1,9 @@
 IB="Idle_Loop"
 # door pull-open: right hand on the handle, handle swings on a 0.8 m door hinged on the avatar's left
-HX,HY=0.45,-0.55
+HX,HY=0.42,-0.45
 def door(a0,a1):
     def f(t):
-        a=lerp(a0,a1,ease((t-0.2)/0.6)); return V(HX-0.8*math.cos(a),HY+0.8*math.sin(a),1.0)
+        a=lerp(a0,a1,ease((t-0.2)/0.6)); return V(HX-0.7*math.cos(a),HY+0.7*math.sin(a),1.0)
     return f
 make_clip("Door_Open_Pull",IB,60,ik={'r':door(0,math.radians(55))},rot={'spine_01':lambda t:Euler((0.08,0,0))},woff={'r':V(0.0,0.07,-0.02)})
 make_clip("Door_Close",IB,60,ik={'r':door(math.radians(55),0)},rot={'spine_01':lambda t:Euler((0.08,0,0))},woff={'r':V(0.0,0.07,-0.02)})

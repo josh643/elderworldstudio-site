@@ -1,0 +1,7 @@
+make_clip('Idle_Rail_Loop','Idle_Rail_Loop',breathe=True)
+make_clip('Idle_Rail_Call','Idle_Rail_Call',breathe=False)
+make_clip('Idle_Lantern_Loop','Idle_Lantern_Loop',breathe=True)
+make_clip('Farm_Watering','Farm_Watering',breathe=False)
+make_clip('Swim_Idle_Loop','Swim_Idle_Loop',breathe=False)
+make_clip('LayToIdle','LayToIdle',breathe=False)
+make_clip('Sitting_Idle_Loop','Sitting_Idle_Loop',breathe=True)

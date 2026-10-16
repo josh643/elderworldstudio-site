@@ -30,18 +30,36 @@ const mixer=new THREE.AnimationMixer(body); let cur;
 for(const c of clips){const o=document.createElement('option');o.textContent=c.name;sel.appendChild(o)}
 function play(n){ if(cur)cur.stop(); cur=mixer.clipAction(clips.find(c=>c.name==n)); cur.play(); }
 sel.onchange=()=>play(sel.value);
-const tgt=new THREE.Vector3(-0.1,0.8,0.15); cam.position.set(...(view.join('')=='stand'?[1.5,1.55,2.3]:view.join('')=='side'?[-1.3,1.0,0.25]:view.join('')=='top'?[-0.15,1.75,0.55]:view.join('')=='close'?[-0.45,1.05,0.65]:[0.9,1.35,1.4])); if(view.join('')=='stand')tgt.set(0,1.0,0); cam.lookAt(tgt);
+const tgt=new THREE.Vector3(-0.1,0.8,0.15); cam.position.set(...(view.join('')=='head'?[0.75,1.25,0.75]:view.join('')=='headside'?[-1.0,1.15,-0.2]:view.join('')=='stand'?[1.5,1.55,2.3]:view.join('')=='side'?[-1.3,1.0,0.25]:view.join('')=='top'?[-0.15,1.75,0.55]:view.join('')=='close'?[-0.45,1.05,0.65]:[0.9,1.35,1.4])); if(view.join('')=='stand')tgt.set(0,1.0,0); if(view.join('').startsWith('head'))tgt.set(0,1.05,-0.25); cam.lookAt(tgt);
 // anchor target at time t (mirrors build.py curves; contact = middle_01 head)
 function anchorAt(clip,s,t){ const sm=A.samples[clip][s], n=sm.length-1, i=Math.min(n,Math.round(t*A.fr[clip]/A.samples_every)); return b2t(sm[i].slice(3)); }
 const w=new THREE.Vector3();
+const P=n=>B[n].getWorldPosition(new THREE.Vector3()), segPt=(a,b,k)=>a.clone().lerp(b,k);
+function segDist(p,a,b){const ab=b.clone().sub(a),t=Math.max(0,Math.min(1,p.clone().sub(a).dot(ab)/ab.lengthSq()));return p.distanceTo(a.clone().addScaledVector(ab,t));}
+// interpenetration: arm segments (shoulder->elbow->wrist) vs head sphere, torso capsule, desk slab, chair back (seated clips)
+function penetration(name,pw){ let hit=false; const hc=P('Head').add(new THREE.Vector3(0,0.09,0).applyQuaternion(B.Head.getWorldQuaternion(new THREE.Quaternion())));
+  const t0=P('spine_01'), t1=P('spine_03'), seated=name.startsWith('Sit_');
+  for(const s of ['l','r']){ const sh=P('upperarm_'+s), el=P('lowerarm_'+s), wr=P('hand_'+s);
+    for(const [a,b,lab] of [[sh,el,'upperarm'],[el,wr,'forearm']]) for(const k of [0.35,0.6,0.85,1]){ const p=segPt(a,b,k);
+      if(p.distanceTo(hc)<0.075){hit=true;pw.add(lab+'-head');}
+      if(lab==='forearm'&&segDist(p,t0,t1)<0.09){hit=true;pw.add('forearm-torso');}
+      if(seated&&p.z>0.03&&p.y<0.755&&p.y>0.70&&Math.abs(p.x)<0.7){hit=true;pw.add(lab+'-desk');}
+      if(seated&&p.z<-0.555&&p.z>-0.63&&p.y>0.55&&p.y<1.05&&Math.abs(p.x)<0.22){hit=true;pw.add(lab+'-chairback');} } }
+  return hit; }
 window.gate=()=>{ const res={};
-  for(const c of clips){ if(!A.samples[c.name]&&!q.get('all'))continue; play(c.name); const a=cur; let worst=0, bindish=0, n=0; const sides=A.samples[c.name]||{};
+  for(const c of clips){ if(!A.samples[c.name]&&!q.get('all'))continue; play(c.name); const a=cur; let worst=0, bindish=0, n=0, pen=0; const pw=new Set(); const sides=A.samples[c.name]||{};
     const FR=A.fr[c.name]||30; for(let i=0;i<=FR/A.samples_every;i++){ const t=i*A.samples_every/FR; a.time=t*c.duration; mixer.update(0); body.updateMatrixWorld(true);
       for(const s in sides){ B['middle_04_leaf_'+s].getWorldPosition(w); worst=Math.max(worst,w.distanceTo(anchorAt(c.name,s,t))); }
       // bind-pose check: upper arms must be well away from rest (T/A pose = arms out)
+      pen+=penetration(c.name,pw)?1:0;
       // bind pose = arms + legs all within 8 deg of the rest (bind) pose
       const near=k=>B[k].quaternion.angleTo(REST[k])<0.14; if(['upperarm_l','upperarm_r','lowerarm_l','lowerarm_r','thigh_l','thigh_r'].every(near)) bindish++; n++; }
-    res[c.name]={contact_cm:+(worst*100).toFixed(2), bind_frames:bindish, pass: worst<0.05 && bindish===0}; }
+    // loop seam: first vs last frame, max bone angle (deg)
+    let seam=0; if(/Loop/.test(c.name)){ // seam = wrap jump (last->first) relative to the median per-frame step
+      const N=Math.max(8,Math.round(c.duration*30)), poses=[]; for(let i=0;i<=N;i++){ a.time=Math.min(c.duration-1e-4,i*c.duration/N); mixer.update(0); const q={}; for(const k in B) q[k]=B[k].quaternion.clone(); poses.push(q); }
+      const step=(p,q)=>{let m=0; for(const k in B) m=Math.max(m,p[k].angleTo(q[k])); return m;}; const st=[]; for(let i=1;i<N;i++) st.push(step(poses[i-1],poses[i])); st.sort((x,y)=>x-y);
+      const med=st[st.length>>1]||1e-6; seam=step(poses[N],poses[0])/Math.max(med,0.002); }
+    res[c.name]={seam_ratio:+seam.toFixed(2), contact_cm:+(worst*100).toFixed(2), bind_frames:bindish, pen_frames:pen, pen_what:[...pw].join(','), pass: worst<0.05 && bindish===0 && pen===0 && seam<3}; }
   play(sel.value||clips[0].name); return res; };
 const clk=new THREE.Clock(); play(q.get('clip')||clips[0].name); sel.value=cur._clip.name;
 if(q.get('t')){cur.time=+q.get('t')*cur._clip.duration; cur.paused=true;}

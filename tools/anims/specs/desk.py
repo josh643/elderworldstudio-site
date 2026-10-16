@@ -25,7 +25,7 @@ make_clip("Sit_ReadMonitor_Loop",SB,120,ik={'l':lambda t:V(0.16,DESKY,DZ),'r':la
   rot=R({'Head':lambda t:Euler((-0.05,0.10*math.sin(TAU*t),0))}),woff={'l':V(0.04,0.10,0.025),'r':V(-0.04,0.10,0.025)})
 # write on paper: right fingertip (pen) scribbles small loops, left hand flat holding the page
 PAPER=V(-0.06,PEL_Y-0.40,DZ+0.003)
-make_clip("Sit_Write_Loop",SB,90,ik={'r':lambda t:PAPER+V(0.03*math.sin(TAU*3*t)+0.04*(t-0.5),0.006*math.sin(TAU*9*t),0.004*max(0,math.sin(TAU*9*t))),
+make_clip("Sit_Write_Loop",SB,90,ik={'r':lambda t:PAPER+V(0.03*math.sin(TAU*3*t)+0.025*math.sin(TAU*t),0.006*math.sin(TAU*9*t),0.004*max(0,math.sin(TAU*9*t))),
   'l':lambda t:V(0.14,PEL_Y-0.42,DZ)},rot=R({'Head':lambda t:Euler((0.30,0,0)),'index_01_r':lambda t:Euler((0.5,0,0)),'middle_01_r':lambda t:Euler((0.4,0,0))}),
   woff={'r':V(-0.03,0.08,0.035),'l':V(0.04,0.10,0.02)})
 # shuffle papers: both hands grip the stack edges, lift and tap it square twice
@@ -44,16 +44,21 @@ make_clip("Sit_Coffee",SB,120,ik={'r':cof,'l':lambda t:V(0.15,DESKY,DZ)},rot={},
 # stretch: arms rise overhead and come back down to the desk
 def st(x):
     def f(t):
-        k=ease(t/0.35)*(1-ease((t-0.7)/0.25)); return lerp(V(x*0.16,DESKY,DZ),CUR['head']+V(x*0.18,0.02,0.38),k)
+        k=ease(t/0.35)*(1-ease((t-0.7)/0.25)); return lerp(V(x*0.16,DESKY+0.12,DZ+0.04),CUR['head']+V(x*0.18,0.02,0.38),k)
     return f
 make_clip("Sit_Stretch",SB,120,ik={'l':st(1),'r':st(-1)},rot={'spine_03':lambda t:Euler((-0.15*ease(t/0.35)*(1-ease((t-0.7)/0.25)),0,0))},
   woff={'l':V(0.03,0.02,-0.12),'r':V(-0.03,0.02,-0.12)})
 # lean back: torso reclines, hands laced behind the head
-make_clip("Sit_LeanBack_Loop",SB,120,ik={'l':lambda t:CUR['head']+V(0.02,0.11,0.05),'r':lambda t:CUR['head']+V(-0.02,0.11,0.05)},
-  rot={'spine_01':lambda t:Euler((-0.18,0,0)),'spine_02':lambda t:Euler((-0.10,0,0)),'Head':lambda t:Euler((-0.12+0.03*math.sin(TAU*t),0,0))},
-  woff={'l':V(0.14,0.02,-0.02),'r':V(-0.14,0.02,-0.02)})
+BR=lambda t: 0.015*math.sin(TAU*2*t)          # 2 breaths per 4 s loop (integer cycles = clean loop)
+SKULL=lambda: CUR['head']+V(0,0.095,0.085)        # back of the skull, from the Head joint
+make_clip("Sit_LeanBack_Loop",SB,120,
+  ik={'l':lambda t:SKULL()+V(-0.012,0,0),'r':lambda t:SKULL()+V(0.012,0,0)},          # fingers interlaced: tips meet just past centre
+  rot={'pelvis':lambda t:Euler((-0.10,0,0)),'spine_01':lambda t:Euler((-0.12+BR(t)*0.5,0,0)),'spine_02':lambda t:Euler((-0.08+BR(t),0,0)),
+       'spine_03':lambda t:Euler((-0.05,0,0)),'neck_01':lambda t:Euler((0.10,0,0)),'Head':lambda t:Euler((0.08+0.02*math.sin(TAU*t),0.05*math.sin(TAU*t),0))},
+  woff={'l':V(0.085,-0.005,-0.015),'r':V(-0.085,-0.005,-0.015)},
+  pole={'l':lambda t:CUR['head']+V(0.32,-0.03,0.03),'r':lambda t:CUR['head']+V(-0.32,-0.03,0.03)})
 # chair pull-out (standing): grab the chair back and draw it 0.3 m toward the body
 def cp(x):
-    return lambda t: V(x,lerp(-0.62,-0.34,ease((t-0.25)/0.5)),0.86)
+    return lambda t: V(x,lerp(-0.45,-0.30,ease((t-0.25)/0.5)),0.86)
 make_clip("Chair_PullOut","Idle_Loop",60,ik={'l':cp(0.18),'r':cp(-0.18)},rot={'spine_01':lambda t:Euler((0.25,0,0)),'spine_02':lambda t:Euler((0.15,0,0))},
   woff={'l':V(0.03,0.09,0.03),'r':V(-0.03,0.09,0.03)})

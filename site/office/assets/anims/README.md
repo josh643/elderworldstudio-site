@@ -35,3 +35,18 @@ for base-avatar (swap the filenames in modules/base-avatar/index.js).
 ## Licences
 UAL1/UAL2 clips: CC0 (Quaternius). Derived IK clips, keyboard/mouse, legend texture, shirt re-cut: EWS-made from CC0 inputs.
 Legend font: DejaVu Sans (free licence). No paid tools.
+
+## Polish pass v3 (proportions, breathing, loops, interpenetration)
+- Retargeted: every clip (new and reused UAL) is now solved on the office body's own skeleton. Only rotations are
+  exported, plus root/pelvis translation. The UAL per-bone offsets used to force UAL proportions onto the UBC body
+  (neck 17 vs 21.5 cm, forearm 27 vs 25 cm, clavicle 16 vs 19 cm), which was the "disproportionate" look. Bone lengths
+  now stay at the body's rest pose.
+- Separate female bakes: `<pack>_f.glb` (+ `anchors_<pack>_f.json`), because the female arms are shorter. Use the `_f` packs for female agents (Freyja).
+- Sit_LeanBack_Loop rebuilt: reclines through pelvis and spine (-0.45 rad total) with the neck/head counter-tilted to keep
+  the gaze level. Fingers interlaced on the back of the skull, elbows driven out to head height by pole targets, 2 breaths per loop.
+- All clips: subtle breathing (spine_02, integer cycles per loop). Standing loops get a small pelvis weight shift.
+  Base clips are time-fitted to whole cycles, so loops are seamless.
+- Gate now also checks interpenetration (arm segments vs head sphere, torso capsule, desk slab, chair back) and the loop
+  seam (wrap jump / median frame step < 3). Male 58/58, female 58/58 (gate-report.json, gate-report-female.json).
+- OFFICE NOTE: base-avatar computes `k = 1.78 / bbox height`, and the bbox includes the hidden 2 m 'Icosphere' node in the
+  UBC glb, so agents are scaled ~0.89 and hands miss desk-height props by ~11%. Use k = 1 (male 1.86 m, female 1.80 m) or exclude 'Icosphere'.
