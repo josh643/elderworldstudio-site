@@ -40,7 +40,7 @@ const capsule = {
       const p = s.progress; u.bar.visible = u.bg.visible = p != null && !!s.stage;
       if (u.bar.visible) { u.bar.scale.x = Math.max(0.02, p); u.bar.position.x = -0.45 * (1 - p); u.bar.quaternion.copy(ctx.cam.quaternion); u.bg.quaternion.copy(ctx.cam.quaternion); }
       u.flag.visible = !!s.blocked; if (s.blocked) u.flag.rotation.y = t * 2;
-      if (u.monitor) u.monitor.material = s.stage ? mat.glow : mat.dark;
+      
     }
     ctx.provide('avatar', { make, animate, all }); ctx.provide('agents', agents);
     this._all = all; this._animate = animate;

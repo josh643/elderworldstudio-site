@@ -1,12 +1,23 @@
 // Snap-together kit pieces. Every piece is a pure function of (ctx, options) and returns its THREE.Group.
 // Grid unit = 1 m. Rooms snap on their centre; walls/doors are optional per side.
-export function room(ctx, { x = 0, z = 0, w = 10, d = 8, floor = 0x2a2236, walls = '', title, sub }) {
+export function room(ctx, { x = 0, z = 0, w = 10, d = 8, floor = 0x2a2236, walls = '', title, sub, enclose = false }) {
   const { THREE, box, M } = ctx, g = new THREE.Group(); g.position.set(x, 0, z);
-  box(w - 0.2, 0.04, d - 0.2, ctx.rug ? ctx.rug(new ctx.THREE.Color(floor).multiplyScalar(2.2).getHex()) : M(floor), 0, 0.02, 0, g);
+  box(w - 0.2, 0.04, d - 0.2, ctx.rug ? ctx.rug(new ctx.THREE.Color(0x8a8f9c).lerp(new ctx.THREE.Color(floor).multiplyScalar(3), 0.18).getHex()) : M(floor), 0, 0.02, 0, g);
   const W = (lx, lz, len, rot) => { const m = box(len, 3, 0.2, ctx.mat.wall, lx, 1.5, lz, g); m.rotation.y = rot; };
   if (walls.includes('n')) W(0, -d / 2, w, 0); if (walls.includes('s')) W(0, d / 2, w, 0);
   if (walls.includes('w')) W(-w / 2, 0, d, Math.PI / 2); if (walls.includes('e')) W(w / 2, 0, d, Math.PI / 2);
-  if (title) ctx.panel(ctx.textCanvas([title, sub || ''], { w: 768, h: 180, size: 60 }), 3.6, 0.85, 0, 3.4, d / 2 - 0.4, 0, g);
+  // team accent strip at the room's front edge (the carpet itself is neutral office tiles)
+  box(w - 0.2, 0.012, 0.25, M(new ctx.THREE.Color(floor).multiplyScalar(3).getHex()), 0, 0.045, d / 2 - 0.25, g);
+  if (enclose) {   /* walled room: inset walls (neighbours sit back to back), doorway centred on the south side */
+    const t = 0.12, h = 3, hx = w / 2 - t / 2, hz = d / 2 - t / 2, dw = 1.6;
+    const P = (len, lx, lz, rot) => { const m = box(len, h, t, ctx.mat.wall, lx, h / 2, lz, g); m.rotation.y = rot; m.userData.wall = 1; return m; };
+    P(w, 0, -hz, 0); P(d, -hx, 0, Math.PI / 2); P(d, hx, 0, Math.PI / 2);
+    const side = (w - dw) / 2; P(side, -(dw / 2 + side / 2), hz, 0); P(side, dw / 2 + side / 2, hz, 0);
+    box(dw, h - 2.3, t, ctx.mat.wall, 0, 2.3 + (h - 2.3) / 2, hz, g);   /* lintel */
+    for (const s of [-1, 1]) box(0.06, 2.3, t + 0.04, ctx.mat.trim, s * (dw / 2 + 0.03), 1.15, hz, g);   /* door frame */
+    box(dw + 0.12, 0.06, t + 0.04, ctx.mat.trim, 0, 2.33, hz, g);
+    if (title) { const pl = ctx.panel(ctx.textCanvas([title, sub || ''], { w: 768, h: 192, size: 64 }), 1.5, 0.375, 0, 2.62, d / 2 + 0.012, 0, g); pl.userData.plate = title; box(1.58, 0.45, 0.03, ctx.mat.trim, 0, 2.62, d / 2 - 0.005, g); }
+  } else if (title) { const pl = ctx.panel(ctx.textCanvas([title, sub || ''], { w: 768, h: 192, size: 64 }), 1.5, 0.375, 0, 2.62, d / 2 + 0.012, 0, g); pl.userData.plate = title; }
   ctx.scene.add(g); ctx.extend(x - w / 2, z - d / 2, x + w / 2, z + d / 2); return g;
 }
 export function corridor(ctx, { x1, z1, x2, z2, width = 3 }) {
@@ -24,11 +35,14 @@ function shared(ctx) { if (G) return G; const T = ctx.THREE;
   const cyl = (rt, rb, h, n = 12) => new T.CylinderGeometry(rt, rb, h, n);
   G = { ao, aoGeo: new T.PlaneGeometry(1, 1).rotateX(-Math.PI / 2), lift: cyl(0.025, 0.025, 0.36), leg: new T.BoxGeometry(0.3, 0.025, 0.04), caster: cyl(0.025, 0.025, 0.03, 8).rotateZ(Math.PI / 2),
     seat: new T.CylinderGeometry(0.26, 0.25, 0.08, 20), back: new T.BoxGeometry(0.44, 0.5, 0.07), screen: new T.PlaneGeometry(0.62, 0.35), bezel: new T.BoxGeometry(0.66, 0.39, 0.03), kb: new T.BoxGeometry(0.44, 0.02, 0.14),
-    neck: new T.BoxGeometry(0.04, 0.22, 0.03), foot: new T.BoxGeometry(0.22, 0.012, 0.16), tleg: new T.BoxGeometry(0.05, 0.72, 0.05) };
+    neck: new T.BoxGeometry(0.04, 0.22, 0.03), foot: new T.BoxGeometry(0.22, 0.012, 0.16), tleg: new T.BoxGeometry(0.05, 0.72, 0.05),
+    mouse: new T.BoxGeometry(0.06, 0.025, 0.1), mug: cyl(0.04, 0.035, 0.1, 14), paper: new T.BoxGeometry(0.21, 0.03, 0.3), book: new T.BoxGeometry(0.17, 0.02, 0.24), pen: cyl(0.005, 0.005, 0.14, 6).rotateZ(Math.PI / 2) };
+  const S = (c, r = 0.6, mt = 0) => new T.MeshStandardMaterial({ color: c, roughness: r, metalness: mt });
+  G.mats = { paper: S(0xf2efe6, 0.9), mug: [S(0xd9b45a, 0.4, 0.2), S(0xf0ece4, 0.35), S(0x2c3e66, 0.4), S(0x8a1c2c, 0.4)], book: [S(0x1d2a44, 0.7), S(0x6b2a2a, 0.7), S(0x2f4a3a, 0.7)], pen: S(0x111111, 0.4) };
   return G; }
 export function desk(ctx, x, z, parent) { const T = ctx.THREE, g0 = shared(ctx), m = ctx.mat, par = parent || ctx.scene;
   const mesh = (geo, mt, px, py, pz, ry = 0) => { const o = new T.Mesh(geo, mt); o.position.set(px, py, pz); o.rotation.y = ry; par.add(o); return o; };
-  const ao = mesh(g0.aoGeo, g0.ao, x, 0.045, z - 0.3); ao.scale.set(2.0, 1, 2.0);
+  const ao = mesh(g0.aoGeo, g0.ao, x, 0.045, z - 0.3); ao.scale.set(2.0, 1, 2.0); ao.userData.batch = 1;
   const d = ctx.box(1.4, 0.04, 0.7, m.wood, x, 0.74, z - 0.6, parent); (ctx.desks ||= []).push([x, z]);
   for (const sx of [-0.65, 0.65]) for (const sz of [-0.28, 0.28]) mesh(g0.tleg, m.rack, x + sx, 0.36, z - 0.6 + sz);
   ctx.box(1.26, 0.35, 0.02, m.wood, x, 0.52, z - 0.9, parent);
@@ -38,7 +52,12 @@ export function desk(ctx, x, z, parent) { const T = ctx.THREE, g0 = shared(ctx),
   mesh(g0.seat, fab, x, 0.46, z + 0.1); mesh(g0.back, fab, x, 0.8, z + 0.36).rotation.x = -0.12;
   // monitor + keyboard
   mesh(g0.foot, m.rack, x, 0.766, z - 0.82); mesh(g0.neck, m.rack, x, 0.87, z - 0.84);
-  mesh(g0.bezel, m.dark, x, 1.08, z - 0.83); const mon = mesh(g0.screen, m.dark, x, 1.08, z - 0.813); mon.userData.keep = 1;
+  mesh(g0.bezel, m.dark, x, 1.08, z - 0.83); const mon = mesh(g0.screen, m.dark, x, 1.08, z - 0.813); mon.userData.keep = 1; (ctx.screens ||= []).push(mon);
   mesh(g0.kb, m.dark, x, 0.77, z - 0.5);
+  // desk clutter (varied per desk, all batched into a handful of draw calls): mouse, mug, paper stack, notebook, pen
+  const v = (Math.abs(Math.round(x * 7 + z * 13)) % 97), M2 = g0.mats; mesh(g0.mouse, m.dark, x + 0.32, 0.765, z - 0.5);
+  mesh(g0.mug, M2.mug[v % 4], x + (v % 2 ? 0.55 : -0.55), 0.81, z - 0.75);
+  if (v % 3) mesh(g0.paper, M2.paper, x + (v % 2 ? -0.5 : 0.48), 0.775 + (v % 5) * 0.004, z - 0.55, (v % 7) * 0.1 - 0.3);
+  if (v % 4 !== 1) { const b = mesh(g0.book, M2.book[v % 3], x - 0.28, 0.77, z - 0.38, 0.2 - (v % 5) * 0.08); mesh(g0.pen, M2.pen, x - 0.26, 0.785, z - 0.38, 0.4); }
   return { desk: d, monitor: mon }; }
 export function pedestal(ctx, x, z, gold, parent) { return ctx.box(0.7, 1, 0.7, gold ? ctx.mat.trim : ctx.mat.stone, x, 0.5, z, parent); }

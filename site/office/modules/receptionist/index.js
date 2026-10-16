@@ -23,7 +23,7 @@ export default {
       const c = ctx.card(`<h3>${esc(me.name)} · receptionist</h3><div class="office-chat"><div class="log" aria-live="polite"></div><form><input name="q" maxlength="400" placeholder="Ask about our games, services or the studio" aria-label="Message ${esc(me.name)}" autocomplete="off"><button class="ob gold" type="submit">Send</button></form><p style="font-size:12px;opacity:.7">${esc(me.name)} is an AI receptionist. Don't share passwords or payment details.</p></div>`);
       const log = c.querySelector('.log'), fm = c.querySelector('form');
       const add = (t, mine) => { const m = document.createElement('div'); m.className = 'm' + (mine ? ' me' : ''); m.textContent = t; log.append(m); log.scrollTop = 1e6; return m; };
-      if (!history.length) history.push({ role: 'assistant', content: `Welcome to ${cfg.hall || 'Fólkvangr'}! I'm ${me.name}. I can tell you about Elder World Studio, show you our games, or help you request a free demo for your business. What brings you in?` });
+      if (!history.length) history.push({ role: 'assistant', content: `Welcome to ${cfg.hall || 'Fólkvangr'}! I'm ${me.name}. I can tell you about Elder World Studio, show you our games, or book a demo for your business. What brings you in?` });
       history.forEach(h => add(h.content, h.role === 'user'));
       fm.onsubmit = async e => { e.preventDefault(); const q = fm.q.value.trim(); if (!q) return; fm.q.value = ''; add(q, true); history.push({ role: 'user', content: q }); const w = add('…');
         try { const j = await (await fetch(cfg.chat || '/api/office/freyja', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ messages: history.slice(-8) }) })).json();

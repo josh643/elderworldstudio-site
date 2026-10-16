@@ -38,7 +38,7 @@ export default {
     const agents = new Map(), all = new Set();
     function make(a, col, onPick) {
       const h = hash(a.id || a.name), base = bases[a.female ?? (h & 1)] || bases[0], scale = base.userData.k;
-      const g = new THREE.Group(), body = SkeletonUtils.clone(base); body.scale.setScalar(scale); body.rotation.y = 0; g.add(body);   // UBC humans face +z = the group's forward
+      const g = new THREE.Group(), body = SkeletonUtils.clone(base); body.scale.setScalar(scale); body.rotation.y = 0; body.userData.cloneOf = a.id || a.name; g.add(body);   // UBC humans face +z = the group's forward
       const hit = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 1.8, 6), new THREE.MeshBasicMaterial({ visible: false })); hit.position.y = 0.9; g.add(hit);
       body.traverse(o => { if (!o.isMesh) return; const n = o.material?.name || '';
         if (n === 'Shirt') o.material = shirt(o.material, col); else if (/hair/i.test(n)) o.material = hair(o.material, (h >> 3) % HAIR.length); });
@@ -55,7 +55,7 @@ export default {
       const mixer = new THREE.AnimationMixer(body), actions = {};
       const act = k => actions[k] ||= mixer.clipAction(clips[CLIP[k]] || clips.Idle_Loop);
       g.userData = { a, body, tag, bones: bonesOf(body), lw: 0, layer: null, bar, bg, flag, folder, mixer, act, cur: null, state: {}, target: null, home: null, phase: Math.random() * 6, pose: null, acc: 0, frame: 0 };
-      play(g, 'idle', 0); ctx.onClick(hit, () => { ctx.revealTag(g); onPick && onPick(); });
+      play(g, 'idle', 0); mixer.update(0.05); g.userData.posed = true; /* never show a bind/T-pose: pose the rig before its first frame */ ctx.onClick(hit, () => { ctx.revealTag(g); onPick && onPick(); });
       all.add(g); if (a.id) agents.set(a.id, g); return g;
     }
     function play(g, k, fade = 0.3) {
@@ -88,14 +88,15 @@ export default {
       const lay = LAYER[k] || null; if (lay) u.layer = lay; u.lw += ((lay ? 1 : 0) - u.lw) * Math.min(1, dt * 5);
       // culling + distance LOD for the skeleton update
       sph.center.copy(av.position).setY(0.9); const d = sph.center.distanceTo(ctx.cam.position); u.acc += dt; u.frame++;
-      const L = ctx.lod || 1, visible = d < 30 * L && frustum.intersectsSphere(sph), every = d < 8 * L ? 1 : d < 14 * L ? 2 : 6;   // far agents: hidden; mid: thinned updates
-      av.visible = d < 30 * L;
+      const L = ctx.lod || 1, visible = d < 16 * L && frustum.intersectsSphere(sph), every = d < 8 * L ? 1 : d < 14 * L ? 2 : 6;   // far agents: hidden; mid: thinned updates
+      av.visible = d < 15 * Math.max(0.8, L) && frustum.intersectsSphere(sph);
+      if (!visible && u.frame % 90 === 0) { u.mixer.update(u.acc); u.acc = 0; }   // off-screen rigs still get a rare update so a state change never reveals a bind pose
       if (visible && u.frame % every === 0) { u.mixer.update(u.acc); u.acc = 0; if (u.layer && u.lw > 0.01 && d < 14) { u.lt = (u.lt || 0) + dt * every; av.updateMatrixWorld(true); pose(u.bones, u.layer, u.lt + u.phase, u.lw, av); } }
       const p = s.progress; u.bar.visible = u.bg.visible = visible && p != null && !!s.stage;
       if (u.bar.visible) { u.bar.scale.x = Math.max(0.02, p); u.bar.position.x = -0.45 * (1 - p); u.bar.quaternion.copy(ctx.cam.quaternion); u.bg.quaternion.copy(ctx.cam.quaternion); }
       u.tagD = visible ? d : Infinity;
       u.flag.visible = !!s.blocked; if (s.blocked) u.flag.rotation.y += dt * 2;
-      if (u.monitor) u.monitor.material = s.stage ? mat.glow : mat.dark;
+      
     }
     this.pre = () => { ctx.cam.updateMatrixWorld(); pm.multiplyMatrices(ctx.cam.projectionMatrix, ctx.cam.matrixWorldInverse); frustum.setFromProjectionMatrix(pm); };
     ctx.provide('avatar', { make, animate, all, rigged: true }); ctx.provide('agents', agents);

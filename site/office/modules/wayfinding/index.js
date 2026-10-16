@@ -17,7 +17,7 @@ export default {
       const c = i % cols, r = Math.floor(i / cols), nr = Math.min(cols, n - r * cols);
       const lx = (c - (nr - 1) / 2) * (tw + 0.08), y = D.y - r * (th + 0.08);
       const p = ctx.panel(ctx.textCanvas([label, `${ctx.verb} to go`], { w: 600, h: 160, size: 62 }), tw, th, D.x - lx, y, D.z, D.ry); ctx.onClick(p, () => ctx.goTo(k));
-      const s = ctx.spotOf?.(k); if (s) { const g = hang(s.pos[0], 3.3, s.pos[2] - 1.2, Math.atan2(s.pos[0] - s.look[0], s.pos[2] - s.look[2]), '↩ Lobby', '', () => ctx.goTo('lobby'), 1.4); g.children.at(-1).material.side = THREE.FrontSide; }
+      const s = null; if (s) { const g = hang(s.pos[0], 3.3, s.pos[2] - 1.2, Math.atan2(s.pos[0] - s.look[0], s.pos[2] - s.look[2]), '↩ Lobby', '', () => ctx.goTo('lobby'), 1.4); g.children.at(-1).material.side = THREE.FrontSide; }
     });
     ctx.sign('Classic site', 'Simple text version', D.x - 2.95, 0.85, D.z, D.ry, () => ctx.classic(), 1.2);
   },

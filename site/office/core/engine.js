@@ -30,7 +30,7 @@ export async function start(opts = {}) {
   let tier = lowEnd ? 0 : devicePixelRatio > 1.5 ? 1 : 2; if (tier === 2 && matchMedia('(pointer: fine)').matches) RATIOS[2] = igpu ? 1.25 : 2;   // desktop: native res up to 2x, 1.25 on integrated GPUs
   if (igpu) RATIOS[1] = Math.min(RATIOS[1], 1.0);
   if (matchMedia('(pointer: fine)').matches) { RATIOS[0] = RATIOS[1] = 1; }   // desktops/kiosks never drop below native resolution; LOD and effects go first
-  const DSCALE = matchMedia('(pointer: fine)').matches ? [1] : [1, 0.85, 0.72]; /* desktop never renders below native size; it sheds LOD instead */ let dstep = 0; const applyRatio = () => R.setPixelRatio(Math.min(devicePixelRatio, RATIOS[tier]) * DSCALE[dstep]);
+  const DSCALE = matchMedia('(pointer: fine)').matches ? [1] : [1, 0.85, 0.72]; /* desktop never renders below native size; it sheds LOD instead */ let dstep = 0; const FINE = matchMedia('(pointer: fine)').matches; const applyRatio = () => R.setPixelRatio(FINE ? 1 : Math.min(devicePixelRatio, RATIOS[tier]) * DSCALE[dstep]);   // desktop/kiosk: exactly 1.0 (native CSS pixels)
   applyRatio(); R.outputColorSpace = THREE.SRGBColorSpace;
   root.prepend(R.domElement);
   const scene = new THREE.Scene(); scene.background = new THREE.Color(0x0b0716); scene.fog = new THREE.Fog(0x0b0716, 25, 70);
@@ -43,11 +43,14 @@ export async function start(opts = {}) {
   function wrap(g, s, max) { const out = []; let cur = ''; for (const wd of s.split(' ')) { const t = cur ? cur + ' ' + wd : wd; if (g.measureText(t).width > max && cur) { out.push(cur); cur = wd; } else cur = t; } if (cur) out.push(cur); return out; }
   function textCanvas(lines, { w = 1024, h = 256, bg = '#140c22', fg = '#f3ead7', size = 64, border = true } = {}) {
     const c = document.createElement('canvas'); c.width = w; c.height = h; const g = c.getContext('2d');
+    const draw = () => { g.clearRect(0, 0, w, h);
     if (bg) { g.fillStyle = bg; g.fillRect(0, 0, w, h); } if (border) { g.strokeStyle = '#d9b45a'; g.lineWidth = 8; g.strokeRect(8, 8, w - 16, h - 16); }
     let y = 28; g.textBaseline = 'top';
     lines.forEach((ln, i) => { const s = i === 0 ? size : Math.round(size * 0.5); g.font = `${i ? '500' : '700'} ${s}px ${i ? 'Inter, system-ui, sans-serif' : 'Cinzel, Georgia, serif'}`; g.fillStyle = i ? fg : '#d9b45a';
-      for (const part of wrap(g, String(ln), w - 64)) { if (y + s > h - 16) return; g.fillText(part, 32, y); y += s * 1.18; } });
-    const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; return t;
+      for (const part of wrap(g, String(ln), w - 64)) { if (y + s > h - 16) return; g.fillText(part, 32, y); y += s * 1.18; } }); };
+    draw();
+    const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; t.userData.text = lines.join(' ').trim();
+    document.fonts?.ready.then(() => { draw(); t.needsUpdate = true; }); return t;
   }
   const panel = (texture, w, h, x, y, z, ry = 0, parent = scene) => { const p = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ map: texture, transparent: true })); p.position.set(x, y, z); p.rotation.y = ry; parent.add(p); displays.push(p); return p; };
   const displays = [];
@@ -151,7 +154,16 @@ export async function start(opts = {}) {
         const dir = c.clone().sub(o).normalize(); rc.set(o, dir); rc.far = dist - 0.06; const hit = rc.intersectObjects(solids, false)[0];
         if (hit) out.push({ spot: name, display: (p.userData.label || '').slice(0, 40) || `${c.x.toFixed(1)},${c.y.toFixed(1)},${c.z.toFixed(1)}`, blocker: hit.object.name || hit.object.geometry.type, at: hit.point.toArray().map(v => +v.toFixed(2)) }); } }
     return out; }
-  window.__ewsOffice = { get yaw() { return yaw; }, get pitch() { return pitch; }, checkOcclusion };
+  // scene sanity (used by the pre-deploy gate): props must rest on a surface; no rig may be in bind/T-pose
+  function sanity() { const out = [], rc = new THREE.Raycaster(); rc.camera = cam; const bb = new THREE.Box3(), c = new THREE.Vector3(); scene.updateMatrixWorld(true);
+    scene.traverse(o => { if (!o.userData.prop) return; bb.setFromObject(o); bb.getCenter(c); rc.set(new THREE.Vector3(c.x, bb.min.y + 0.02, c.z), new THREE.Vector3(0, -1, 0)); rc.far = 3;
+      const ms = []; scene.traverse(m => { if (m.isMesh && !m.isSkinnedMesh) ms.push(m); }); const hits = rc.intersectObjects(ms, false).filter(h => { let p = h.object; while (p) { if (p === o) return false; p = p.parent; } return h.object.visible; });
+      const gap = hits.length ? (bb.min.y + 0.02) - hits[0].point.y : bb.min.y; if (Math.abs(gap) > 0.05) out.push({ type: 'floating-prop', name: o.userData.prop, gap: +gap.toFixed(2), at: c.toArray().map(v => +v.toFixed(1)) }); });
+    for (const av of ctx.use('avatar')?.all || []) { const B = av.userData.bones; if (!B?.upperarm_l || !B?.lowerarm_l) continue; const a = B.upperarm_l.getWorldPosition(new THREE.Vector3()), b = B.lowerarm_l.getWorldPosition(new THREE.Vector3());
+      const dy = Math.abs(b.y - a.y) / a.distanceTo(b); if (av.visible && dy < 0.35) out.push({ type: 'bind-pose', name: av.userData.a?.name, clip: av.userData.cur }); }
+    scene.traverse(o => { if (!o.userData.plate) return; const im = o.material.map?.image; let ok = false; try { const d = im.getContext('2d').getImageData(0, 0, im.width, im.height).data; let gold = 0; for (let i = 0; i < d.length; i += 64) if (d[i] > 150 && d[i + 2] < 140) gold++; ok = gold > 40; } catch {} if (!ok || !o.material.map.userData.text) out.push({ type: 'blank-plate', name: o.userData.plate }); });
+    return out; }
+  window.__ewsOffice = { get yaw() { return yaw; }, get pitch() { return pitch; }, checkOcclusion, sanity };
   const fine = matchMedia('(pointer: fine)').matches; lookHint.style.display = fine ? 'block' : 'none'; const locked = () => document.pointerLockElement === el;
   const center = { clientX: 0, clientY: 0 }; const centerPick = () => { const r = el.getBoundingClientRect(); center.clientX = r.left + r.width / 2; center.clientY = r.top + r.height / 2; return pickAt(center); };
   const xhair = $('div', { class: 'office-xhair', 'aria-hidden': 'true' }); root.append(xhair);
@@ -187,7 +199,7 @@ export async function start(opts = {}) {
   ctx.state = s => mods.forEach(m => { try { m.onState?.(s); } catch (e) { console.warn(e); } });
 
   // loop with FPS watchdog
-  const clock = new THREE.Clock(); const T0 = performance.now(); let running = true, fa = 0, fn = 0, slow = false, lowFor = 0, fps1 = 0, fpsN = 0; const fpsEl = new URLSearchParams(location.search).has('fps') ? (() => { const d = document.createElement('div'); d.className = 'office-fps'; d.style.cssText = 'position:absolute;right:8px;top:8px;z-index:9;font:12px monospace;color:#0f0;background:#000a;padding:3px 6px;pointer-events:none'; root.append(d); return d; })() : null; const fwd = new THREE.Vector3(), right = new THREE.Vector3();
+  const clock = new THREE.Clock(); const T0 = performance.now(); let cullT = 0, running = true, fa = 0, fn = 0, slow = false, lowFor = 0, fps1 = 0, fpsN = 0; const fpsEl = new URLSearchParams(location.search).has('fps') ? (() => { const d = document.createElement('div'); d.className = 'office-fps'; d.style.cssText = 'position:absolute;right:8px;top:8px;z-index:9;font:12px monospace;color:#0f0;background:#000a;padding:3px 6px;pointer-events:none'; root.append(d); return d; })() : null; const fwd = new THREE.Vector3(), right = new THREE.Vector3();
   function resize() { const w = root.clientWidth, h = root.clientHeight; R.setSize(w, h, false); cam.aspect = w / h; const a = w / h; cam.fov = a >= 1 ? 62 : Math.min(78, Math.max(62, 2 * Math.atan(Math.tan(Math.PI / 8) / a) * 180 / Math.PI)); cam.updateProjectionMatrix(); }   // portrait phones get a wider view
   addEventListener('resize', resize); resize();
   function frame() {
@@ -198,13 +210,15 @@ export async function start(opts = {}) {
     if (fa > 2) { const fps = fn / fa; fa = fn = 0;   // step quality down first; only offer classic after sustained <20 fps for 10 s at the lowest level
       if (fps < 40 && ctx.lod > 0.5) { ctx.lod = Math.max(0.5, ctx.lod - 0.15); lowFor = 0; }
       else if (fps < 40 && (dstep < DSCALE.length - 1 || tier > 0)) { if (dstep < DSCALE.length - 1) dstep++; else { tier--; dstep = 0; ctx.tierChanged?.(tier); } applyRatio(); resize(); lowFor = 0; }
-      else if (fps < 20) { lowFor += 2; if (lowFor >= 10 && !slow) { slow = true; cardOf('<h3>Running slowly?</h3><p>We\u2019ve already lowered the 3D quality. If it still stutters, the classic site is lighter.</p><div class="row"><a class="ob gold" href="/?classic=1">Switch to the classic site</a></div>'); } }
-      else lowFor = 0; }
+      else lowFor = 0; }   /* no 'running slowly' popup: quality steps down silently */
     if (glide) { glide.t = Math.min(1, glide.t + dt / 1.6); const k = glide.t * glide.t * (3 - 2 * glide.t); pos.lerpVectors(glide.from, glide.to, k); yaw = glide.y0 + (glide.y1 - glide.y0) * k; pitch = glide.p0 + (glide.p1 - glide.p0) * k; if (glide.t >= 1) glide = null; }
     const mvF = (keys.w || keys.arrowup ? 1 : 0) - (keys.s || keys.arrowdown ? 1 : 0) - jv.y, mvR = (keys.d ? 1 : 0) - (keys.a ? 1 : 0) + jv.x;
     if (keys.arrowleft || keys.q) yaw += dt * 1.8; if (keys.arrowright || keys.r) yaw -= dt * 1.8;   // keyboard turning never needs the cursor
     if (edgeX && !locked() && !drag && !card) yaw -= edgeX * dt * 2.2;          // cursor parked at a screen edge = keep turning
     if (mvF || mvR) { glide = null; fwd.set(-Math.sin(yaw), 0, -Math.cos(yaw)); right.set(-fwd.z, 0, fwd.x); const sp = keys.shift ? 8 : 4; pos.addScaledVector(fwd, mvF * dt * sp).addScaledVector(right, mvR * dt * sp); pos.x = Math.max(fx + 1, Math.min(fX - 1, pos.x)); pos.z = Math.max(fz + 1, Math.min(fZ - 1, pos.z)); }
+    cullT += rdt; if (cullT > 0.4) { cullT = 0; const wp = new THREE.Vector3();   // distance-cull signs/displays (each is its own draw call)
+      for (const p of farCull) { const u = p.userData.fc; const far = u.c.distanceTo(pos) - u.r > 20; if (far && p.visible) { p.visible = false; p.userData.far = 1; } else if (!far && p.userData.far) { p.visible = true; p.userData.far = 0; } }
+      for (const p of displays) { p.getWorldPosition(wp); const far = wp.distanceToSquared(pos) > 18 * 18; if (far && p.visible) { p.visible = false; p.userData.far = 1; } else if (!far && p.userData.far) { p.visible = true; p.userData.far = 0; } } }
     if (!glide || glide.walk) { const ox = pos.x, oz = pos.z; collide(pos); if (glide?.walk && Math.hypot(pos.x - ox, pos.z - oz) > 0.01) glide = null; }   // tours glide freely; walking (keys or tap-to-walk) is blocked by furniture
     pos.y = EYE;   // always grounded at eye height: tours and teleports never lift the walking camera
     if (R.xr.isPresenting) { rig.position.set(pos.x, 0, pos.z); rig.rotation.set(0, yaw, 0); cam.position.set(0, 0, 0); }
@@ -218,18 +232,20 @@ export async function start(opts = {}) {
   // static batching: every plain, non-interactive mesh is baked into one mesh per material (hundreds of desk/chair/
   // wall parts -> a few dozen draw calls). Clickables, signs, avatars and anything marked userData.keep stay live.
   function batchStatic() { scene.updateMatrixWorld(true); const groups = new Map(), victims = [], clickSet = new Set(clickables);
-    scene.traverse(m => { if (!m.isMesh || m.isSkinnedMesh || m.isInstancedMesh || !m.visible || displays.includes(m) || clickSet.has(m) || m.userData.batched) return;
+    scene.traverse(m => { if (!m.isMesh || m.isSkinnedMesh || m.isInstancedMesh || !m.visible || displays.includes(m) || clickSet.has(m) || m.userData.batched) return; if (m.material?.transparent && !m.userData.batch) return;
       for (let p = m; p; p = p.parent) { if (p.userData?.keep || p.userData?.a || p.isSprite) return; if (p !== m && !p.visible) return; }
-      const g = m.geometry; if (!g.index || !g.attributes.uv || !g.attributes.normal || Object.keys(g.attributes).length !== 3 || Array.isArray(m.material)) return;
-      const k = m.material.uuid; if (!groups.has(k)) groups.set(k, { mat: m.material, list: [] }); groups.get(k).list.push(m); victims.push(m); });
+      const g = m.geometry; if (!g.attributes.uv || !g.attributes.normal || g.morphAttributes?.position || Array.isArray(m.material)) return;
+      const M = m.material, plain = !M.map && !M.emissiveMap && !M.normalMap && !M.transparent && M.isMeshStandardMaterial && !M.vertexColors; const k = plain ? 'vc' + M.type + '|' + M.roughness.toFixed(1) + '|' + M.metalness.toFixed(1) + '|' + M.side + '|' + (M.emissive?.getHex() || 0) : M.uuid; if (!groups.has(k)) groups.set(k, { mat: M, plain, list: [] }); groups.get(k).list.push(m); victims.push(m); });
     let before = victims.length, after = 0;
-    for (const { mat, list } of groups.values()) { if (list.length < 2) { before -= list.length; continue; }
-      const geos = list.map(m => m.geometry.clone().applyMatrix4(m.matrixWorld)); const merged = mergeGeometries(geos, false); geos.forEach(g => g.dispose());
+    for (const { mat: mat0, plain, list } of groups.values()) { let mat = mat0; if (plain) { mat = mat0.clone(); mat.color.set(0xffffff); mat.vertexColors = true; } if (list.length < 2) { before -= list.length; continue; }
+      const geos = list.map(m => { let g = m.geometry.clone(); for (const a of Object.keys(g.attributes)) if (!['position', 'normal', 'uv'].includes(a)) g.deleteAttribute(a); if (g.index) g = g.toNonIndexed(); if (plain) { const n = g.attributes.position.count, a = new Float32Array(n * 3), col = m.material.color; for (let i = 0; i < n; i++) { a[i * 3] = col.r; a[i * 3 + 1] = col.g; a[i * 3 + 2] = col.b; } g.setAttribute('color', new THREE.BufferAttribute(a, 3)); } return g.applyMatrix4(m.matrixWorld); }); const merged = mergeGeometries(geos, false); geos.forEach(g => g.dispose());
       if (!merged) { before -= list.length; continue; } const mm = new THREE.Mesh(merged, mat); mm.userData.batched = true; mm.matrixAutoUpdate = false; scene.add(mm); after++;
       list.forEach(m => m.parent?.remove(m)); }
     ctx.batched = { before, after }; }
-  buildColliders(); baseCols = cols.slice(); batchStatic();
+  const farCull = []; function collectFar() { farCull.length = 0; const clickSet = new Set(clickables); for (const o of scene.children) { if (o.userData.batched || o.isLight || o.userData.a || o.isSkinnedMesh || o.isInstancedMesh || o === rip) continue; let skin = false; o.traverse(c => { if (c.isSkinnedMesh || c.userData.a) skin = true; }); if (!skin && !displays.includes(o) && o.visible) { const bx = new THREE.Box3().setFromObject(o); if (bx.isEmpty()) continue; const sp = bx.getBoundingSphere(new THREE.Sphere()); if (sp.radius > 12) continue; o.userData.fc = { c: sp.center, r: sp.radius }; farCull.push(o); } } }
+  buildColliders(); baseCols = cols.slice(); batchStatic(); collectFar();
+  setTimeout(() => { const b0 = ctx.batched; batchStatic(); ctx.batched = { before: b0.before + ctx.batched.before, after: b0.after + ctx.batched.after }; collectFar(); }, 10500);   /* second pass: lazy GLB props */
   setTimeout(buildColliders, 4000); setTimeout(buildColliders, 10000);   // again once the lazy props have landed
-  window.__ewsOffice.colliders = () => cols.length; window.__ewsOffice.info = () => ({ calls: R.info.render.calls, tris: R.info.render.triangles, geos: R.info.memory.geometries, tex: R.info.memory.textures, batched: ctx.batched, ratio: R.getPixelRatio(), buf: R.getDrawingBufferSize(new THREE.Vector2()).toArray(), tier, lod: ctx.lod }); window.__ewsOffice.desks = () => ctx.desks || []; window.__ewsOffice.walk = (x, z, ang, secs) => { pos.set(x, EYE, z); glide = null; yaw = ang; keys.w = 1; return new Promise(r => setTimeout(() => { keys.w = 0; r([pos.x, pos.z]); }, secs * 1000)); };
+  window.__ewsOffice.scene = scene; window.__ewsOffice.breakdown = () => { const fr = new THREE.Frustum().setFromProjectionMatrix(new THREE.Matrix4().multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse)); const m = {}; scene.traverseVisible(o => { if (!(o.isMesh || o.isSprite || o.isPoints || o.isLine)) return; if (o.frustumCulled && !o.isSkinnedMesh && o.geometry && !fr.intersectsObject(o)) return; let r = o; while (r.parent && r.parent !== scene) r = r.parent; const k = (o.isSkinnedMesh ? "skin:" : o.isSprite ? "sprite:" : o.isInstancedMesh ? "inst:" : "") + (r.userData.mod || r.name || r.type); m[k] = (m[k] || 0) + (Array.isArray(o.material) ? o.material.length : 1); }); return Object.entries(m).sort((a, b) => b[1] - a[1]).slice(0, 40); }; window.__ewsOffice.colliders = () => cols.length; window.__ewsOffice.orphans = () => { const out = []; scene.traverse(o => { if (!o.isSkinnedMesh) return; let p = o, ok = false; while (p) { if (p.userData?.a) ok = true; p = p.parent; } if (!ok) { let r = o; while (r.parent && r.parent !== scene) r = r.parent; out.push('ROOT ' + JSON.stringify(r.userData).slice(0, 120) + ' pos ' + r.position.toArray().join(',')); const chain = []; let q = o; while (q) { chain.push((q.type || '') + ':' + (q.name || '')); q = q.parent; } out.push(chain.join(' < ')); } }); return out; }; window.__ewsOffice.avatars = () => [...(ctx.use('avatar')?.all || [])].map(g => ({ id: g.userData.a?.id, name: g.userData.a?.name, p: g.position.toArray().map(v => +v.toFixed(2)), ry: +g.rotation.y.toFixed(2), clip: g.userData.cur, vis: g.visible, inScene: !!g.parent })); window.__ewsOffice.look = (x, z, lx, lz) => { pos.set(x, EYE, z); glide = null; ({ yaw, pitch } = lookAt([x, EYE, z], [lx, 1.2, lz])); }; window.__ewsOffice.info = () => ({ calls: R.info.render.calls, tris: R.info.render.triangles, geos: R.info.memory.geometries, tex: R.info.memory.textures, batched: ctx.batched, ratio: R.getPixelRatio(), buf: R.getDrawingBufferSize(new THREE.Vector2()).toArray(), tier, lod: ctx.lod }); window.__ewsOffice.desks = () => ctx.desks || []; window.__ewsOffice.walk = (x, z, ang, secs) => { pos.set(x, EYE, z); glide = null; yaw = ang; keys.w = 1; return new Promise(r => setTimeout(() => { keys.w = 0; r([pos.x, pos.z]); }, secs * 1000)); };
   R.setAnimationLoop(frame); return { goTo, close, ctx };   // setAnimationLoop also drives WebXR frames
 }

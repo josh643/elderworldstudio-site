@@ -17,10 +17,15 @@ export default {
     const ktx2 = new KTX2Loader().setTranscoderPath('/office/vendor/basis/').detectSupport(R);
     const L = new GLTFLoader().setDRACOLoader(draco).setKTX2Loader(ktx2), cache = {};
     const load = n => cache[n] ||= L.loadAsync(`/office/modules/props/assets/${n}.glb?v=1`).then(g => g.scene);
+    // settle: drop a prop onto whatever surface is under it (floor, desk top), using its real bounding box
+    const rc = new THREE.Raycaster(); rc.camera = ctx.camera; const bb = new THREE.Box3(), c = new THREE.Vector3(), down = new THREE.Vector3(0, -1, 0);
+    const settle = o => { o.updateMatrixWorld(true); bb.setFromObject(o); bb.getCenter(c); rc.set(new THREE.Vector3(c.x, 2.5, c.z), down); rc.far = 3;
+      const hit = (() => { const ms = []; scene.traverse(m => { if (m.isMesh && !m.isSkinnedMesh) ms.push(m); }); return rc.intersectObjects(ms, false); })().find(h => { let p = h.object; while (p) { if (p === o) return false; p = p.parent; } return h.object.visible && !h.object.isSprite && !h.object.isSkinnedMesh && h.point.y < 1.6; });
+      const top = hit ? hit.point.y : 0; o.position.y += top - bb.min.y; };
     const run = async () => {
       const rack = await load('server_rack_42u').catch(() => null);
-      if (rack) for (const b of ctx.use('racks') || []) { const r = rack.clone(); r.position.set(b.position.x, 0, b.position.z); scene.add(r); b.visible = false; }
-      for (const [n, x, z, ry] of cfg.place || PLACE) { const m = await load(n).catch(() => null); if (!m) continue; const o = m.clone(); o.position.set(x, n === 'desk_lamp_arm_01' ? 1.16 : 0, z); o.rotation.y = ry; scene.add(o); }
+      if (rack) for (const b of ctx.use('racks') || []) { const r = rack.clone(); r.position.set(b.position.x, 0, b.position.z); r.userData.prop = 'server_rack_42u'; b.visible = false; b.parent?.remove(b); scene.add(r); settle(r); }
+      for (const [n, x, z, ry] of cfg.place || PLACE) { const m = await load(n).catch(() => null); if (!m) continue; const o = m.clone(); o.position.set(x, 0, z); o.rotation.y = ry; o.userData.prop = n; scene.add(o); settle(o); }
     };
     setTimeout(run, 1500);   // after first frames: never delays the office opening
   },

@@ -88,6 +88,10 @@
    }
   },
   {
+   "id": "monitors",
+   "src": "modules/monitors/index.js"
+  },
+  {
    "id": "datacenter",
    "src": "modules/datacenter/index.js",
    "anchor": [
