@@ -22,7 +22,7 @@ EWS_TESTERS_EMAIL = "ews_testers@googlegroups.com"
 STEAM_OMNI = utm("https://store.steampowered.com/app/4121760/", "omnivael")
 STEAM_COTR = utm("https://store.steampowered.com/app/2559510/", "chronicles")
 
-def page(path, title, desc, body, canonical, current="", noindex=False):
+def page(path, title, desc, body, canonical, current="", noindex=False, compact=False):
     depth = path.count("/")  # e.g. "privacy-policy/index.html" -> 1
     P = "../" * depth
     nav = [("index.html", "Home", "home"), ("index.html#games", "Games", "games"),
@@ -54,10 +54,10 @@ def page(path, title, desc, body, canonical, current="", noindex=False):
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
-<header class="site-header">
+<header class="site-header{' compact' if compact else ''}">
  <div class="wrap">
   <a class="brand" href="{P}index.html"><img src="{P}assets/img/brand/ews-mark.svg?v=4" width="36" height="36" alt=""><span>{STUDIO}</span></a>
-  <nav class="nav" aria-label="Main">{navhtml}</nav>
+  {'<button class="menu-btn" type="button" aria-expanded="false" aria-controls="mainnav" onclick="var o=this.getAttribute(\'aria-expanded\')!==\'true\';this.setAttribute(\'aria-expanded\',o);document.getElementById(\'mainnav\').classList.toggle(\'open\',o)"><span class="sr">Menu</span>&#9776;</button>' if compact else ''}<nav class="nav"{' id="mainnav"' if compact else ''} aria-label="Main">{navhtml}</nav>
  </div>
 </header>
 <main id="main">
@@ -620,12 +620,29 @@ KIOSK = f"""
   <p class="meta">We reply by email, usually within one business day. We only use your details to answer your request (see our <a href="{{P}}privacy-policy/index.html">Privacy Policy</a>).</p>
  </form>
 </div></section>
-<style>.kiosk-img{{width:100%;height:auto;border-radius:16px;display:block}}.kiosk-two{{align-items:center}}.price-big{{font-size:2.4rem;font-weight:700;margin:6px 0}}.price-big small{{font-size:1rem;color:var(--soft)}}.plan-best{{outline:2px solid var(--accent)}}.lead-form{{display:grid;gap:14px;max-width:640px}}.lead-form label{{display:grid;gap:6px;font-weight:600}}.lead-form input,.lead-form select,.lead-form textarea{{font:inherit;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:#130B22;color:inherit}}.lead-form .hp{{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}}</style>
+<style>.kiosk-img{{width:100%;height:auto;border-radius:16px;display:block}}.kiosk-two{{align-items:center}}.price-big{{font-size:2.4rem;font-weight:700;margin:6px 0}}.price-big small{{font-size:1rem;color:var(--soft)}}.plan-best{{outline:2px solid var(--accent)}}.lead-form{{display:grid;gap:14px;max-width:640px}}.lead-form label{{display:grid;gap:6px;font-weight:600}}.lead-form input,.lead-form select,.lead-form textarea{{font:inherit;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:#130B22;color:inherit}}.lead-form .hp{{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}}
+.lead-form input,.lead-form select,.lead-form textarea{{width:100%;min-width:0;max-width:100%;font-size:16px;min-height:44px}}.lead-form label{{min-width:0}}.lead-form .btn{{min-height:48px}}
+.kiosk-plans .btn,.kiosk-hero .btn{{min-height:44px;display:inline-flex;align-items:center;justify-content:center}}
+.menu-btn{{display:none}}.sr{{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}}
+@media (max-width:700px){{
+ .site-header.compact{{position:static}}
+ .site-header.compact .wrap{{justify-content:space-between;flex-wrap:wrap;min-height:56px;padding-top:6px;padding-bottom:6px}}
+ .site-header.compact .brand img{{width:28px}}.site-header.compact .brand span{{font-size:.9rem}}
+ .site-header.compact .menu-btn{{display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;font-size:1.5rem;background:none;border:1px solid var(--line);border-radius:10px;color:var(--text)}}
+ .site-header.compact .nav{{display:none;width:100%;flex-direction:column;gap:2px;padding-bottom:6px}}
+ .site-header.compact .nav.open{{display:flex}}
+ .site-header.compact .nav a{{padding:12px;font-size:1rem;min-height:44px}}
+ .kiosk-hero{{padding-top:28px!important}}.kiosk-hero h1{{font-size:1.9rem;line-height:1.15}}
+ .kiosk-hero .btns{{display:flex;flex-direction:column;gap:10px}}.kiosk-hero .btns .btn{{width:100%}}
+ .kiosk-two,.kiosk-plans{{grid-template-columns:1fr!important}}.kiosk-plans .btn{{width:100%}}
+ .lead-form.panel{{padding:16px}}.price-big{{font-size:2rem}}
+}}
+</style>
 <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 <script>document.getElementById('lead-t').value=Date.now();document.querySelectorAll('[data-plan]').forEach(function(a){{a.addEventListener('click',function(){{document.getElementById('kiosk-plan').value=a.dataset.plan;}});}});(function(){{var q=new URLSearchParams(location.search),s=document.getElementById('form-status');if(!q.has('sent'))return;s.hidden=false;s.textContent=q.get('sent')==='1'?'Thanks! Your demo request was sent. We will reply by email soon.':('Sorry, that did not go through: '+(q.get('e')||'please try again')+' You can also email annaews@agentmail.to.');}})();</script>
 {KIOSK_LD}
 """
-page("kiosk/index.html", f"Self-Order Kiosk Leasing for Small Businesses | {STUDIO}", "Lease the EWS Order Kiosk: 19-inch touchscreen, mini PC and ticket printer in a locking stand. From $129/mo with Elder POS ($1 application fee per card or scan-to-pay sale, no fee on cash) or $149/mo kiosk only. Book a free demo.", KIOSK, "/kiosk/")
+page("kiosk/index.html", f"Self-Order Kiosk Leasing for Small Businesses | {STUDIO}", "Lease the EWS Order Kiosk: 19-inch touchscreen, mini PC and ticket printer in a locking stand. From $129/mo with Elder POS ($1 application fee per card or scan-to-pay sale, no fee on cash) or $149/mo kiosk only. Book a free demo.", KIOSK, "/kiosk/", compact=True)
 # 404 uses root-absolute links (served for any missing path)
 page("404.html", f"Page not found | {STUDIO}", "Page not found.", NOTFOUND, "/404.html", noindex=True)
 p404 = ROOT / "404.html"
