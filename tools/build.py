@@ -594,8 +594,9 @@ GAMES = f"""
 <section class="block alt" id="bigger">
  <div class="wrap">
   <div class="center"><h2>Bigger Games</h2></div>
-  <div class="grid cards single">
+  <div class="grid cards">
 {_gcard("Omnivael: Wayfarer's Life", '<span class="tag soon">Early Access &middot; Coming to Steam</span>', "A living sandbox RPG where your legacy unfolds through trade, exploration, relationships and time itself, in a medieval frontier whose economy runs on its people.", "../omnivael.jpg", "wide", f'<a class="btn btn-primary" href="{STEAM_OMNI}" rel="noopener">View on Steam</a>', "Omnivael key art")}
+{_gcard("Chronicles of the Realm", '<span class="tag soon">Free &middot; Coming to Steam</span>', "A free first-person dungeon game set in the world of Omnivael. Take up sword and shield, survive wave after wave of slimes and goblins in a torch-lit cave, and pick a boon between waves.", "../chronicles-of-the-realm.jpg", "wide", f'<a class="btn btn-primary" href="{STEAM_COTR}" rel="noopener">View on Steam</a>', "Chronicles of the Realm: fighting slimes in a torch-lit cave arena")}
   </div>
  </div>
 </section>
@@ -608,7 +609,7 @@ GAMES = f"""
  </div>
 </section>
 """
-page("games/index.html", f"Games | {STUDIO}", f"Games by {STUDIO}: Astro Dodge and Star Wayfarer on Google Play, Omnivael on Steam, and casual mobile games coming soon.", GAMES, "/games/", "games")
+page("games/index.html", f"Games | {STUDIO}", f"Games by {STUDIO}: Astro Dodge and Star Wayfarer on Google Play, Omnivael and Chronicles of the Realm on Steam, and casual mobile games coming soon.", GAMES, "/games/", "games")
 # 404 uses root-absolute links (served for any missing path)
 page("404.html", f"Page not found | {STUDIO}", "Page not found.", NOTFOUND, "/404.html", noindex=True)
 p404 = ROOT / "404.html"
