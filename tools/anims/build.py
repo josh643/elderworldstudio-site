@@ -6,10 +6,16 @@ U2="/tmp/ual2/Universal Animation Library 2[Standard]/Unreal-Godot/UAL2_Standard
 OUT=sys.argv[sys.argv.index('--')+1]
 bpy.ops.wm.read_factory_settings(use_empty=True)
 bpy.ops.import_scene.gltf(filepath=U1)
+for a in bpy.data.actions: a['u1']=1
+bpy.ops.import_scene.gltf(filepath=U2)
+for a in list(bpy.data.actions):
+    if 'u1' not in a and a.name.split('.')[0] not in [x.name for x in bpy.data.actions if 'u1' in x]: a.name=a.name.split('.')[0]
 arm=[o for o in bpy.data.objects if o.type=='ARMATURE'][0]
+for o in bpy.data.objects:
+    if o.type=='ARMATURE' and o!=arm: o.animation_data_clear()
 for o in list(bpy.data.objects):
     if o!=arm: bpy.data.objects.remove(o)
-sc=bpy.context.scene; sc.render.fps=30
+sc=bpy.context.scene; sc.render.fps=30; bpy.context.view_layer.objects.active=arm; arm.select_set(True)
 PEL_Y=0.331                     # seated pelvis is 0.331 m behind root (facing -Y, left=+X, up=Z)
 import json as _j
 LAY=_j.load(open('/workspace/anims-lib/props/layout.json')); u=0.019; TILT=math.radians(6)
@@ -22,7 +28,7 @@ KEY_D=key_top('D'); KEY_K=key_top('K')
 MOUSE_C=Vector((KBX-0.29, KBY, DESK)); MOUSE_TOP=MOUSE_C+Vector((0,0.0,0.033))
 KNUCK=Vector((0,0.05,0.035))     # knuckles sit ~5 cm behind and 3.5 cm above the fingertip contact
 KB=KEY_D; MOUSE=MOUSE_TOP
-ANCH={}
+ANCH={}; SAMPLES={}; ERR={}; CUR={}; LOOPBASE={}; FRAMES={}
 def bezier_free(): pass
 def make_clip(name, base, frames, ik={}, rot={}, woff=None):
     pre={b:f for b,f in rot.items() if not b.startswith(('index','middle','ring','pinky','thumb'))}
@@ -31,6 +37,7 @@ def make_clip(name, base, frames, ik={}, rot={}, woff=None):
         tmp=_clip(name+"__pre_Armature",base,frames,{},pre); return _clip(name,name+"__pre",frames,ik,post,woff)
     return _clip(name,base,frames,ik,post,woff)
 def _clip(name, base, frames, ik={}, rot={}, woff=None):
+    FRAMES[name.replace('__pre','')]=frames
     WO=dict(WOFF); WO.update(woff or {})
     """ik: side->fn(t)->Vector contact point for knuckles (middle_01 head); rot: bone->fn(t)->Euler offset"""
     src=bpy.data.actions[base+"_Armature"]; n=int(src.frame_range[1])
@@ -46,13 +53,19 @@ def _clip(name, base, frames, ik={}, rot={}, woff=None):
     bones=[pb for pb in arm.pose.bones]; data={}
     for f in range(1,frames+2):
         t=(f-1)/frames
+        sc.frame_set(1+((f-1)%n) if LOOPBASE.get(name,True) else min(f,n)); bpy.context.view_layer.update()
+        CUR['head']=arm.pose.bones['Head'].head.copy(); CUR['t']=t
         for (e,fn),sd in zip(emps,ik): e.location=arm.matrix_world@fn(t); WR[sd].location=arm.matrix_world@(fn(t)+WO[sd])
-        sc.frame_set(1+((f-1)%n)); bpy.context.view_layer.update()
+        bpy.context.view_layer.update()
         for it in range(6):
             for (e,fn),sd in zip(emps,ik):
                 WR[sd].location=WR[sd].location-((arm.matrix_world@arm.pose.bones['middle_04_leaf_'+sd].head)-(arm.matrix_world@fn(t)))
             bpy.context.view_layer.update()
         data[f]={pb.name:pb.matrix.copy() for pb in bones}
+        if ik and (f-1)%3==0:
+            for sd,fn in ik.items():
+                p=fn(t); SAMPLES.setdefault(name,{}).setdefault(sd,[]).append([round(c,4) for c in p]*2)
+                ERR[name]=max(ERR.get(name,0),((arm.matrix_world@arm.pose.bones['middle_04_leaf_'+sd].head)-p).length)
     for pb,c in cons: pb.constraints.remove(c)
     for e,_ in emps: bpy.data.objects.remove(e)
     for e in WR.values(): bpy.data.objects.remove(e)
@@ -69,49 +82,23 @@ def _clip(name, base, frames, ik={}, rot={}, woff=None):
     bpy.ops.object.mode_set(mode='OBJECT')
     return act
 TAU=2*math.pi
-WOFF={'l':Vector((0.045,0.09,0.03)),'r':Vector((-0.045,0.09,0.03))}   # wrist rests 7.5 cm behind, 4.5 cm above the fingertip
-CH=int(__import__('os').environ.get('CH','3'))
-def fing(side,speed,phase):  # finger tap: index/middle curl
-    return lambda t: Euler((0.25+0.35*max(0,math.sin(TAU*speed*t+phase)),0,0))
-F=90  # 3 s loops at 30 fps
-def kb_hand(side):
-    base=(KEY_D if side=='l' else KEY_K)+Vector((0,0,0.004))
-    def fn(t):
-        dx=0.012*math.sin(TAU*2*t+(0 if side=='l' else 1.3)); dz=0.008*max(0,math.sin(TAU*6*t+(0 if side=='l' else 2)))
-        return base+Vector((dx,0.0,dz))
-    return fn
-make_clip("Sit_Type_Loop","Sitting_Idle_Loop",F,
-  ik={'l':kb_hand('l'),'r':kb_hand('r')},
-  rot={'index_01_l':fing('l',6,0),'index_01_r':fing('r',6,2),'middle_01_l':fing('l',5,1),'middle_01_r':fing('r',5,3),
-       'spine_01':lambda t:Euler((0.12,0,0)),'spine_02':lambda t:Euler((0.12,0,0)),'Head':lambda t:Euler((0.10,0.04*math.sin(TAU*t),0))})
-ANCH['Sit_Type_Loop']={'l':'kb','r':'kb'}
-def mouse_r(t):
-    return MOUSE_TOP+Vector((0.012,-0.035,-0.003))+Vector((0.02*math.sin(TAU*2*t),0.015*math.sin(TAU*3*t+0.7),0))
-make_clip("Sit_Mouse_Loop","Sitting_Idle_Loop",F,
-  ik={'r':mouse_r,'l':lambda t:KEY_D+Vector((0,0,0.004))},
-  rot={'index_01_r':lambda t:Euler((0.2+0.4*max(0,math.sin(TAU*4*t)),0,0)),'spine_01':lambda t:Euler((0.12,0,0)),'spine_02':lambda t:Euler((0.12,0,0.06)),'Head':lambda t:Euler((0.1,-0.05,0))},woff={'r':Vector((-0.01,0.10,-0.012))})
-MW={'r':Vector((-0.01,0.10,-0.012))}
-ANCH['Sit_Mouse_Loop']={'l':'kb','r':'mouse'}
-def tgt_of(nm,s,t):
-    if nm=='Sit_Type_Loop': p=kb_hand(s)(t)
-    elif s=='r': p=mouse_r(t)
-    else: p=KEY_D+Vector((0,0,0.004))
-    return p,p
-rep={}; samples={}
-for nm,sides in ANCH.items():
-    arm.animation_data.action=bpy.data.actions[nm]; wk=wt=0; samples[nm]={}
-    for f in range(1,F+2):
-        sc.frame_set(f); bpy.context.view_layer.update(); t=(f-1)/F
-        for s in sides:
-            kn,tip=tgt_of(nm,s,t)
-            wk=max(wk,((arm.matrix_world@arm.pose.bones['hand_'+s].head).z-tip.z))  # wrist height above contact
-            wt=max(wt,((arm.matrix_world@arm.pose.bones['middle_04_leaf_'+s].head)-tip).length)
-            if (f-1)%3==0: samples[nm].setdefault(s,[]).append([round(c,4) for c in kn]+[round(c,4) for c in tip])
-    rep[nm]={'wrist_above_cm':round(wk*100,2),'fingertip_cm':round(wt*100,2)}
-print("GATE_CM",rep)
+WOFF={'l':Vector((0.045,0.09,0.03)),'r':Vector((-0.045,0.09,0.03))}
+def fing(side,speed,phase): return lambda t: Euler((0.25+0.35*max(0,math.sin(TAU*speed*t+phase)),0,0))
+def ease(x): x=max(0,min(1,x)); return x*x*(3-2*x)
+def lerp(a,b,k): return a+(b-a)*k
+V=lambda x,y,z: Vector((x,y,z))
+PACK=sys.argv[sys.argv.index('--')+2]
+exec(open(f'/workspace/anims-lib/specs/{PACK}.py').read())
+names=[a.name for a in bpy.data.actions if not a.name.endswith('_Armature') and '__pre' not in a.name and a.users>=0 and a.use_fake_user]
+print("BUILT",PACK,names)
+print("GATE_CM",{k:round(v*100,2) for k,v in ERR.items()})
 json.dump({'frame':'clip root, Blender axes: -Y forward (three +Z), +X avatar-left, Z up. three = (x, z, -y)',
   'keyboard':{'centre_base':[KBX,KBY,DESK],'tilt_deg':6,'yaw':'Esc on avatar-left'},'mouse':{'centre_base':list(MOUSE_C)},
-  'contact_bones':{'knuckle':'middle_01_*','fingertip':'middle_04_leaf_*'},'clips':ANCH,'samples_every':3,'frames':F,'samples':samples},open(OUT+'.anchors.json','w'))
+  'contact_bones':{'fingertip':'middle_04_leaf_*'},'samples_every':3,'frames':{k:FRAMES[k] for k in SAMPLES},'samples':SAMPLES},open(OUT+'.anchors.json','w'))
 for a in list(bpy.data.actions):
-    if a.name.endswith("_Armature"): bpy.data.actions.remove(a)
-bpy.ops.export_scene.gltf(filepath=OUT,export_format='GLB',use_selection=False,export_animation_mode='ACTIONS',export_force_sampling=True,export_frame_step=1,export_def_bones=False,export_skins=True)
+    if a.name.endswith("_Armature") or '__pre' in a.name or 'u1' in a or not a.use_fake_user: bpy.data.actions.remove(a)
+for a in list(bpy.data.actions):
+    if a.name.split('.')[0]!=a.name: bpy.data.actions.remove(a)
+for o in list(bpy.data.objects):
+    if o!=arm: bpy.data.objects.remove(o)
+bpy.ops.export_scene.gltf(filepath=OUT,export_format='GLB',export_animation_mode='ACTIONS',export_force_sampling=True)

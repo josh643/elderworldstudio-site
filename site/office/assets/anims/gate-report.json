@@ -1,11 +1,146 @@
 {
+ "Chair_PullOut": {
+  "contact_cm": 4.55,
+  "bind_frames": 0,
+  "pass": true
+ },
+ "Sit_Coffee": {
+  "contact_cm": 1.71,
+  "bind_frames": 0,
+  "pass": true
+ },
+ "Sit_LeanBack_Loop": {
+  "contact_cm": 0.11,
+  "bind_frames": 0,
+  "pass": true
+ },
  "Sit_Mouse_Loop": {
   "contact_cm": 0.29,
   "bind_frames": 0,
   "pass": true
  },
+ "Sit_Phone_Loop": {
+  "contact_cm": 0.11,
+  "bind_frames": 0,
+  "pass": true
+ },
+ "Sit_ReadMonitor_Loop": {
+  "contact_cm": 0.04,
+  "bind_frames": 0,
+  "pass": true
+ },
+ "Sit_ShufflePapers": {
+  "contact_cm": 0.6,
+  "bind_frames": 0,
+  "pass": true
+ },
+ "Sit_Stretch": {
+  "contact_cm": 2.51,
+  "bind_frames": 0,
+  "pass": true
+ },
  "Sit_Type_Loop": {
   "contact_cm": 1.08,
+  "bind_frames": 0,
+  "pass": true
+ },
+ "Sit_Write_Loop": {
+  "contact_cm": 1.03,
+  "bind_frames": 0,
+  "pass": true
+ },
+ "Door_Close": {
+  "contact_cm": 1.73,
+  "bind_frames": 0,
+  "pass": true
+ },
+ "Door_Open_Pull": {
+  "contact_cm": 1.96,
+  "bind_frames": 0,
+  "pass": true
+ },
+ "Door_Push_Open": {
+  "contact_cm": 0.53,
+  "bind_frames": 0,
+  "pass": true
+ },
+ "Idle_CheckWatch": {
+  "contact_cm": 2.54,
+  "bind_frames": 0,
+  "pass": true
+ },
+ "Idle_LookAround": {
+  "contact_cm": 0,
+  "bind_frames": 0,
+  "pass": true
+ },
+ "Idle_WeightShift": {
+  "contact_cm": 0,
+  "bind_frames": 0,
+  "pass": true
+ },
+ "Turn_L90": {
+  "contact_cm": 0,
+  "bind_frames": 0,
+  "pass": true
+ },
+ "Turn_R90": {
+  "contact_cm": 0,
+  "bind_frames": 0,
+  "pass": true
+ },
+ "Arcade_Play_Loop": {
+  "contact_cm": 0.77,
+  "bind_frames": 0,
+  "pass": true
+ },
+ "Freyja_Desk_Idle": {
+  "contact_cm": 0.05,
+  "bind_frames": 0,
+  "pass": true
+ },
+ "Freyja_Greet": {
+  "contact_cm": 1.24,
+  "bind_frames": 0,
+  "pass": true
+ },
+ "Freyja_Guide": {
+  "contact_cm": 2.26,
+  "bind_frames": 0,
+  "pass": true
+ },
+ "Handshake": {
+  "contact_cm": 0.61,
+  "bind_frames": 0,
+  "pass": true
+ },
+ "Hermod_HandOver": {
+  "contact_cm": 1.29,
+  "bind_frames": 0,
+  "pass": true
+ },
+ "Hermod_Register_Scan": {
+  "contact_cm": 2.18,
+  "bind_frames": 0,
+  "pass": true
+ },
+ "Hermod_Shelve": {
+  "contact_cm": 1.93,
+  "bind_frames": 0,
+  "pass": true
+ },
+ "Point_Fwd": {
+  "contact_cm": 4.8,
+  "bind_frames": 0,
+  "pass": true
+ },
+ "Present_Loop": {
+  "contact_cm": 0.65,
+  "bind_frames": 0,
+  "pass": true
+ },
+ "Wave": {
+  "contact_cm": 1.4,
   "bind_frames": 0,
   "pass": true
  },
