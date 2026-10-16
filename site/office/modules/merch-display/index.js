@@ -15,8 +15,8 @@ export default {
       fragmentShader: 'uniform sampler2D map; uniform float t; varying vec2 vUv; ' +
         ' float a(vec2 u){ return texture2D(map, u).a; }' +
         ' void main(){ vec4 c = texture2D(map, vUv); float al = a(vUv);' +
-        ' float o = .012, nb = max(max(a(vUv+vec2(o,0.)), a(vUv-vec2(o,0.))), max(a(vUv+vec2(0.,o)), a(vUv-vec2(0.,o)))); float rim = clamp(nb - al, 0., 1.);' +
-        ' float lum = dot(c.rgb, vec3(.3,.59,.11)); vec3 col = c.rgb * 1.12 + vec3(.05,.06,.08) * (1.0 - smoothstep(.05,.35,lum));' +
+        ' float o = .016, nb = max(max(a(vUv+vec2(o,0.)), a(vUv-vec2(o,0.))), max(a(vUv+vec2(0.,o)), a(vUv-vec2(0.,o)))); float rim = clamp(nb - al, 0., 1.);' +
+        ' float lum = dot(c.rgb, vec3(.3,.59,.11)); vec3 col = c.rgb * 1.08 + vec3(.004,.006,.009);' +
         ' col *= .96 + .04 * sin(vUv.y * 240.0 - t * 3.0); col = mix(col, vec3(.45,.9,1.0), rim);' +
         ' gl_FragColor = vec4(pow(col, vec3(1.0/2.2)), max(al, rim)); }' });
     this.onFrame = (dt, t) => { for (const p of spin) { p.rotation.y = Math.sin(t * 0.35 + p.userData.ph) * 0.6;
@@ -27,7 +27,7 @@ export default {
          cheap rim/scanline hologram shader so dark items (black shirt) read clearly. No realtime lights. */
       const T = ctx.THREE; box(0.86, 0.04, 0.86, mat.trim, x, 0.92, z); const top = new T.Mesh(new T.CylinderGeometry(0.38, 0.38, 0.03, 32), HOLO_BASE); top.position.set(x, 0.95, z); ctx.scene.add(top);
       const bd = new T.Mesh(new T.PlaneGeometry(1.6, 1.7), BACK); bd.position.set(x, 1.8, z - 0.55); ctx.scene.add(bd);
-      const p = new T.Mesh(new T.PlaneGeometry(1.2, 1.2), holoMat(ctx.image(m.img.replace(/\.jpg$/, '-cut.png')))); p.position.set(x, 1.7, z); ctx.scene.add(p); p.userData.ph = i; spin.push(p);
+      const p = new T.Mesh(new T.PlaneGeometry(1.2, 1.2), holoMat(ctx.image(m.img.replace(/\.jpg$/, '-cut.png?v=2')))); p.position.set(x, 1.7, z); ctx.scene.add(p); p.userData.ph = i; spin.push(p);
       const pl = panel(textCanvas([m.title, `${m.price} · ${m.tag}`], { w: 768, h: 160, size: 40 }), 1.9, 0.4, x, 0.75, z + 0.52);
       const open = () => ctx.card(`<h3>${esc(m.title)}</h3><p><b>${esc(m.price)}</b> · ${esc(m.tag)}</p><img src="${esc(m.img)}" alt=""><p>${esc(m.text)}</p><div class="row">${ctx.btn({ href: m.href, label: m.href.startsWith('http') ? 'Buy' : 'View on the merch page' })}</div>`);
       [p, pl].forEach(o => ctx.onClick(o, open));

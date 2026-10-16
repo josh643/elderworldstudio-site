@@ -26,15 +26,16 @@ export default {
       const K = new THREE.Group(); K.position.set(kx, 0, kz); K.rotation.y = ry; ctx.scene.add(K); (ctx.kiosks ||= []).push([kx, kz, title]);
       box(0.46, 0.05, 0.34, mat.wood, 0, 0.025, 0, K); box(0.5, 0.012, 0.38, brass, 0, 0.056, 0, K);          // wood plinth, brass edge
       box(0.05, 1.0, 0.05, brass, 0, 0.56, 0, K);                                                               // slim brass pedestal
-      const hd = box(0.6, 0.4, 0.035, mat.dark, 0, 1.14, 0.02, K); hd.rotation.x = -0.3;
-      const sc = ctx.panel(ctx.textCanvas([title, line], { w: 600, h: 400, size: 64, body: 40, bg: screenBg }), 0.56, 0.37, 0, 1.14, 0.042, 0, K); sc.rotation.x = -0.3; sc.material.toneMapped = false; sc.userData.plate = title;
+      const hd = box(0.78, 0.54, 0.035, mat.dark, 0, 1.14, 0.02, K); hd.rotation.x = -0.3;
+      const sc = ctx.panel(ctx.textCanvas([title, line], { w: 600, h: 400, size: 66, body: 50, bg: screenBg }), 0.74, 0.49, 0, 1.14, 0.042, 0, K); sc.rotation.x = -0.3; sc.material.toneMapped = false; sc.userData.plate = title;
       /* in-place overlay at the kiosk with the real content: no camera move, no wall anchor. Close / Esc leaves you where you stood. */
       const E = ctx.esc, T = x => E(ctx.t(x)), S = ctx.site, li = (h, p) => `<li><b>${h}</b>${p ? ' · ' + p : ''}</li>`;
       const BODY = {
         services: () => `<ul>${(S.services || []).map(v => li(T(v.title), E(String(v.text).split(/(?<=[.!?])\s/)[0]))).join('')}</ul><button class="ob gold" type="button" data-lead>${T('Book a demo')}</button>`,
         games: () => `<ul>${(S.games || []).map(g => li(E(g.title || g.name), E(g.tag || g.platform || ''))).join('')}</ul>`,
         merch: () => `<ul>${(S.merch || []).map(m => li(E(m.title), E(m.price))).join('')}</ul>${ctx.btn({ href: '/merch/', label: ctx.t('Open the merch page') })}`,
-        teams: () => `<ul>${[...new Set(Array.from(ctx.use('agents') || []).map(a => a.team || a.userData?.team).filter(Boolean))].map(t => li(T(t))).join('')}</ul>` };
+        /* public, role-based (PUBLIC-CONTENT-RULES: roles only, Freyja is the only named character) */
+        teams: () => `<ul>${[['Reception', 'Freyja greets visitors and takes requests'], ['Games', 'Designers, coders and QA building our PC and mobile games'], ['Design & Marketing', 'Artists, animators and marketing'], ['Client Sites', 'Websites, kiosks and POS screens for businesses'], ['Call Center', 'AI phone agents that answer and book'], ['Ops & Leadership', 'Keeps the studio running']].map(([h, p]) => li(T(h), T(p))).join('')}</ul>` };
       const open = () => { const extra = it.k && BODY[it.k] ? BODY[it.k]() : (it.k ? '' : `<p>${T('Ask Freyja at the desk ahead, or tap any kiosk to explore.')}</p>`);
         const c = ctx.card(`<h3>${T(title)}</h3><p>${T(line)}</p>${extra}`);
         const ld = c?.querySelector?.('[data-lead]'); if (ld) ld.onclick = () => { ctx.closeCard?.(); (ctx.use('leadForm') || (() => {}))(); }; };

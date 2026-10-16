@@ -6,6 +6,9 @@
   /* language: ?lang= > remembered > browser. English + Spanish ship now. */
   var L = (q.get('lang') || '').slice(0, 2); try { if (L) localStorage.setItem('ews-lang', L); else L = localStorage.getItem('ews-lang') || ''; } catch (e) {}
   if (!L) L = (navigator.language || 'en').slice(0, 2); window.EWS_LANG = L === 'es' ? 'es' : 'en'; document.documentElement.lang = window.EWS_LANG;
+  /* kiosk lock: once a browser has opened ?office=1 it is the HDMI kiosk and always comes back to ?office=1 (the classic page's
+     "Switch to 3D" link, the classic button or any stray click can't strand it on /?view=3d or the classic site). */
+  try { if (q.get('kiosk') === '0') localStorage.removeItem('ews-kiosk'); else if (q.has('office')) localStorage.setItem('ews-kiosk', location.search); else if (localStorage.getItem('ews-kiosk') && location.pathname === '/') { location.replace('/' + localStorage.getItem('ews-kiosk')); return; } } catch (e) {}
   /* view choice (home route only; deep links and crawlers keep the classic page untouched). Kiosk (?office=1) always 3D. */
   if (/bot|crawl|spider|slurp|lighthouse-classic/i.test(navigator.userAgent)) return;
   if (q.has('classic')) { try { localStorage.setItem('ews-view', q.get('classic') === '0' ? '3d' : 'classic'); } catch (e) {} }
@@ -36,7 +39,7 @@
     if (/swiftshader|llvmpipe|software|basic render/i.test(rn) && !forced) return false;   // no real GPU: classic site
   } catch (e) { return false; }
 
- import('/office/office.js?v=26').then(function (m) { m.start({ overlay: true }); }).catch(function (e) { console.warn('office failed, classic site stays', e); }); };
+ import('/office/office.js?v=27').then(function (m) { m.start({ overlay: true }); }).catch(function (e) { console.warn('office failed, classic site stays', e); }); };
   if (!forced && pref !== '3d') { if (document.body) choice(); else addEventListener('DOMContentLoaded', choice); return; }
   var later = function () { setTimeout(function () { (window.requestIdleCallback || setTimeout)(go, { timeout: 1500 }); }, forced ? 0 : 400); };
   document.documentElement.classList.add('office-pending');

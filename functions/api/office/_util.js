@@ -61,8 +61,10 @@ export function visitor(request) {
 export async function enqueueTTS(env, text, voice) {
   text = String(text).slice(0, 600); const d = new Uint8Array(await crypto.subtle.digest('SHA-1', new TextEncoder().encode(voice + '|' + text)));
   const h = [...d].slice(0, 12).map(b => b.toString(16).padStart(2, '0')).join('');
-  if (await env.OFFICE_KV.get('tts:a:' + h, { type: 'stream' })) return h + '!';   /* '!' = already rendered */
-  const q = JSON.parse(await env.OFFICE_KV.get('tts:q') || '[]').filter(j => j.h !== h).slice(-20);
-  q.push({ h, voice, text, t: Date.now() }); await env.OFFICE_KV.put('tts:q', JSON.stringify(q), { expirationTtl: 600 });
+  const r = await ttsDO(env, 'enqueue', { method: 'POST', body: JSON.stringify({ h, voice, text }) }).then(r => r.json());
+  if (r.ready) return h + '!';
   return h;
 }
+
+// TTS store lives in the OFFICE_RL Durable Object worker (strongly consistent; no cached misses).
+export function ttsDO(env, op, init, qs = '') { const stub = env.OFFICE_RL.get(env.OFFICE_RL.idFromName('tts')); return stub.fetch(`https://rl/tts/${op}${qs}`, init); }

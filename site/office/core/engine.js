@@ -4,8 +4,8 @@
 //   onState?(snapshot), onFrame?(dt, t) }. Modules share things with ctx.provide(name, v) / ctx.use(name).
 import * as THREE from '../vendor/three.module.min.js?v=169';
 import { mergeGeometries } from '../vendor/jsm/utils/BufferGeometryUtils.js?v=169';
-import * as kit from './kit.js?v=26';
-const V = 26, GOLD = 0xd9b45a;
+import * as kit from './kit.js?v=27';
+const V = 27, GOLD = 0xd9b45a;
 const $ = (t, a = {}, h = '') => { const e = document.createElement(t); for (const k in a) e.setAttribute(k, a[k]); e.innerHTML = h; return e; };
 export const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -97,7 +97,7 @@ export async function start(opts = {}) {
   const srNav = $('nav', { class: 'office-srnav', 'aria-label': 'Office navigation' }); const bClassic = $('button', { class: 'ob', type: 'button' }, tr('Switch to Classic')); srNav.append(bClassic);
   const bLang = $('button', { class: 'ob', type: 'button', lang: LANG === 'es' ? 'en' : 'es' }, LANG === 'es' ? 'English' : 'Español'); srNav.append(bLang);
   bLang.onclick = () => { try { localStorage.setItem('ews-lang', LANG === 'es' ? 'en' : 'es'); } catch {} dispatchEvent(new Event('pagehide')); location.reload(); };   /* state (position, chat) is saved on pagehide */ root.append(srNav);
-  ctx.classic = () => { try { if (localStorage.getItem('ews-view') === '3d') localStorage.setItem('ews-view', 'classic'); } catch (e) {} if (opts.overlay) { close(); if (!document.querySelector('.ews-switch')) { const a = document.createElement('a'); a.href = '/?view=3d'; a.className = 'ews-switch'; a.textContent = tr('Switch to 3D'); document.body.append(a); } } else location.href = '/?view=classic'; };
+  ctx.classic = () => { try { if (localStorage.getItem('ews-kiosk')) return; } catch (e) {}   /* the kiosk always stays on 3D */ try { if (localStorage.getItem('ews-view') === '3d') localStorage.setItem('ews-view', 'classic'); } catch (e) {} if (opts.overlay) { close(); if (!document.querySelector('.ews-switch')) { const a = document.createElement('a'); a.href = '/?view=3d'; a.className = 'ews-switch'; a.textContent = tr('Switch to 3D'); document.body.append(a); } } else location.href = '/?view=classic'; };
   bClassic.onclick = () => ctx.classic();
   const live = $('div', { class: 'office-sr', 'aria-live': 'polite' }); root.append(live);
 
