@@ -29,3 +29,19 @@ export function sanitize(raw, names) {
   }
   return out;
 }
+
+// Strongly consistent limiter (Durable Object in worker ews-office-limiter, binding OFFICE_RL). rules = [[name, limit, windowMs]].
+// Fails CLOSED for chat (returns ok:false) if the binding is missing, so a misconfig can never become an open LLM proxy.
+export async function doLimit(env, key, rules, add = 0) {
+  if (!env.OFFICE_RL) return { ok: false, spent: Infinity, missing: true };
+  const stub = env.OFFICE_RL.get(env.OFFICE_RL.idFromName(key));
+  const r = await stub.fetch(`https://rl/?rules=${encodeURIComponent(JSON.stringify(rules))}${add ? '&add=' + add : ''}`);
+  return r.json();
+}
+// Visitor key: IPv4 as-is, IPv6 by /64 (one household/device network; stops address rotation from dodging limits).
+export function visitor(request) {
+  const ip = request.headers.get('cf-connecting-ip') || '0';
+  if (!ip.includes(':')) return ip;
+  const full = ip.includes('::') ? (() => { const [a, b] = ip.split('::'); const A = a ? a.split(':') : [], B = b ? b.split(':') : []; return [...A, ...Array(8 - A.length - B.length).fill('0'), ...B]; })() : ip.split(':');
+  return full.slice(0, 4).join(':') + '::/64';
+}

@@ -106,6 +106,8 @@ site = {"generated_from": ["index.html", "games/index.html", "services/index.htm
 
 # ---- roster (public-safe: display name, role, team; no repos, schedules, clients, models)
 names = json.load(open(ROOT / "tools/office/agent-names.json"))["agents"]
+for k, v in json.load(open(ROOT / "tools/office/name-overrides.json")).items():
+    if not k.startswith("_"): names[k] = {"name": v["name"], "role": v["role"]}
 teams = json.load(open(ROOT / "tools/office/teams.json"))["teams"]
 seen, R = set(), []
 for tk, t in teams.items():

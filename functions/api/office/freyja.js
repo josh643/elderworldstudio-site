@@ -1,5 +1,4 @@
-import { json, memRate, day } from './_util.js';
-let pending = 0;   // per-isolate cost not yet flushed to KV (flush every >= 2 cents, keeps KV writes tiny)
+import { json, doLimit, visitor } from './_util.js';
 import site from '../../../site/office/data/site.json';
 // POST /api/office/freyja {messages:[{role,content}]} -> {reply, action?:{tour?, lead?}}
 // Freyja, the receptionist at Fólkvangr. gpt-4o-mini, max 220 output tokens, 30 msgs/IP/day,
@@ -33,17 +32,18 @@ export async function onRequestPost({ request, env }) {
   const msgs = (Array.isArray(b.messages) ? b.messages : []).slice(-8).map(m => ({ role: m.role === 'assistant' ? 'assistant' : 'user', content: String(m.content || '').slice(0, 500) }));
   const last = [...msgs].reverse().find(m => m.role === 'user')?.content || '';
   if (!last) return json({ error: 'empty' }, 400);
-  const ip = request.headers.get('cf-connecting-ip') || '0';
-  if (!memRate(`f:${ip}`, 6, 60000) || !memRate(`fd:${ip}`, 30, 86400000)) return json({ reply: 'I\u2019ve enjoyed our chat! I need a rest for today; the tour buttons below still work.', action: null });
-  const cap = Math.round(Number(env.OFFICE_FREYJA_CAP_USD || 0.5) * 1e6), costKey = `cost:freyja:${day()}`;
-  const spent = (env.OFFICE_KV ? Number(await env.OFFICE_KV.get(costKey, { cacheTtl: 60 })) || 0 : cap) + pending;
-  if (!env.OPENAI_API_KEY || spent >= cap) { const f = faq(last); return json({ ...f, mode: 'faq' }); }
+  const ip = visitor(request);
+  const lim = await doLimit(env, 'ip:' + ip, [['min', 6, 60000], ['day', 30, 864e5]]);
+  if (!lim.ok) return json({ reply: 'I\u2019m getting a lot of questions! Give me a minute. Meanwhile the tour buttons below still work, or request a demo with the form.', action: { lead: false }, limited: true, retryMs: lim.retryMs }, 429);
+  const cap = Math.round(Number(env.OFFICE_FREYJA_CAP_USD || 0.5) * 1e6);
+  const spent = env.OPENAI_API_KEY ? (await doLimit(env, 'global-budget', [])).spent : cap;   // daily $ budget, one global DO
+  if (!env.OPENAI_API_KEY || spent >= cap) { const f = faq(last); return json({ ...f, mode: 'faq', remaining: lim.remaining }); }
   try {
     const r = await fetch('https://api.openai.com/v1/chat/completions', { method: 'POST', headers: { authorization: `Bearer ${env.OPENAI_API_KEY}`, 'content-type': 'application/json' },
       body: JSON.stringify({ model: 'gpt-4o-mini', max_tokens: 220, temperature: 0.5, response_format: { type: 'json_object' }, messages: [{ role: 'system', content: SYSTEM() }, ...msgs] }) });
     const j = await r.json(); if (!r.ok) throw new Error('upstream');
     const u = j.usage || {}; const micro = Math.ceil((u.prompt_tokens || 0) * 0.15 + (u.completion_tokens || 0) * 0.6);
-    pending += micro; if (env.OFFICE_KV && pending >= 20000) { const base = Number(await env.OFFICE_KV.get(costKey)) || 0; const add = pending; pending = 0; await env.OFFICE_KV.put(costKey, String(base + add), { expirationTtl: 3 * 86400 }); }
+    await doLimit(env, 'global-budget', [], micro);
     let o = {}; try { o = JSON.parse(j.choices[0].message.content); } catch {}
     const reply = String(o.reply || '').slice(0, 600) || faq(last).reply;
     return json({ reply, action: { tour: TOURS.includes(o.tour) ? o.tour : null, lead: !!o.lead }, mode: 'llm' });

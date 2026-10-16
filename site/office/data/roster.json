@@ -274,6 +274,12 @@
    "name": "Design",
    "members": [
     {
+     "id": "design-ui",
+     "name": "Rán",
+     "role": "UI designer",
+     "lead": false
+    },
+    {
      "id": "design-qa",
      "name": "Vor",
      "role": "design QA",
