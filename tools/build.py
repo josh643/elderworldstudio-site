@@ -551,7 +551,7 @@ page("merch/index.html", f"Merch | {STUDIO}", f"Official {STUDIO} merch: crest t
 KIOSK_IMG_V = "1"
 KIOSK_LD = """<script type="application/ld+json">{"@context":"https://schema.org","@type":"Product","name":"EWS Order Kiosk","brand":{"@type":"Organization","name":"Elder World Studio Inc"},"description":"Self-order kiosk for small businesses: mini PC, 19-inch touchscreen and 58mm ticket printer in a locking floor stand. Leased on a 12-month term.","image":"https://elderworldstudio.com/assets/img/kiosk/01-hero-capbar-shop.jpg","offers":[{"@type":"Offer","name":"Kiosk only","price":"149.00","priceCurrency":"USD","priceSpecification":{"@type":"UnitPriceSpecification","price":"149.00","priceCurrency":"USD","unitText":"MONTH"},"availability":"https://schema.org/PreOrder"},{"@type":"Offer","name":"Kiosk + Elder POS","price":"129.00","priceCurrency":"USD","priceSpecification":{"@type":"UnitPriceSpecification","price":"129.00","priceCurrency":"USD","unitText":"MONTH"},"availability":"https://schema.org/PreOrder"}]}</script>"""
 KIOSK = f"""
-<section class="hero kiosk-hero">
+<section class="block kiosk-hero center" style="padding-top:56px">
  <div class="wrap">
   <h1>Let customers order themselves</h1>
   <p>The EWS Order Kiosk is a self-order station for your shop. Customers tap their order on a 19&Prime; touchscreen, grab a printed ticket, and pay at your register. Lease it for one simple monthly price.</p>
