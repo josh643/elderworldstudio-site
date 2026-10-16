@@ -22,10 +22,15 @@ export default {
     const settle = o => { o.updateMatrixWorld(true); bb.setFromObject(o); bb.getCenter(c); rc.set(new THREE.Vector3(c.x, 2.5, c.z), down); rc.far = 3;
       const hit = (() => { const ms = []; scene.traverse(m => { if (m.isMesh && !m.isSkinnedMesh) ms.push(m); }); return rc.intersectObjects(ms, false); })().find(h => { let p = h.object; while (p) { if (p === o) return false; p = p.parent; } return h.object.visible && !h.object.isSprite && !h.object.isSkinnedMesh && h.point.y < 1.6; });
       const top = hit ? hit.point.y : 0; o.position.y += top - bb.min.y; };
+    /* GLB props (sofa, arm chairs, cabinet, plants, racks) arrive after the collider sweep and have alpha materials, so give
+       each one an invisible proxy box (cheap AABB) and re-run the sweep. Lamps on desks are skipped (desk already collides). */
+    const proxy = o => { if (/lamp/.test(o.userData.prop)) return; bb.setFromObject(o); const s = bb.getSize(new THREE.Vector3()), q = bb.getCenter(new THREE.Vector3());
+      const px = new THREE.Mesh(new THREE.BoxGeometry(s.x, Math.min(s.y, 1.6), s.z), new THREE.MeshBasicMaterial()); px.visible = false; px.position.set(q.x, Math.min(s.y, 1.6) / 2 + 0.16, q.z); px.name = 'collider:' + o.userData.prop; px.userData.keep = 1; scene.add(px); };
     const run = async () => {
       const rack = await load('server_rack_42u').catch(() => null);
-      if (rack) for (const b of ctx.use('racks') || []) { const r = rack.clone(); r.position.set(b.position.x, 0, b.position.z); r.userData.prop = 'server_rack_42u'; b.visible = false; b.parent?.remove(b); scene.add(r); settle(r); }
-      for (const [n, x, z, ry] of cfg.place || PLACE) { const m = await load(n).catch(() => null); if (!m) continue; const o = m.clone(); o.position.set(x, 0, z); o.rotation.y = ry; o.userData.prop = n; scene.add(o); settle(o); }
+      if (rack) for (const b of ctx.use('racks') || []) { const r = rack.clone(); r.position.set(b.position.x, 0, b.position.z); r.userData.prop = 'server_rack_42u'; b.visible = false; b.parent?.remove(b); scene.add(r); settle(r); proxy(r); }
+      for (const [n, x, z, ry] of cfg.place || PLACE) { const m = await load(n).catch(() => null); if (!m) continue; const o = m.clone(); o.position.set(x, 0, z); o.rotation.y = ry; o.userData.prop = n; scene.add(o); settle(o); proxy(o); }
+      ctx.rebuildColliders?.();
     };
     setTimeout(run, 1500);   // after first frames: never delays the office opening
   },

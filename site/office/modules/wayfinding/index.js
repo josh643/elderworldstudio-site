@@ -1,5 +1,5 @@
 // Wayfinding: hanging 3D banners. In the lobby, an arc of banners (one per tour stop registered by other modules);
-// tap = walk there. Every area gets a small "↩ Lobby" banner. Also the "Classic site" sign at the entrance.
+// tap = in-place info overlay (never moves the camera). Every area gets a small "↩ Lobby" banner. Also the "Classic site" sign at the entrance.
 // Runs last in modules.json so it sees every registered stop. New area module = new banner, automatically.
 export default {
   setup(ctx, cfg) {
@@ -23,13 +23,21 @@ export default {
     items.forEach((it, i) => {
       const left = i % 2 === 0, row = Math.floor(i / 2), kx = L.x + (left ? -1.85 : 1.85), kz = z0 + row * gap, ry = left ? Math.PI / 2 : -Math.PI / 2;
       const [title, line] = it.k === null ? it.t(ctx.site) : (LINE[it.k] || [it.label, ctx.verb + ' for details']);
-      const K = new THREE.Group(); K.position.set(kx, 0, kz); K.rotation.y = ry; ctx.scene.add(K);
+      const K = new THREE.Group(); K.position.set(kx, 0, kz); K.rotation.y = ry; ctx.scene.add(K); (ctx.kiosks ||= []).push([kx, kz, title]);
       box(0.46, 0.05, 0.34, mat.wood, 0, 0.025, 0, K); box(0.5, 0.012, 0.38, brass, 0, 0.056, 0, K);          // wood plinth, brass edge
       box(0.05, 1.0, 0.05, brass, 0, 0.56, 0, K);                                                               // slim brass pedestal
       const hd = box(0.6, 0.4, 0.035, mat.dark, 0, 1.14, 0.02, K); hd.rotation.x = -0.3;
       const sc = ctx.panel(ctx.textCanvas([title, line], { w: 600, h: 400, size: 64, body: 40, bg: screenBg }), 0.56, 0.37, 0, 1.14, 0.042, 0, K); sc.rotation.x = -0.3; sc.material.toneMapped = false; sc.userData.plate = title;
-      const open = () => { const c = ctx.card(`<h3>${ctx.esc(ctx.t(title))}</h3><p>${ctx.esc(ctx.t(line))}</p>` + (it.k ? `<button class="ob gold go" type="button">${ctx.esc(ctx.t('Take me there'))}</button>` : `<p>${ctx.esc(ctx.t('Ask Freyja at the desk ahead, or tap any kiosk to explore.'))}</p>`));
-        const g = c.querySelector('.go'); if (g) g.onclick = () => { ctx.closeCard(); ctx.goTo(it.k); }; };
+      /* in-place overlay at the kiosk with the real content: no camera move, no wall anchor. Close / Esc leaves you where you stood. */
+      const E = ctx.esc, T = x => E(ctx.t(x)), S = ctx.site, li = (h, p) => `<li><b>${h}</b>${p ? ' · ' + p : ''}</li>`;
+      const BODY = {
+        services: () => `<ul>${(S.services || []).map(v => li(T(v.title), E(String(v.text).split(/(?<=[.!?])\s/)[0]))).join('')}</ul><button class="ob gold" type="button" data-lead>${T('Book a demo')}</button>`,
+        games: () => `<ul>${(S.games || []).map(g => li(E(g.title || g.name), E(g.tag || g.platform || ''))).join('')}</ul>`,
+        merch: () => `<ul>${(S.merch || []).map(m => li(E(m.title), E(m.price))).join('')}</ul>${ctx.btn({ href: '/merch/', label: ctx.t('Open the merch page') })}`,
+        teams: () => `<ul>${[...new Set(Array.from(ctx.use('agents') || []).map(a => a.team || a.userData?.team).filter(Boolean))].map(t => li(T(t))).join('')}</ul>` };
+      const open = () => { const extra = it.k && BODY[it.k] ? BODY[it.k]() : (it.k ? '' : `<p>${T('Ask Freyja at the desk ahead, or tap any kiosk to explore.')}</p>`);
+        const c = ctx.card(`<h3>${T(title)}</h3><p>${T(line)}</p>${extra}`);
+        const ld = c?.querySelector?.('[data-lead]'); if (ld) ld.onclick = () => { ctx.closeCard?.(); (ctx.use('leadForm') || (() => {}))(); }; };
       [hd, sc].forEach(o => ctx.onClick(o, open));
     });
     const D = ctx.directoryAt || { x: 0, y: 1.85, z: 9.72, ry: Math.PI };
