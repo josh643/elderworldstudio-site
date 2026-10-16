@@ -1,0 +1,11 @@
+{"_note":"Piper voice map. Source: huggingface.co/rhasspy/piper-voices (main). Every voice's MODEL_CARD was read on 2026-10-16; only datasets whose license permits commercial use are assigned. Attribution required for CC-BY / CC-BY-SA voices (listed in /office/credits).",
+ "receptionist":{"name":"Freyja","model":"en_US-kristin-medium","license":"Public domain (LibriVox)","source":"https://huggingface.co/rhasspy/piper-voices/tree/main/en/en_US/kristin/medium"},
+ "receptionist@es":{"name":"Freyja (es)","model":"es_AR-daniela-high","license":"CC BY-SA 4.0 (OpenSLR 61)","source":"https://huggingface.co/rhasspy/piper-voices/tree/main/es/es_AR/daniela/high"},
+ "odin":{"name":"Odin","model":"en_US-norman-medium","license":"Public domain (LibriVox)","source":"https://huggingface.co/rhasspy/piper-voices/tree/main/en/en_US/norman/medium"},
+ "game-coder":{"name":"Brokkr","model":"en_US-bryce-medium","license":"Public domain","source":"https://huggingface.co/rhasspy/piper-voices/tree/main/en/en_US/bryce/medium"},
+ "game-designer":{"name":"Freyr","model":"en_US-joe-medium","license":"CC0","source":"https://huggingface.co/rhasspy/piper-voices/tree/main/en/en_US/joe/medium"},
+ "store":{"name":"Hermod","model":"en_US-john-medium","license":"Public domain (LibriVox)","source":"https://huggingface.co/rhasspy/piper-voices/tree/main/en/en_US/john/medium"},
+ "qa":{"name":"Eir","model":"en_GB-cori-medium","license":"Public domain (LibriVox)","source":"https://huggingface.co/rhasspy/piper-voices/tree/main/en/en_GB/cori/medium"},
+ "coder":{"name":"Dvalin","model":"en_GB-northern_english_male-medium","license":"CC BY-SA 4.0 (OpenSLR 83)","source":"https://huggingface.co/rhasspy/piper-voices/tree/main/en/en_GB/northern_english_male/medium"},
+ "build":{"name":"Volund","model":"en_US-sam-medium","license":"Apache-2.0","source":"https://huggingface.co/rhasspy/piper-voices/tree/main/en/en_US/sam/medium"},
+ "_rejected":{"en_US-lessac-medium":"Blizzard 2013 Lessac license: non-commercial","en_US-ryan-medium":"CC BY-NC-SA 4.0","en_US-hfc_*":"CC BY-NC-SA 4.0","en_GB-semaine-medium":"CC BY-NC-SA 4.0","amy/alan/kusal/jenny_dioco":"license 'see URL', not verified commercial-OK"}}

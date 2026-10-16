@@ -9,6 +9,7 @@ export async function onRequestGet({ request, env }) {
 export async function onRequestPost({ request, env }) {
   if (!authed(request, env)) return json({ ok: false }, 401);
   const { ids = [] } = await request.json().catch(() => ({}));
-  await Promise.all(ids.slice(0, 100).map(i => env.OFFICE_KV.delete(`lead:${String(i).replace(/[^0-9a-f-]/gi, '')}`)));
+  await Promise.all(ids.slice(0, 100).map(async i => { const k = String(i).replace(/[^0-9a-f-]/gi, ''); await env.OFFICE_KV.delete(`lead:${k}`);
+    await env.OFFICE_KV.put(`leadst:${k}`, JSON.stringify({ s: 'in development', team: 'client', t: Date.now() }), { expirationTtl: 60 * 86400 }); }));   /* picked up by the client team on CT111 */
   return json({ ok: true });
 }

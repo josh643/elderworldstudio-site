@@ -18,19 +18,20 @@ function sample(kind, o) {
     .r{background:#fff;border-left:4px solid ${b};padding:14px;display:flex;flex-direction:column}.r h3{margin-bottom:10px}.line{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #eee;font-size:14px}.r .btn{margin-top:auto}</style>
     <div class="l">${items.map(i => `<div class="k">${esc(i)}</div>`).join('')}</div><div class="r"><h3>${n} · Register</h3><div class="line"><span>${esc(items[0])}</span><span>1</span></div><div class="line"><span>${esc(items[1])}</span><span>1</span></div><button class="btn">Charge</button></div>`;
 }
-export function openKiosk(ctx, leadUrl) {
+export function openKiosk(ctx, leadUrl, onSent) {
   const c = ctx.card(`<h3>Elder kiosk · instant sample</h3><form class="office-lead ews-kiosk"><label>Business type<select name="type">${Object.entries(TYPES).map(([k, [l]]) => `<option value="${k}">${l}</option>`).join('')}</select></label>
-    <label>Business name<input name="name" maxlength="60" placeholder="e.g. Fresh Fades"></label><label>Colours <input name="c1" type="color" value="#2f7d6a"> <input name="c2" type="color" value="#d9b45a"></label>
+    <label>Business name<input name="name" maxlength="60" placeholder="e.g. Fresh Fades"></label><label>Colours <span style="display:flex;gap:10px;margin-top:4px"><input name="c1" type="color" value="#2f7d6a" style="width:64px;height:38px;padding:2px;border-radius:8px;background:#2f7d6a"> <input name="c2" type="color" value="#d9b45a" style="width:64px;height:38px;padding:2px;border-radius:8px;background:#d9b45a"></span></label>
     <label>Show me<select name="kind"><option value="site">Website homepage</option><option value="kiosk">Order kiosk</option><option value="pos">POS screen</option></select></label>
-    <iframe class="ews-sample" title="Sample preview" sandbox="" style="width:100%;height:240px;border:1px solid #444;border-radius:8px;background:#fff"></iframe>
+    <iframe class="ews-sample" title="Sample preview" sandbox="" style="width:100%;height:330px;border:1px solid #444;border-radius:8px;background:#fff"></iframe>
     <details><summary>Send this to our client team</summary><label>Your name *<input name="cname" maxlength="100" autocomplete="name"></label><label>Email *<input name="email" type="email" maxlength="200" autocomplete="email"></label>
     <div class="hp" aria-hidden="true"><input name="website_url" tabindex="-1" autocomplete="off"></div><button class="ob gold" type="button" data-send>Send to client team</button><p class="msg" role="status"></p></details></form>`);
   const fm = c.querySelector('form'), fr = c.querySelector('iframe'), t0 = Date.now();
-  const o = () => Object.fromEntries(new FormData(fm)), draw = () => { fr.srcdoc = sample(o().kind, o()); };
+  c.style.width = 'min(620px, 96vw)'; c.style.maxHeight = '92vh'; c.style.overflow = 'auto';
+  const o = () => Object.fromEntries(new FormData(fm)), draw = () => { const v = o(); fm.c1.style.background = v.c1; fm.c2.style.background = v.c2; fr.srcdoc = '<style>html{zoom:.62}</style>' + sample(v.kind, v); };
   fm.addEventListener('input', draw); draw();
   c.querySelector('[data-send]').onclick = async () => { const d = o(), m = c.querySelector('.msg'); m.textContent = 'Sending…';
-    const body = { name: d.cname, email: d.email, business: d.name || 'Not given', type: d.kind === 'site' ? 'Website' : 'Custom software', website_url: d.website_url, t: t0, source: 'office-kiosk',
+    const body = { name: d.cname, email: d.email, business: d.name || 'Not given', type: d.kind === 'site' ? 'Website' : 'Custom software', website_url: d.website_url, t: t0, source: 'office-kiosk', client_language: window.EWS_LANG === 'es' ? 'es' : 'en',
       description: `Instant sample from the office kiosk: ${TYPES[d.type]?.[0] || d.type}, ${d.kind} sample, colours ${d.c1} / ${d.c2}.` };
-    try { const j = await (await fetch(leadUrl || '/api/office/lead', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) })).json(); m.textContent = j.ok ? 'Sent. Our client team will reply by email.' : (j.error || 'Could not send.'); }
+    try { const j = await (await fetch(leadUrl || '/api/office/lead', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) })).json(); if (j.ok) onSent?.(j.id, body.type); m.textContent = j.ok ? 'Sent. Freyja is printing your ticket for the client team.' : (j.error || 'Could not send.'); }
     catch { m.textContent = 'Could not send right now.'; } };
 }

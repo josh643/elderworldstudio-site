@@ -4,12 +4,18 @@
 //   onState?(snapshot), onFrame?(dt, t) }. Modules share things with ctx.provide(name, v) / ctx.use(name).
 import * as THREE from '../vendor/three.module.min.js?v=169';
 import { mergeGeometries } from '../vendor/jsm/utils/BufferGeometryUtils.js?v=169';
-import * as kit from './kit.js?v=24';
-const V = 24, GOLD = 0xd9b45a;
+import * as kit from './kit.js?v=25';
+const V = 25, GOLD = 0xd9b45a;
 const $ = (t, a = {}, h = '') => { const e = document.createElement(t); for (const k in a) e.setAttribute(k, a[k]); e.innerHTML = h; return e; };
 export const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
 export async function start(opts = {}) {
+  /* i18n: English + Spanish. UI strings translated once (static JSON, flagged for review); no per-visitor cost. */
+  const LANG = window.EWS_LANG === 'es' ? 'es' : 'en'; let I18N = {}; const seenStr = new Set();
+  if (LANG === 'es') { try { I18N = (await (await fetch('/office/data/i18n/es.json?v=1')).json()).strings || {}; } catch {} }
+  const tr = s => { if (typeof s !== 'string') return s; const k = s.trim(); if (!k) return s; seenStr.add(k); return I18N[k] ?? s; };
+  const tDom = el => { const w = document.createTreeWalker(el, NodeFilter.SHOW_TEXT); let n; while ((n = w.nextNode())) { const k = n.nodeValue.trim(); if (k && /[A-Za-z]/.test(k)) { seenStr.add(k); if (I18N[k]) n.nodeValue = n.nodeValue.replace(k, I18N[k]); } }
+    el.querySelectorAll('[placeholder],[aria-label]').forEach(e => ['placeholder', 'aria-label'].forEach(a => { const v = e.getAttribute(a); if (v) { seenStr.add(v); if (I18N[v]) e.setAttribute(a, I18N[v]); } })); };
   if (!document.querySelector('link[href*="office.css"]')) document.head.append($('link', { rel: 'stylesheet', href: '/office/office.css?v=' + V }));
   const root = $('div', { class: 'office-root', role: 'application', 'aria-label': 'Elder World Studio 3D office. Use the tour buttons, or switch to the classic site.' });
   root.append($('div', { class: 'office-load' }, 'Opening the doors of Fólkvangr…'));
@@ -30,9 +36,12 @@ export async function start(opts = {}) {
   let tier = lowEnd ? 0 : devicePixelRatio > 1.5 ? 1 : 2; if (tier === 2 && matchMedia('(pointer: fine)').matches) RATIOS[2] = igpu ? 1.25 : 2;   // desktop: native res up to 2x, 1.25 on integrated GPUs
   if (igpu) { RATIOS[1] = Math.min(RATIOS[1], 1.0); if (tier > 1) tier = 1; }   /* integrated GPUs start on the mid tier: no 2K maps, no MSAA */
   if (matchMedia('(pointer: fine)').matches) { RATIOS[0] = RATIOS[1] = 1; }   // desktops/kiosks never drop below native resolution; LOD and effects go first
-  const DESK = !matchMedia('(pointer: coarse)').matches; const DSCALE = DESK ? [1] : [1, 0.85, 0.72]; /* desktop never renders below native size; it sheds LOD instead */ let dstep = 0; const FINE = DESK; const applyRatio = () => R.setPixelRatio(FINE ? 1 : Math.min(devicePixelRatio, RATIOS[tier]) * DSCALE[dstep]);   // desktop/kiosk: exactly 1.0 (native CSS pixels)
+  const DESK = !matchMedia('(pointer: coarse)').matches; const DSCALE = DESK ? [1] : [1, 0.85, 0.72]; /* desktop never renders below native size; it sheds LOD instead */ let dstep = 0; const FINE = DESK; const applyRatio = () => R.setPixelRatio(FINE ? (igpu ? 0.85 : 1) : Math.min(devicePixelRatio, RATIOS[tier]) * DSCALE[dstep]);   // desktop/kiosk: exactly 1.0 (native CSS pixels)
   applyRatio(); R.outputColorSpace = THREE.SRGBColorSpace;
   root.prepend(R.domElement);
+  if (igpu && !matchMedia('(pointer: coarse)').matches && !/[?&]sharp=0/.test(location.search)) {   /* 0.85 render scale is upscaled by the compositor; a light unsharp kernel restores edge crispness */
+    const sv = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); sv.setAttribute('width', 0); sv.setAttribute('height', 0); sv.style.position = 'absolute';
+    sv.innerHTML = '<filter id="ews-sharp"><feConvolveMatrix order="3" preserveAlpha="true" kernelMatrix="0 -0.35 0 -0.35 2.4 -0.35 0 -0.35 0"/></filter>'; document.body.append(sv); R.domElement.style.filter = 'url(#ews-sharp)'; }
   const scene = new THREE.Scene(); scene.background = new THREE.Color(0x0b0716); scene.fog = new THREE.Fog(0x0b0716, 25, 70);
   const cam = new THREE.PerspectiveCamera(62, 1, 0.1, 120); const rig = new THREE.Group(); rig.add(cam); scene.add(rig);   // rig = player body (XR moves the camera inside it)
   scene.add(new THREE.HemisphereLight(0xfff1d6, 0x1a1030, 1.3)); const sun = new THREE.DirectionalLight(0xffe2b0, 1.1); sun.position.set(8, 20, 6); scene.add(sun);
@@ -42,7 +51,7 @@ export async function start(opts = {}) {
   const loader = new THREE.TextureLoader(); const image = src => { const t = loader.load(src); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = R.capabilities.getMaxAnisotropy(); return t; };
   function wrap(g, s, max) { const out = []; let cur = ''; for (const wd of s.split(' ')) { const t = cur ? cur + ' ' + wd : wd; if (g.measureText(t).width > max && cur) { out.push(cur); cur = wd; } else cur = t; } if (cur) out.push(cur); return out; }
   function textCanvas(lines, { w = 1024, h = 256, bg = '#140c22', fg = '#f3ead7', size = 64, body = 0, border = true } = {}) {
-    const c = document.createElement('canvas'); c.width = w; c.height = h; const g = c.getContext('2d');
+    lines = lines.map(tr); const c = document.createElement('canvas'); c.width = w; c.height = h; const g = c.getContext('2d');
     const draw = () => { g.clearRect(0, 0, w, h);
     if (bg) { g.fillStyle = bg; g.fillRect(0, 0, w, h); } if (border) { g.strokeStyle = '#d9b45a'; g.lineWidth = 8; g.strokeRect(8, 8, w - 16, h - 16); }
     let y = 28; g.textBaseline = 'top';
@@ -55,6 +64,7 @@ export async function start(opts = {}) {
   const panel = (texture, w, h, x, y, z, ry = 0, parent = scene) => { const p = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ map: texture, transparent: true })); p.position.set(x, y, z); p.rotation.y = ry; parent.add(p); displays.push(p); return p; };
   const displays = [];
   function label(text, sub, col = '#f3ead7') {
+    text = tr(text); sub = tr(sub);
     const c = document.createElement('canvas'); c.width = 256; c.height = 64; const g = c.getContext('2d');
     g.fillStyle = '#0d0818cc'; g.beginPath(); g.roundRect(2, 2, 252, 60, 14); g.fill(); g.textAlign = 'center';
     g.fillStyle = col; g.font = '700 26px Inter, system-ui, sans-serif'; g.fillText(text, 128, 30);
@@ -64,7 +74,7 @@ export async function start(opts = {}) {
   const clickables = [], spots = {}, tours = [], services = {}, bounds = { minX: -8, maxX: 8, minZ: -4, maxZ: 10 }, after = {};
   const touch = matchMedia('(pointer: coarse)').matches && !matchMedia('(pointer: fine)').matches, xr = /OculusBrowser|Quest|Pico/i.test(navigator.userAgent);
   const verb = xr ? 'Trigger' : touch ? 'Tap' : 'Click or press E';   // device-aware prompt for in-world signs
-  const ctx = {
+  const ctx = { igpu,
     verb, touch, lod: 1,
     THREE, kit, scene, cam, rig, renderer: R, mat, get tier() { return tier; }, M, box, panel, image, textCanvas, label, site, roster, esc, root,
     onClick: (obj, handler) => { obj.userData.onPick = handler; clickables.push(obj); return obj; },
@@ -73,7 +83,7 @@ export async function start(opts = {}) {
     provide: (k, v) => { services[k] = v; }, use: k => services[k],
     goTo: n => goTo(n), card: html => cardOf(html), closeCard: () => closeCard(),
     btn: b => `<a class="ob ${b.primary !== false ? 'gold' : ''}" href="${esc(b.href)}" target="_blank" rel="noopener">${esc(b.label)}</a>`,
-    hudButton: (text, fn) => { const b = $('button', { class: 'ob', type: 'button' }, esc(text)); b.onclick = fn; srNav.append(b); return b; },   // a11y only; visible UI is in-world
+    t: tr, lang: LANG, hudButton: (text, fn) => { const b = $('button', { class: 'ob', type: 'button' }, esc(tr(text))); b.onclick = fn; srNav.append(b); return b; },   // a11y only; visible UI is in-world
     sign: (text, sub, x, y, z, ry, fn, w = 2.6) => { const p = panel(textCanvas([text, sub || ''], { w: 768, h: 200, size: 64 }), w, w * 0.26, x, y, z, ry); if (fn) ctx.onClick(p, fn); return p; },
     get tours() { return tours; }, spotOf: k => spots[k],
     player: { get pos() { return pos; }, get yaw() { return yaw; }, set yaw(v) { yaw = v; }, teleport: (x, z) => { pos.x = x; pos.z = z; glide = null; } },
@@ -82,8 +92,10 @@ export async function start(opts = {}) {
   };
   // HUD (built before modules so they can add buttons)
   const hud = $('div', { class: 'office-hud' }, `<span class="t">Elder World Studio · Fólkvangr</span>`); root.append(hud);
-  const srNav = $('nav', { class: 'office-srnav', 'aria-label': 'Office navigation' }); const bClassic = $('button', { class: 'ob', type: 'button' }, 'Classic site'); srNav.append(bClassic); root.append(srNav);
-  ctx.classic = () => { try { localStorage.setItem('ews-classic', '1'); } catch (e) {} if (opts.overlay) close(); else location.href = '/?classic=1'; };
+  const srNav = $('nav', { class: 'office-srnav', 'aria-label': 'Office navigation' }); const bClassic = $('button', { class: 'ob', type: 'button' }, tr('Switch to Classic')); srNav.append(bClassic);
+  const bLang = $('button', { class: 'ob', type: 'button', lang: LANG === 'es' ? 'en' : 'es' }, LANG === 'es' ? 'English' : 'Español'); srNav.append(bLang);
+  bLang.onclick = () => { try { localStorage.setItem('ews-lang', LANG === 'es' ? 'en' : 'es'); } catch {} dispatchEvent(new Event('pagehide')); location.reload(); };   /* state (position, chat) is saved on pagehide */ root.append(srNav);
+  ctx.classic = () => { try { if (localStorage.getItem('ews-view') === '3d') localStorage.setItem('ews-view', 'classic'); } catch (e) {} if (opts.overlay) { close(); if (!document.querySelector('.ews-switch')) { const a = document.createElement('a'); a.href = '/?view=3d'; a.className = 'ews-switch'; a.textContent = tr('Switch to 3D'); document.body.append(a); } } else location.href = '/?view=classic'; };
   bClassic.onclick = () => ctx.classic();
   const live = $('div', { class: 'office-sr', 'aria-live': 'polite' }); root.append(live);
 
@@ -138,7 +150,24 @@ export async function start(opts = {}) {
         else { [x, z] = at(0.5, 0.0); put(G.pot, clay, x, 0.21, z, 0); put(G.bush, leaf, x, 0.75, z, 0); } } };
     run(fx, fZ, fX, fZ, 0, -1); run(fx, fz, fX, fz, 0, 1); run(fx, fz, fx, fZ, 1, 0); run(fX, fz, fX, fZ, -1, 0); }
   // ceiling + recessed light panels (one instanced draw call), so there is no black void overhead
-  box(fX - fx, 0.1, fZ - fz, new THREE.MeshStandardMaterial({ color: 0x3a3442, roughness: 0.9 }), (fx + fX) / 2, 4.05, (fz + fZ) / 2);
+  /* ceiling (material-only v1, baked, unlit so it never reads black): off-white plaster with warm wood slats every
+     0.5 m, a brass trim line and a soft baked cove glow per 4 m bay. One texture, one draw call. */
+  /* ceiling v2 (campus vision board): warm wood slats over a warm taupe plaster, brass trim, and glowing ring coves
+     (one InstancedMesh, unlit, baked glow halo texture under each ring). Unlit so it never reads black; 3 draw calls total. */
+  { const c = document.createElement('canvas'); c.width = c.height = 512; const g = c.getContext('2d');
+    g.fillStyle = '#b9a58c'; g.fillRect(0, 0, 512, 512);
+    for (let i = 0; i < 16; i++) { const x = i * 32 + 6, wg = g.createLinearGradient(x, 0, x + 20, 0); wg.addColorStop(0, '#7a5434'); wg.addColorStop(0.5, '#986a42'); wg.addColorStop(1, '#6d4a2d'); g.fillStyle = wg; g.fillRect(x, 0, 20, 512);
+      g.globalAlpha = 0.16; g.fillStyle = '#3e2614'; for (let k = 0; k < 10; k++) g.fillRect(x + 2 + (k * 5) % 16, (k * 97 + i * 31) % 512, 1, 50 + (k * 31) % 90); g.globalAlpha = 1; }
+    g.fillStyle = '#c9a24e'; g.fillRect(0, 0, 512, 5); g.fillRect(0, 507, 512, 5);
+    const tx = new THREE.CanvasTexture(c); tx.colorSpace = THREE.SRGBColorSpace; tx.wrapS = tx.wrapT = THREE.RepeatWrapping; tx.repeat.set((fX - fx) / 4, (fZ - fz) / 4); tx.anisotropy = 4;
+    const ceil = box(fX - fx, 0.1, fZ - fz, new THREE.MeshBasicMaterial({ map: tx }), (fx + fX) / 2, 4.05, (fz + fZ) / 2); ceil.userData.noCollide = 1; ceil.name = 'ceiling';
+    const hc = document.createElement('canvas'); hc.width = hc.height = 128; { const h = hc.getContext('2d'), r = h.createRadialGradient(64, 64, 20, 64, 64, 64); r.addColorStop(0, 'rgba(255,214,150,0)'); r.addColorStop(0.62, 'rgba(255,214,150,.55)'); r.addColorStop(0.72, 'rgba(255,214,150,.18)'); r.addColorStop(1, 'rgba(255,214,150,0)'); h.fillStyle = r; h.fillRect(0, 0, 128, 128); }
+    const halo = new THREE.CanvasTexture(hc); halo.colorSpace = THREE.SRGBColorSpace;
+    const pts = []; for (let x = fx + 6; x < fX - 3; x += 12) for (let z = fz + 6; z < fZ - 3; z += 12) pts.push([x, z]);
+    const ring = new THREE.InstancedMesh(new THREE.TorusGeometry(1.6, 0.05, 6, 48).rotateX(Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0xffe2b0, toneMapped: false }), pts.length);
+    const glow = new THREE.InstancedMesh(new THREE.PlaneGeometry(4.6, 4.6).rotateX(Math.PI / 2), new THREE.MeshBasicMaterial({ map: halo, transparent: true, depthWrite: false, toneMapped: false, side: THREE.DoubleSide }), pts.length);
+    const m4 = new THREE.Matrix4(); pts.forEach(([x, z], i) => { ring.setMatrixAt(i, m4.makeTranslation(x, 3.86, z)); glow.setMatrixAt(i, m4.makeTranslation(x, 3.99, z)); });
+    for (const o of [ring, glow]) { o.userData.noCollide = 1; o.userData.keep = 1; o.frustumCulled = false; scene.add(o); } }
   { const cols = Math.floor((fX - fx) / 4), rows = Math.floor((fZ - fz) / 4), lp = new THREE.InstancedMesh(new THREE.PlaneGeometry(1.4, 0.5).rotateX(Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0xfff1dc, toneMapped: false }), cols * rows), m4 = new THREE.Matrix4(); let k = 0;
     for (let i = 0; i < cols; i++) for (let j = 0; j < rows; j++) { m4.makeTranslation(fx + 2 + i * 4, 3.99, fz + 2 + j * 4); lp.setMatrixAt(k++, m4); } scene.add(lp); }
 
@@ -189,6 +218,8 @@ export async function start(opts = {}) {
       for (let i = 0; i < ps.length; i++) for (let j = i + 1; j < ps.length; j++) { const A = ps[i], B = ps[j]; if (A.o.parent === B.o.parent && A.o.parent !== scene) continue; if (Math.abs(A.n.dot(B.n)) < 0.95) continue;
         const I = A.b.clone().intersect(B.b); if (I.isEmpty()) continue; const sz = I.getSize(new THREE.Vector3()), area = Math.max(sz.x, sz.z) * sz.y; if (area > 0.02) out.push({ type: 'text-overlap', a: A.o.material.map.userData.text.slice(0, 30), b: B.o.material.map.userData.text.slice(0, 30) }); } }
     scene.traverse(o => { if (!o.userData.art || !o.visible) return; const sz = new THREE.Box3().setFromObject(o).getSize(new THREE.Vector3()); if (Math.max(sz.x, sz.z) < 1.4 || sz.y < 1.0) out.push({ type: 'art-too-small', w: +Math.max(sz.x, sz.z).toFixed(2), h: +sz.y.toFixed(2) }); });
+    scene.traverse(o => { if (!o.isMesh || !o.visible || o.userData.batched || o.isSkinnedMesh) return; const M = o.material; if (!M || Array.isArray(M) || M.map || M.vertexColors || !M.color) return; const b = new THREE.Box3().setFromObject(o), sz = b.getSize(new THREE.Vector3());
+      const lum = 0.3 * M.color.r + 0.59 * M.color.g + 0.11 * M.color.b; if (sz.y < 0.08 && b.max.y < 0.12 && sz.x * sz.z > 2 && lum < 0.08) out.push({ type: 'flat-dark-floor-quad', at: b.getCenter(new THREE.Vector3()).toArray().map(v => +v.toFixed(1)), area: +(sz.x * sz.z).toFixed(1) }); });
     { const seen = new Set(); scene.traverse(o => { const c = o.userData.cabinet; if (!c) return; if (seen.has(c)) out.push({ type: 'duplicate-cabinet', name: c }); seen.add(c); }); }
     scene.traverse(o => { if (!o.userData.plate) return; const im = o.material.map?.image; let ok = false; try { const d = im.getContext('2d').getImageData(0, 0, im.width, im.height).data; let gold = 0; for (let i = 0; i < d.length; i += 64) if (d[i] > 150 && d[i + 2] < 140) gold++; ok = gold > 40; } catch {} if (!ok || !o.material.map.userData.text) out.push({ type: 'blank-plate', name: o.userData.plate }); });
     return out; }
@@ -197,9 +228,9 @@ export async function start(opts = {}) {
   const center = { clientX: 0, clientY: 0 }; const centerPick = () => { const r = el.getBoundingClientRect(); center.clientX = r.left + r.width / 2; center.clientY = r.top + r.height / 2; return pickAt(center); };
   const xhair = $('div', { class: 'office-xhair', 'aria-hidden': 'true' }); root.append(xhair);
   document.addEventListener('pointerlockchange', () => { xhair.style.display = locked() ? 'block' : 'none'; });
-  let skipMove = 0, zeroRun = 0, lockBroken = (() => { try { return localStorage.getItem('ews-nolock') === '1'; } catch { return false; } })(); document.addEventListener('pointerlockchange', () => { skipMove = 2; });
+  let skipMove = 0, zeroRun = 0, lockBroken = (() => { try { localStorage.removeItem('ews-nolock'); return sessionStorage.getItem('ews-nolock') === '1'; } catch { return false; } })();   /* session only: a stale flag used to disable mouse-look forever (Joshua's 'stuck mouse') */ document.addEventListener('pointerlockchange', () => { skipMove = 2; });
   document.addEventListener('mousemove', e => { if (!locked()) return; if (skipMove) { skipMove--; return; }
-    if (e.movementX === 0 && e.movementY === 0) { if (++zeroRun > 12) { lockBroken = true; try { localStorage.setItem('ews-nolock', '1'); } catch {} document.exitPointerLock(); } return; } zeroRun = 0;   // compositor without relative-pointer support (e.g. cage): fall back to steer mode   // first events after (re)lock carry bogus jumps
+    if (e.movementX === 0 && e.movementY === 0) { if (++zeroRun > 40) { lockBroken = true; try { sessionStorage.setItem('ews-nolock', '1'); } catch {} document.exitPointerLock(); } return; } zeroRun = 0;   // compositor without relative-pointer support (e.g. cage): fall back to steer mode   // first events after (re)lock carry bogus jumps
     const mx = Math.max(-80, Math.min(80, e.movementX)), my = Math.max(-80, Math.min(80, e.movementY)); if (Math.abs(e.movementY) > 200 || Math.abs(e.movementX) > 400) return;
     yaw -= mx * 0.0022; pitch = Math.max(-PMAX, Math.min(PMAX, pitch - my * 0.0022)); yaw = (yaw + Math.PI * 4) % (Math.PI * 2); glide = null; });
   addEventListener('keydown', e => { if (e.key.toLowerCase() === 'e' && !e.target.closest?.('input,textarea,select')) { const h = locked() ? centerPick() : null; if (h) { document.exitPointerLock?.(); h(); } } });
@@ -222,7 +253,7 @@ export async function start(opts = {}) {
   function pickAt(e) { const r = el.getBoundingClientRect(); ndc.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1); ray.setFromCamera(ndc, cam); const h = ray.intersectObjects(clickables, false)[0]; return h && h.distance < 30 ? h.object.userData.onPick : null; }
   tours.forEach(([k, t]) => { const b = $('button', { class: 'ob', type: 'button' }, 'Go to ' + esc(t)); b.onclick = () => goTo(k); srNav.append(b); });
   let card = null; function closeCard() { card?.remove(); card = null; }
-  function cardOf(html) { if (document.pointerLockElement) document.exitPointerLock(); closeCard(); card = $('section', { class: 'office-card', role: 'dialog', 'aria-modal': 'false' }, `<button class="x" type="button" aria-label="Close">×</button>${html}`); card.querySelector('.x').onclick = closeCard; root.append(card); const h = card.querySelector('h3'); if (h) { h.tabIndex = -1; h.focus(); } return card; }
+  function cardOf(html) { if (document.pointerLockElement) document.exitPointerLock(); closeCard(); card = $('section', { class: 'office-card', role: 'dialog', 'aria-modal': 'false' }, `<button class="x" type="button" aria-label="Close">×</button>${html}`); card.querySelector('.x').onclick = closeCard; root.append(card); tDom(card); const h = card.querySelector('h3'); if (h) { h.tabIndex = -1; h.focus(); } return card; }
   function close() { running = false; R.setAnimationLoop(null); root.remove(); document.documentElement.classList.remove('office-on'); R.dispose(); }
   document.querySelector('.skip')?.addEventListener('click', () => { if (opts.overlay) close(); });
   ctx.state = s => mods.forEach(m => { try { m.onState?.(s); } catch (e) { console.warn(e); } });
@@ -280,7 +311,12 @@ export async function start(opts = {}) {
   buildColliders(); baseCols = cols.slice(); batchStatic(); collectFar(); lowMats();
   setTimeout(() => { buildColliders(); const b0 = ctx.batched; batchStatic(); ctx.batched = { before: b0.before + ctx.batched.before, after: b0.after + ctx.batched.after }; collectFar(); lowMats(); }, 10500);   /* second pass: lazy GLB props */
   { let n = 0; const iv = setInterval(() => { buildColliders(); if (n % 4 === 3) lowMats(); if (++n >= 24) clearInterval(iv); }, 500); }  /* lazy desks/props get colliders within 0.5 s of landing */   // again once the lazy props have landed
-  window.__ewsOffice.pos = () => pos.toArray().map(v => +v.toFixed(3)); window.__ewsOffice.breakdown = () => { const fr = new THREE.Frustum().setFromProjectionMatrix(new THREE.Matrix4().multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse)); const m = {}; scene.traverseVisible(o => { if (!(o.isMesh || o.isSprite || o.isPoints || o.isLine)) return; if (o.frustumCulled && !o.isSkinnedMesh && o.geometry && !fr.intersectsObject(o)) return; let r = o; while (r.parent && r.parent !== scene) r = r.parent; const k = (o.isSkinnedMesh ? "skin:" : o.isSprite ? "sprite:" : o.isInstancedMesh ? "inst:" : "") + (r.userData.mod || r.name || r.type); m[k] = (m[k] || 0) + (Array.isArray(o.material) ? o.material.length : 1); }); return Object.entries(m).sort((a, b) => b[1] - a[1]).slice(0, 40); }; window.__ewsOffice.colliders = () => cols.length; window.__ewsOffice.orphans = () => { const out = []; scene.traverse(o => { if (!o.isSkinnedMesh) return; let p = o, ok = false; while (p) { if (p.userData?.a) ok = true; p = p.parent; } if (!ok) { let r = o; while (r.parent && r.parent !== scene) r = r.parent; out.push('ROOT ' + JSON.stringify(r.userData).slice(0, 120) + ' pos ' + r.position.toArray().join(',')); const chain = []; let q = o; while (q) { chain.push((q.type || '') + ':' + (q.name || '')); q = q.parent; } out.push(chain.join(' < ')); } }); return out; }; window.__ewsOffice.avatars = () => [...(ctx.use('avatar')?.all || [])].map(g => ({ id: g.userData.a?.id, name: g.userData.a?.name, p: g.position.toArray().map(v => +v.toFixed(2)), ry: +g.rotation.y.toFixed(2), clip: g.userData.cur, hip: (() => { const h = g.userData.bones?.pelvis || g.userData.bones?.hips || g.userData.bones?.Hips; return h ? h.getWorldPosition(new THREE.Vector3()).toArray().map(v => +v.toFixed(2)) : null; })(), vis: g.visible, inScene: !!g.parent })); window.__ewsOffice.look = (x, z, lx, lz) => { pos.set(x, EYE, z); glide = null; ({ yaw, pitch } = lookAt([x, EYE, z], [lx, 1.2, lz])); }; window.__ewsOffice.info = () => ({ calls: R.info.render.calls, tris: R.info.render.triangles, geos: R.info.memory.geometries, tex: R.info.memory.textures, batched: ctx.batched, ratio: R.getPixelRatio(), buf: R.getDrawingBufferSize(new THREE.Vector2()).toArray(), tier, lod: ctx.lod }); window.__ewsOffice.desks = () => ctx.desks || []; window.__ewsOffice.walk = (x, z, ang, secs) => { pos.set(x, EYE, z); glide = null; yaw = ang; keys.w = 1; return new Promise(r => setTimeout(() => { keys.w = 0; r([pos.x, pos.z]); }, secs * 1000)); };
+  window.__ewsOffice.pos = () => pos.toArray().map(v => +v.toFixed(3)); window.__ewsOffice.breakdown = () => { const fr = new THREE.Frustum().setFromProjectionMatrix(new THREE.Matrix4().multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse)); const m = {}; scene.traverseVisible(o => { if (!(o.isMesh || o.isSprite || o.isPoints || o.isLine)) return; if (o.frustumCulled && !o.isSkinnedMesh && o.geometry && !fr.intersectsObject(o)) return; let r = o; while (r.parent && r.parent !== scene) r = r.parent; const k = (o.isSkinnedMesh ? "skin:" : o.isSprite ? "sprite:" : o.isInstancedMesh ? "inst:" : "") + (r.userData.mod || r.name || r.type); m[k] = (m[k] || 0) + (Array.isArray(o.material) ? o.material.length : 1); }); return Object.entries(m).sort((a, b) => b[1] - a[1]).slice(0, 40); }; window.__ewsOffice.hands = () => { const desks = ctx.desks || [], out = [];   /* fingertip-to-keyboard contact for typing agents (PR #6 gate: 5 cm) */
+    for (const g of ctx.use('avatar')?.all || []) { if (g.userData.cur !== 'type' || !g.visible) continue; const tips = []; g.traverse(o => { if (o.isBone && /middle_?0?4/i.test(o.name)) tips.push(o); }); if (!tips.length) continue;
+      const p = g.position; let best = null, bd = 1e9; for (const [x, z] of desks) { const d = Math.hypot(x - p.x, z - p.z); if (d < bd) { bd = d; best = [x, z]; } } if (!best || bd > 1.5) continue;
+      const kb = new THREE.Box3(new THREE.Vector3(best[0] + 0.095 - 0.23, 0.76, best[1] - 0.48 - 0.08), new THREE.Vector3(best[0] + 0.095 + 0.23, 0.79, best[1] - 0.48 + 0.08));
+      out.push({ name: g.userData.a?.name, d: tips.map(b => +kb.distanceToPoint(b.getWorldPosition(new THREE.Vector3())).toFixed(3)), tips: tips.map(b => b.name) }); } return out; };
+  window.__ewsOffice.colliders = () => cols.length; window.__ewsOffice.i18nSeen = () => [...seenStr]; tDom(srNav); window.__ewsOffice.orphans = () => { const out = []; scene.traverse(o => { if (!o.isSkinnedMesh) return; let p = o, ok = false; while (p) { if (p.userData?.a) ok = true; p = p.parent; } if (!ok) { let r = o; while (r.parent && r.parent !== scene) r = r.parent; out.push('ROOT ' + JSON.stringify(r.userData).slice(0, 120) + ' pos ' + r.position.toArray().join(',')); const chain = []; let q = o; while (q) { chain.push((q.type || '') + ':' + (q.name || '')); q = q.parent; } out.push(chain.join(' < ')); } }); return out; }; window.__ewsOffice.avatars = () => [...(ctx.use('avatar')?.all || [])].map(g => ({ id: g.userData.a?.id, name: g.userData.a?.name, p: g.position.toArray().map(v => +v.toFixed(2)), ry: +g.rotation.y.toFixed(2), clip: g.userData.cur, hip: (() => { const h = g.userData.bones?.pelvis || g.userData.bones?.hips || g.userData.bones?.Hips; return h ? h.getWorldPosition(new THREE.Vector3()).toArray().map(v => +v.toFixed(2)) : null; })(), vis: g.visible, inScene: !!g.parent })); window.__ewsOffice.look = (x, z, lx, lz) => { pos.set(x, EYE, z); glide = null; ({ yaw, pitch } = lookAt([x, EYE, z], [lx, 1.2, lz])); }; window.__ewsOffice.info = () => ({ calls: R.info.render.calls, tris: R.info.render.triangles, geos: R.info.memory.geometries, tex: R.info.memory.textures, batched: ctx.batched, ratio: R.getPixelRatio(), buf: R.getDrawingBufferSize(new THREE.Vector2()).toArray(), tier, lod: ctx.lod }); window.__ewsOffice.desks = () => ctx.desks || []; window.__ewsOffice.walk = (x, z, ang, secs) => { pos.set(x, EYE, z); glide = null; yaw = ang; keys.w = 1; return new Promise(r => setTimeout(() => { keys.w = 0; r([pos.x, pos.z]); }, secs * 1000)); };
   /* seamless updates + kiosk health: the kiosk watcher asks the page; the page reloads only when nobody is using it */
   let lastFrameT = performance.now(), wantUpdate = false; for (const ev of ['mousemove', 'wheel', 'touchstart', 'input']) addEventListener(ev, () => lastInput = performance.now(), { passive: true, capture: true });
   const busy = () => { const a = document.activeElement; return !!(document.querySelector('.office-card') || (a && (a.matches?.('input,textarea,select') || a.isContentEditable)) || glide); };

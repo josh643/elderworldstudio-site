@@ -1,3 +1,4 @@
+import { enqueueTTS } from './_util.js';
 import { json, doLimit, visitor } from './_util.js';
 import site from '../../../site/office/data/site.json';
 // POST /api/office/freyja {messages:[{role,content}]} -> {reply, action?:{tour?, lead?}}
@@ -30,7 +31,7 @@ function faq(q) {
   if (/video|youtube|devlog/.test(q)) return { reply: 'Our devlogs are on YouTube. The big screen on the east wall opens the channel.', action: { tour: 'devlog' } };
   return { reply: 'I can show you our games, our services for businesses, the merch display, or the team halls. What would you like to see?', action: null };
 }
-export async function onRequestPost({ request, env }) {
+async function inner({ request, env }) {
   let b; try { b = await request.json(); } catch { return json({ error: 'bad request' }, 400); }
   const msgs = (Array.isArray(b.messages) ? b.messages : []).slice(-8).map(m => ({ role: m.role === 'assistant' ? 'assistant' : 'user', content: String(m.content || '').slice(0, 500) }));
   const last = [...msgs].reverse().find(m => m.role === 'user')?.content || '';
@@ -39,7 +40,8 @@ export async function onRequestPost({ request, env }) {
   const lim = await doLimit(env, 'ip:' + ip, [['min', 6, 60000], ['day', 30, 864e5]]);
   if (!lim.ok) return json({ reply: 'I\u2019m getting a lot of questions! Give me a minute. Meanwhile the tour buttons below still work, or request a demo with the form.', action: { lead: false }, limited: true, retryMs: lim.retryMs }, 429);
   /* answer cache: first-turn questions are normalised and cached at the edge for 6 h (no per-visitor data in the key) */
-  const norm = last.toLowerCase().replace(/[^a-z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim(), firstTurn = msgs.filter(m => m.role === 'user').length === 1;
+  const ES = b.lang === 'es';
+  const norm = (ES ? 'es:' : '') + last.toLowerCase().replace(/[^a-z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim(), firstTurn = msgs.filter(m => m.role === 'user').length === 1;
   const ckey = firstTurn && norm.length < 160 ? new Request('https://cache.ews/freyja/' + encodeURIComponent(norm)) : null, cache = globalThis.caches?.default;
   if (ckey && cache) { const hit = await cache.match(ckey); if (hit) { const j = await hit.json(); return json({ ...j, cached: true, remaining: lim.remaining }); } }
   const put = (o) => { if (ckey && cache && o.mode === 'llm') cache.put(ckey, new Response(JSON.stringify(o), { headers: { 'content-type': 'application/json', 'cache-control': 'max-age=21600' } })).catch(() => {}); return json(o); };
@@ -48,7 +50,7 @@ export async function onRequestPost({ request, env }) {
   if (!env.OPENAI_API_KEY || spent >= cap) { const f = faq(last); return json({ ...f, mode: 'faq', remaining: lim.remaining }); }
   try {
     const r = await fetch('https://api.openai.com/v1/chat/completions', { method: 'POST', headers: { authorization: `Bearer ${env.OPENAI_API_KEY}`, 'content-type': 'application/json' },
-      body: JSON.stringify({ model: 'gpt-4o-mini', max_tokens: 220, temperature: 0.5, response_format: { type: 'json_object' }, messages: [{ role: 'system', content: SYSTEM() }, ...msgs] }) });
+      body: JSON.stringify({ model: 'gpt-4o-mini', max_tokens: 220, temperature: 0.5, response_format: { type: 'json_object' }, messages: [{ role: 'system', content: SYSTEM() + (ES ? '\nThe visitor chose Spanish: write "reply" in natural Latin American Spanish (keep product names and the term \'application fee\' explained as \'tarifa de aplicación\').' : '') }, ...msgs] }) });
     const j = await r.json(); if (!r.ok) throw new Error('upstream');
     const u = j.usage || {}; const micro = Math.ceil((u.prompt_tokens || 0) * 0.15 + (u.completion_tokens || 0) * 0.6);
     await doLimit(env, 'global-budget', [], micro);
@@ -56,4 +58,14 @@ export async function onRequestPost({ request, env }) {
     const reply = String(o.reply || '').slice(0, 600) || faq(last).reply;
     return put({ reply, action: { tour: TOURS.includes(o.tour) ? o.tour : null, lead: !!o.lead }, mode: 'llm' });
   } catch { const f = faq(last); return json({ ...f, mode: 'faq' }); }
+}
+
+// Wrap: every reply gets a Piper audio id; CT111 renders it (no device TTS). Client polls /api/office/tts?h=<id>.
+export async function onRequestPost(c) {
+  let lang = 'en'; try { lang = (await c.request.clone().json()).lang === 'es' ? 'es' : 'en'; } catch {}
+  const r = await inner(c); let o; try { o = await r.clone().json(); } catch { return r; }
+  if (!o.reply) return r;
+  const id = await enqueueTTS(c.env, o.reply, lang === 'es' ? 'receptionist@es' : 'receptionist').catch(() => null);
+  if (id) { o.tts = id.replace('!', ''); o.ttsReady = id.endsWith('!'); }
+  return new Response(JSON.stringify(o), { status: r.status, headers: r.headers });
 }

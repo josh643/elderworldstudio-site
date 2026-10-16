@@ -54,12 +54,15 @@ export default {
     if (ctx.rug) box(len, 0.03, 6.9, ctx.rug(0x8a5a44), x0 + 2 - len / 2, 0.035, z0);
     for (const sz of [-1, 1]) { box(len, 3.2, 0.12, ctx.mat.wall, x0 + 2 - len / 2, 1.6, z0 + sz * 3.6); box(len, 0.12, 0.03, ctx.mat.wood, x0 + 2 - len / 2, 1.0, z0 + sz * 3.53); box(len, 0.1, 0.03, ctx.mat.wood, x0 + 2 - len / 2, 0.05, z0 + sz * 3.53); }   /* warm plaster walls, wood dado rail + skirting */
     // lighting: a few warm/neon point lights (no shadow maps)
-    // key-art posters on the walls between cabinets (cycling the games that have art), lit frames
-    const arts = games.filter(g => g.img); let ai = 0;
-    if (arts.length) for (let k = 0; k <= Math.ceil(games.length / 2); k++) for (const sz of [-1, 1]) {
-      if (ai >= arts.length) continue; const g = arts[ai++], px = x0 - 2 + bay / 2 - k * bay; if (px < x0 + 2 - len + 0.6) continue;
-      box(1.24, 1.24, 0.04, ctx.mat.wood, px, 2.0, z0 + sz * 3.52);
-      const pp = panel(sharp(ctx.image(g.img)), 1.15, 1.15, px, 2.0, z0 + sz * 3.49, sz > 0 ? Math.PI : 0); pp.material.toneMapped = false; pp.userData.label = g.title + ' poster'; ctx.onClick(pp, () => show(g)); }
+    /* walls (Joshua: no repeating posters): ONE large key-art piece per wall (the cabinets already show every game's art),
+       the rest is windows with the baked lake view on the outer wall and plants on the inner wall. */
+    const arts = games.filter(g => g.img), nb = Math.ceil(games.length / 2) + 1;
+    for (let k = 0; k < nb; k++) for (const sz of [-1, 1]) {
+      const px = x0 - 2 + bay / 2 - k * bay; if (px < x0 + 2 - len + 0.6) continue; const wz = z0 + sz * 3.49, ry = sz > 0 ? Math.PI : 0;
+      if (k === 1 && arts[sz > 0 ? 0 : 1]) { const g = arts[sz > 0 ? 0 : 1]; box(2.1, 2.1, 0.04, ctx.mat.wood, px, 1.95, z0 + sz * 3.52);
+        const pp = panel(sharp(ctx.image(g.img)), 2.0, 2.0, px, 1.95, wz, ry); pp.material.toneMapped = false; pp.userData.label = g.title + ' key art'; ctx.onClick(pp, () => show(g)); continue; }
+      if (sz < 0) ctx.kit.windowPane(ctx, px, 1.9, z0 + sz * 3.53, ry, 1.9, 1.3); else if (k % 2 === 0) ctx.kit.plant(ctx, px, z0 + sz * 3.1, 1.1);
+    }
     // far-end feature wall: studio logo + neon sign, closes the hall
     const fx = x0 + 2 - len; box(0.12, 3.4, 7.2, ctx.mat.wall, fx, 1.7, z0); box(0.03, 2.6, 4.2, ctx.mat.wood, fx + 0.06, 1.75, z0);
     const lg = panel(sharp(ctx.image(site.brand.logo)), 1.6, 1.6, fx + 0.08, 2.15, z0, Math.PI / 2); lg.userData.label = 'arcade logo';

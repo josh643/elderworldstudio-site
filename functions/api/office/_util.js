@@ -15,8 +15,17 @@ export async function rate(env, key, limit, ttl) {          // coarse KV counter
   const n = Number(await env.OFFICE_KV.get(key)) || 0; if (n >= limit) return false;
   await env.OFFICE_KV.put(key, String(n + 1), { expirationTtl: ttl }); return true;
 }
-// Public feed allowlist: only these fields ever leave; free text is never published.
-const STAGES = ['plan', 'build', 'self-check', 'QA', 'review', 'ready', 'released'];
+// Public feed allowlist: only these fields ever leave. The one free-text field is a short task title, redacted twice
+// (publisher on CT111 and here): no paths, URLs, emails, ids, code or long numbers; plain words only, 64 chars.
+export function redactTask(t) {
+  let s = String(t || '').replace(/`[^`]*`/g, ' ').replace(/https?:\/\/\S+/g, ' ').replace(/\S+@\S+/g, ' ')
+    .replace(/\S*[\/\\]\S*/g, ' ').replace(/\S+\.(py|js|ts|md|json|sh|html|css)\b/gi, ' ').replace(/\b\d{3,}\b/g, ' ')
+    .replace(/[^A-Za-z0-9 ,.'&:+-]/g, ' ').replace(/\s+/g, ' ').trim();
+  s = s.split(/(?<=[.;:])\s/)[0].replace(/[.:;,]+$/, '');
+  if (s.length > 64) s = s.slice(0, 64).replace(/\s+\S*$/, '') + '…';
+  return s.length >= 4 ? s : '';
+}
+const STAGES = ['waiting', 'plan', 'build', 'self-check', 'QA', 'review', 'ready', 'released'];
 export function sanitize(raw, names) {
   const out = { updated: String(raw.updated || new Date().toISOString()).slice(0, 40), work: [] };
   const seen = new Set();
@@ -25,8 +34,10 @@ export function sanitize(raw, names) {
     if (!agent || !names[agent] || seen.has(agent)) continue; seen.add(agent);
     const stage = STAGES.includes(w.stage) ? w.stage : null; if (!stage) continue;
     out.work.push({ agent, name: names[agent].name, role: names[agent].role, team: String(w.team || '').replace(/[^a-z0-9-]/gi, '').slice(0, 30),
-      stage, progress: Math.max(0, Math.min(1, Number(w.progress) || 0)), blocked: !!w.blocked });
+      stage, progress: Math.max(0, Math.min(1, Number(w.progress) || 0)), blocked: !!w.blocked, task: redactTask(w.task) });
   }
+  out.last = {}; for (const [a, t] of Object.entries(raw.last || {}).slice(0, 200)) { if (names[a] && !seen.has(a)) { const r = redactTask(t); if (r) out.last[a] = r; } }
+  if (raw.thumbs) out.thumbs = raw.thumbs;
   return out;
 }
 
@@ -44,4 +55,14 @@ export function visitor(request) {
   if (!ip.includes(':')) return ip;
   const full = ip.includes('::') ? (() => { const [a, b] = ip.split('::'); const A = a ? a.split(':') : [], B = b ? b.split(':') : []; return [...A, ...Array(8 - A.length - B.length).fill('0'), ...B]; })() : ip.split(':');
   return full.slice(0, 4).join(':') + '::/64';
+}
+
+// Piper TTS queue (KV). Only server code enqueues (Freyja's replies), so this is never an open TTS proxy.
+export async function enqueueTTS(env, text, voice) {
+  text = String(text).slice(0, 600); const d = new Uint8Array(await crypto.subtle.digest('SHA-1', new TextEncoder().encode(voice + '|' + text)));
+  const h = [...d].slice(0, 12).map(b => b.toString(16).padStart(2, '0')).join('');
+  if (await env.OFFICE_KV.get('tts:a:' + h, { type: 'stream' })) return h + '!';   /* '!' = already rendered */
+  const q = JSON.parse(await env.OFFICE_KV.get('tts:q') || '[]').filter(j => j.h !== h).slice(-20);
+  q.push({ h, voice, text, t: Date.now() }); await env.OFFICE_KV.put('tts:q', JSON.stringify(q), { expirationTtl: 600 });
+  return h;
 }

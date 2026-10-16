@@ -20,7 +20,7 @@ export function room(ctx, { x = 0, z = 0, w = 10, d = 8, floor = 0x2a2236, walls
   ctx.scene.add(g); ctx.extend(x - w / 2, z - d / 2, x + w / 2, z + d / 2); return g;
 }
 export function corridor(ctx, { x1, z1, x2, z2, width = 3 }) {
-  const { box, M } = ctx, l = Math.hypot(x2 - x1, z2 - z1), m = box(l, 0.03, width, M(0x332a40), (x1 + x2) / 2, 0.015, (z1 + z2) / 2);
+  const { box, M } = ctx, l = Math.hypot(x2 - x1, z2 - z1), m = box(l, 0.03, width, ctx.mat.floor, (x1 + x2) / 2, 0.015, (z1 + z2) / 2);
   m.rotation.y = -Math.atan2(z2 - z1, x2 - x1); ctx.extend(Math.min(x1, x2) - width, Math.min(z1, z2) - width, Math.max(x1, x2) + width, Math.max(z1, z2) + width); return m;
 }
 export function sign(ctx, text, x, y, z, ry = 0) { return ctx.panel(ctx.textCanvas([text], { w: 512, h: 128, size: 56 }), 2.4, 0.6, x, y, z, ry); }
@@ -52,11 +52,35 @@ export function desk(ctx, x, z, parent) { const T = ctx.THREE, g0 = shared(ctx),
   // monitor + keyboard
   mesh(g0.foot, m.rack, x, 0.766, z - 0.82); mesh(g0.neck, m.rack, x, 0.87, z - 0.84);
   mesh(g0.bezel, m.dark, x, 1.08, z - 0.83); const mon = mesh(g0.screen, m.dark, x, 1.08, z - 0.813); mon.userData.keep = 1; (ctx.screens ||= []).push(mon);
-  mesh(g0.kb, m.dark, x, 0.77, z - 0.5);
+  /* PR #6 anchors (seat centre z+0.1, agent faces -z, right = +x): keyboard 0.58 m ahead, 0.095 m right; mouse 0.29 m right of it; mug 0.40 ahead, 0.26 right */
+  const kb = mesh(g0.kb, m.dark, x + 0.095, 0.77, z - 0.48); kb.userData.anchor = 'keyboard';
   // desk clutter (varied per desk, all batched into a handful of draw calls): mouse, mug, paper stack, notebook, pen
-  const v = (Math.abs(Math.round(x * 7 + z * 13)) % 97), M2 = g0.mats; mesh(g0.mouse, m.dark, x + 0.32, 0.765, z - 0.5);
-  mesh(g0.mug, M2.mug[v % 4], x + (v % 2 ? 0.55 : -0.55), 0.81, z - 0.75);
+  const v = (Math.abs(Math.round(x * 7 + z * 13)) % 97), M2 = g0.mats; mesh(g0.mouse, m.dark, x + 0.385, 0.765, z - 0.48);
+  mesh(g0.mug, M2.mug[v % 4], x + 0.26, 0.81, z - 0.30);
   if (v % 3) mesh(g0.paper, M2.paper, x + (v % 2 ? -0.5 : 0.48), 0.775 + (v % 5) * 0.004, z - 0.55, (v % 7) * 0.1 - 0.3);
   if (v % 4 !== 1) { const b = mesh(g0.book, M2.book[v % 3], x - 0.28, 0.77, z - 0.38, 0.2 - (v % 5) * 0.08); mesh(g0.pen, M2.pen, x - 0.26, 0.785, z - 0.38, 0.4); }
   return { desk: d, monitor: mon }; }
 export function pedestal(ctx, x, z, gold, parent) { return ctx.box(0.7, 1, 0.7, gold ? ctx.mat.trim : ctx.mat.stone, x, 0.5, z, parent); }
+/* window with a baked view (sky, lake, far campus treeline): one shared texture, unlit, wood frame + mullions. Low-tier safe. */
+let VIEW = null;
+export function viewTex(ctx) {
+  if (VIEW) return VIEW; const c = document.createElement('canvas'); c.width = 512; c.height = 320; const g = c.getContext('2d');
+  const sky = g.createLinearGradient(0, 0, 0, 190); sky.addColorStop(0, '#8fbbe3'); sky.addColorStop(1, '#e9e2cf'); g.fillStyle = sky; g.fillRect(0, 0, 512, 190);
+  g.fillStyle = 'rgba(255,255,255,.75)'; for (const [x, y, r] of [[90, 60, 26], [120, 52, 32], [150, 62, 22], [360, 40, 20], [385, 34, 28], [410, 44, 18]]) { g.beginPath(); g.arc(x, y, r, 0, 7); g.fill(); }
+  g.fillStyle = '#6f8a6a'; g.beginPath(); g.moveTo(0, 190); for (let x = 0; x <= 512; x += 16) g.lineTo(x, 172 - Math.abs(Math.sin(x * 0.021)) * 26 - (x % 48 === 0 ? 8 : 0)); g.lineTo(512, 190); g.fill();   // far treeline
+  g.fillStyle = '#b8a688'; for (const [x, w, h] of [[300, 40, 34], [350, 26, 48], [384, 34, 28]]) g.fillRect(x, 190 - h, w, h);                                            // campus buildings
+  const lake = g.createLinearGradient(0, 190, 0, 320); lake.addColorStop(0, '#7fa6c4'); lake.addColorStop(1, '#3f6684'); g.fillStyle = lake; g.fillRect(0, 190, 512, 130);
+  g.fillStyle = 'rgba(255,255,255,.25)'; for (let i = 0; i < 40; i++) g.fillRect((i * 97) % 512, 196 + (i * 37) % 120, 18 + (i % 5) * 6, 2);
+  VIEW = new ctx.THREE.CanvasTexture(c); VIEW.colorSpace = ctx.THREE.SRGBColorSpace; return VIEW;
+}
+export function windowPane(ctx, x, y, z, ry, w = 2.2, h = 1.5, parent) {
+  const T = ctx.THREE, G = new T.Group(); G.position.set(x, y, z); G.rotation.y = ry; (parent || ctx.scene).add(G);
+  const v = new T.Mesh(new T.PlaneGeometry(w, h), new T.MeshBasicMaterial({ map: viewTex(ctx), toneMapped: false })); v.position.z = 0.005; G.add(v); v.userData.noCollide = 1;
+  const fr = ctx.mat.wood; ctx.box(w + 0.12, 0.08, 0.06, fr, 0, h / 2 + 0.04, 0.02, G); ctx.box(w + 0.12, 0.1, 0.12, fr, 0, -h / 2 - 0.05, 0.05, G);
+  for (const sx of [-1, 1]) ctx.box(0.06, h, 0.06, fr, sx * (w / 2 + 0.03), 0, 0.02, G); ctx.box(0.04, h, 0.03, fr, 0, 0, 0.02, G); ctx.box(w, 0.04, 0.03, fr, 0, h * 0.18, 0.02, G);
+  return G;
+}
+export function plant(ctx, x, z, s = 1, parent) {
+  const T = ctx.THREE; ctx.box(0.36 * s, 0.4 * s, 0.36 * s, ctx.mat.wood, x, 0.2 * s, z, parent);
+  const lv = new T.Mesh(new T.IcosahedronGeometry(0.42 * s, 0), ctx.M(0x3f6b3a)); lv.position.set(x, 0.75 * s, z); lv.scale.y = 1.3; (parent || ctx.scene).add(lv); return lv;
+}

@@ -7,7 +7,14 @@ import { RoomEnvironment } from './RoomEnvironment.js?v=3';
 export default {
   setup(ctx) {
     if (ctx.tier === 0) return;
-    const { THREE, renderer: R, scene, mat } = ctx, q = ctx.tier >= 2 ? 'hi' : 'lo', L = new THREE.TextureLoader();
+    const { THREE, renderer: R, scene, mat } = ctx, q = ctx.tier >= 2 && !ctx.igpu ? 'hi' : 'lo', L = new THREE.TextureLoader();
+    if (ctx.igpu) {   /* integrated GPUs: small colour maps only, Lambert, no environment map / normal / roughness maps */
+      const tx = (n, rep) => { const t = L.load(`/office/modules/materials/tex/${n}-c-lo.jpg`); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(rep, rep); t.anisotropy = 4; t.colorSpace = THREE.SRGBColorSpace; return t; };
+      const lam = (n, rep, o = {}) => new THREE.MeshLambertMaterial({ map: tx(n, rep), ...o });
+      Object.assign(mat, { floor: lam('floor', 30), wall: lam('plaster', 6), wood: lam('wood', 1), stone: lam('concrete', 1), rack: new THREE.MeshLambertMaterial({ color: 0x555a60 }), trim: new THREE.MeshLambertMaterial({ color: 0xd9b45a, emissive: 0x2a1c00 }), dark: new THREE.MeshLambertMaterial({ color: 0x0c0c10 }) });
+      mat.fabric = new THREE.MeshLambertMaterial({ color: 0x2a2a30 }); const cm = tx('carpet', 4), rugs = new Map();
+      ctx.rug = (col, rep = 1) => { const k = col + ':' + rep; if (!rugs.has(k)) rugs.set(k, new THREE.MeshLambertMaterial({ map: cm, color: col })); return rugs.get(k); };
+      return; }
     const pm = new THREE.PMREMGenerator(R); scene.environment = pm.fromScene(new RoomEnvironment(), 0.04).texture; pm.dispose();
     R.toneMapping = THREE.ACESFilmicToneMapping; R.toneMappingExposure = 0.9;
     const XH = new Set(['floor', 'wood', 'carpet']), big = ctx.tier >= 2 && matchMedia('(pointer: fine)').matches;   // desktop: 2K maps on the big near surfaces

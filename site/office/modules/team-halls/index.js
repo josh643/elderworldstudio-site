@@ -8,6 +8,7 @@ export default {
     const totalW = cols * W, rooms = {}; this.rooms = rooms; this.A = A; this.ctx = ctx;
     teams.forEach((t, i) => {
       const cx = x0 - totalW / 2 + (i % cols) * W + W / 2, cz = z0 - Math.floor(i / cols) * D - D / 2, col = COLS[i % COLS.length];
+      (ctx.teamSpot ||= {})[t.key || t.id] = [cx, cz];   /* Freyja's ticket handoff target */
       ctx.kit.room(ctx, { x: cx, z: cz, w: W, d: D, floor: new THREE.Color(col).multiplyScalar(0.25).getHex(), title: t.name, sub: `${t.members.length} agents`, enclose: true });
       // QA bench: a real work table with a test tablet; review tray: a low filing cabinet with an in-tray on top
       const qx = cx + W / 2 - 1.3, qz = cz + D / 2 - 1.4, tx = cx - W / 2 + 1.1, tz = cz + D / 2 - 1.3, mt = ctx.mat;
@@ -20,9 +21,11 @@ export default {
       { const bz = cz - D / 2 + 0.55, T3 = THREE, add = (geo, m, x, y, z) => { const o = new T3.Mesh(geo, m); o.position.set(x, y, z); ctx.scene.add(o); return o; };
         G2 ||= { post: new T3.BoxGeometry(0.05, 1.9, 0.05), cyl: new T3.CylinderGeometry(0.15, 0.15, 0.95, 16), jug: new T3.CylinderGeometry(0.13, 0.11, 0.38, 16), leaf: new T3.IcosahedronGeometry(0.32, 1), pot: new T3.CylinderGeometry(0.18, 0.14, 0.34, 14),
           white: new T3.MeshStandardMaterial({ color: 0xeef2f6, roughness: 0.5 }), water: new T3.MeshStandardMaterial({ color: 0x8ec9ee, roughness: 0.1, metalness: 0.1 }), green: new T3.MeshStandardMaterial({ color: 0x2f6b3a, roughness: 0.8, flatShading: true }), clay: new T3.MeshStandardMaterial({ color: 0x8a5a3c, roughness: 0.8 }), grey: new T3.MeshStandardMaterial({ color: 0x3a3d44, roughness: 0.5 }) };
-        const notes = [t.name, ...(t.members || []).slice(0, 4).map(m => '• ' + m.name + ': ' + (m.role || '')), 'Ship small. Test on a phone.'];
+        /* live whiteboard: Now / Next / Done from the status feed (redacted task titles only); redrawn on each state change */
+        const wc = document.createElement('canvas'); wc.width = 1024; wc.height = 560; const wtx = new THREE.CanvasTexture(wc); wtx.colorSpace = THREE.SRGBColorSpace;
         for (const sx of [-0.95, 0.95]) add(G2.post, mt.rack, cx + sx, 0.95, bz);
-        const wb = ctx.panel(ctx.textCanvas(notes, { w: 1024, h: 560, size: 58, bg: '#f4f6f8', fg: '#1d2a44' }), 1.8, 0.98, cx, 1.35, bz + 0.03, 0); wb.userData.label = t.name + ' whiteboard';
+        const wb = new THREE.Mesh(new THREE.PlaneGeometry(1.8, 0.98), new THREE.MeshBasicMaterial({ map: wtx, toneMapped: false })); wb.position.set(cx, 1.35, bz + 0.03); ctx.scene.add(wb); wb.userData.label = t.name + ' whiteboard'; wb.userData.keep = 1;
+        (this.boards ||= {})[t.key] = { c: wc, tx: wtx, name: t.name, ids: new Set((t.members || []).map(m => m.id)) };
         add(G2.cyl, G2.white, cx + W / 2 - 0.6, 0.48, bz); add(G2.jug, G2.water, cx + W / 2 - 0.6, 1.14, bz);
         const pr = add(new T3.BoxGeometry(0.55, 0.35, 0.45), G2.grey, cx - W / 2 + 0.7, 0.92, bz); add(new T3.BoxGeometry(0.6, 0.74, 0.5), mt.wood, cx - W / 2 + 0.7, 0.37, bz);
         add(new T3.BoxGeometry(0.45, 1.1, 0.55), mt.rack, cx - W / 2 + 1.4, 0.55, bz);
@@ -42,7 +45,20 @@ export default {
     return { minZ };
   },
   // live stage -> where the avatar walks (desk / QA bench / tray / Odin's dais / release gate)
+  drawBoards(s) {
+    const work = s.work || [], last = s.last || {};
+    for (const [k, b] of Object.entries(this.boards || {})) { const g = b.c.getContext('2d'); g.fillStyle = '#f4f6f8'; g.fillRect(0, 0, 1024, 560);
+      g.fillStyle = '#1d2a44'; g.font = '700 46px Inter, sans-serif'; g.fillText(b.name, 30, 60); g.fillStyle = '#c9ced6'; g.fillRect(30, 80, 964, 3);
+      const mine = work.filter(w => w.team === k || b.ids.has(w.agent));
+      const cols = [['Now', mine.filter(w => !['waiting', 'ready', 'released'].includes(w.stage))], ['Next', mine.filter(w => w.stage === 'waiting')], ['Done', [...mine.filter(w => ['ready', 'released'].includes(w.stage)), ...Object.entries(last).filter(([a]) => b.ids.has(a)).map(([a, t]) => ({ task: t }))]]];
+      cols.forEach(([h, L], i) => { const x = 30 + i * 330; g.fillStyle = ['#b8452f', '#a07a1c', '#2f7d4a'][i]; g.font = '700 34px Inter, sans-serif'; g.fillText(this.ctx.t ? this.ctx.t(h) : h, x, 130);
+        g.fillStyle = '#1d2a44'; g.font = '500 24px Inter, sans-serif'; let y = 172;
+        if (!L.length) { g.fillStyle = '#8a93a3'; g.fillText('—', x, y); }
+        for (const w of L.slice(0, 5)) { const txt = String(w.task || '').trim(); if (!txt) continue; let ln = '', n = 0; for (const wd of txt.split(' ')) { if (g.measureText(ln + wd).width > 300 && ln) { g.fillText(ln, x, y); y += 28; ln = ''; if (++n >= 2) break; } ln += wd + ' '; } if (n < 2) { g.fillText(ln, x, y); y += 28; } y += 14; if (y > 530) break; } });
+      b.tx.needsUpdate = true; }
+  },
   onState(s) {
+    this.drawBoards(s);
     const agents = this.ctx.use('agents'), dais = this.ctx.use('dais'), gate = this.ctx.use('gate');
     for (const av of this.A.all) if (av.userData.team) { av.userData.state = {}; av.userData.target = av.userData.home; }
     for (const w of s.work || []) {

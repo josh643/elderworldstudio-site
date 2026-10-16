@@ -1,6 +1,7 @@
 // Receptionist feature (plugin): Freyja at the desk, text chat (Worker /api/office/freyja: rate-limited, $-capped,
 // FAQ fallback) and the demo-request lead form (stored as a lead record; no email). Remove from modules.json to disable.
-import { openKiosk } from './kiosk-ui.js?v=1';
+import { openKiosk } from './kiosk-ui.js?v=3';
+import * as V from './voice.js?v=1';
 export default {
   setup(ctx, cfg, [x, z]) {
     const { box, mat, esc } = ctx, A = ctx.use('avatar');
@@ -16,21 +17,43 @@ export default {
       <label>Tell us about it *<textarea name="description" required maxlength="2000" rows="4"></textarea></label><div class="hp" aria-hidden="true"><input name="website_url" tabindex="-1" autocomplete="off"></div>
       <button class="ob gold" type="submit">Send to the client team</button><p class="msg" role="status"></p></form>`);
       const fm = c.querySelector('form'), t0 = Date.now();
-      fm.onsubmit = async e => { e.preventDefault(); const d = Object.fromEntries(new FormData(fm)); d.t = t0; d.source = 'office'; const m = fm.querySelector('.msg'); m.textContent = 'Sending…';
-        try { const j = await (await fetch(cfg.lead || '/api/office/lead', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(d) })).json(); m.textContent = j.ok ? 'Thanks! Our client team has your request and will reply by email.' : (j.error || 'Could not send.'); if (j.ok) fm.querySelector('button').disabled = true; }
+      fm.onsubmit = async e => { e.preventDefault(); const d = Object.fromEntries(new FormData(fm)); d.t = t0; d.source = 'office'; d.client_language = V.lang(); const m = fm.querySelector('.msg'); m.textContent = 'Sending…';
+        try { const j = await (await fetch(cfg.lead || '/api/office/lead', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(d) })).json(); if (j.ok) sent(j.id, d.type); m.textContent = j.ok ? 'Thanks! Our client team has your request and will reply by email.' : (j.error || 'Could not send.'); if (j.ok) fm.querySelector('button').disabled = true; }
         catch { m.textContent = 'Could not send right now. You can also use the classic services page.'; } };
     };
+    const speak = ms => { f.userData.speaking = true; clearTimeout(f.userData.st); f.userData.st = setTimeout(() => { f.userData.speaking = false; }, ms); };
+    /* front-desk flow: request sent -> she prints a ticket -> it travels to the right team's room -> status is trackable at the kiosk */
+    const TEAM = { Website: 'client', 'AI tool': 'client', 'Custom software': 'client', 'Not sure': 'client' }, tickets = [];
+    const reqs = () => { try { return JSON.parse(localStorage.getItem('ews-req') || '[]'); } catch { return []; } };
+    const sent = (id, type) => { const team = TEAM[type] || 'client'; if (id) localStorage.setItem('ews-req', JSON.stringify([...reqs(), { id, team, t: Date.now() }].slice(-10)));
+      V.playLine('form_sent', () => V.playLine('ticket_' + (['client', 'games', 'ops'].includes(team) ? team : 'client'))); speak(6000);
+      const T = ctx.THREE, tk = new T.Mesh(new T.PlaneGeometry(0.16, 0.24), new T.MeshBasicMaterial({ color: 0xfaf6ea, side: T.DoubleSide })); tk.userData.noCollide = 1;
+      const from = new T.Vector3(x - 1.3, 1.2, z + 1.25), spot = ctx.teamSpot?.[team] || [x, z - 20], to = new T.Vector3(spot[0], 1.3, spot[1]);
+      tk.position.copy(from); ctx.scene.add(tk); tickets.push({ tk, from, to, t: -0.25 }); };
+    const statusCard = () => { const L = reqs(); const c = ctx.card(`<h3>Your requests</h3><div class="st">${L.length ? '' : '<p>No requests from this device yet. Tap “Start a request” to begin.</p>'}</div><button class="ob" type="button">Refresh</button>`);
+      const box = c.querySelector('.st'), LBL = { received: 'Received', 'in development': 'In development', review: 'In review', ready: 'Ready', unknown: 'Received' };
+      const load = async () => { box.innerHTML = ''; let last;
+        for (const r of L.slice().reverse()) { const j = await (await fetch('/api/office/lead-status?id=' + encodeURIComponent(r.id))).json().catch(() => ({})); last ||= j.status;
+          const p = document.createElement('p'); p.textContent = `#${r.id.slice(-6)} · ${new Date(r.t).toLocaleDateString()} · ${LBL[j.status] || 'Received'}`; box.append(p); }
+        const k = { 'in development': 'status_dev', ready: 'status_ready', review: 'status_review' }[last] || (last ? 'status_received' : null); if (k) V.playLine(k); };
+      c.querySelector('button').onclick = load; if (L.length) load(); };
+    this.tickets = tickets; this.sent = sent;
     const chat = () => {
       f.userData.talking = true; clearTimeout(f.userData.tt); f.userData.tt = setTimeout(() => { f.userData.talking = false; }, 30000);
       const c = ctx.card(`<h3>${esc(me.name)} · receptionist</h3><div class="office-chat"><div class="log" aria-live="polite"></div><form><input name="q" maxlength="400" placeholder="Ask about our games, services or the studio" aria-label="Message ${esc(me.name)}" autocomplete="off"><button class="ob gold" type="submit">Send</button></form><p style="font-size:12px;opacity:.7">${esc(me.name)} is an AI receptionist. Don't share passwords or payment details.</p></div>`);
       const log = c.querySelector('.log'), fm = c.querySelector('form');
+      { const row = document.createElement('div'); row.className = 'row'; const listen = V.mic(t => { fm.q.value = t; fm.requestSubmit(); }, on => { mb.textContent = on ? '…' : ctx.t('🎤 Hold to talk'); });
+        const mb = document.createElement('button'); mb.type = 'button'; mb.className = 'ob'; mb.textContent = ctx.t('🎤 Hold to talk'); if (listen) { mb.onpointerdown = () => listen(); } else mb.hidden = true;
+        const sb = document.createElement('button'); sb.type = 'button'; sb.className = 'ob'; sb.textContent = ctx.t('My request status'); sb.onclick = () => statusCard();
+        const kb = document.createElement('button'); kb.type = 'button'; kb.className = 'ob gold'; kb.textContent = ctx.t('Start a request'); kb.onclick = () => { V.playLine('form_open'); openKiosk(ctx, cfg.lead, sent); };
+        row.append(mb, kb, sb); fm.after(row); }
       const add = (t, mine) => { const m = document.createElement('div'); m.className = 'm' + (mine ? ' me' : ''); m.textContent = t; log.append(m); log.scrollTop = 1e6; return m; };
-      if (!history.length) history.push({ role: 'assistant', content: `Welcome to ${cfg.hall || 'Fólkvangr'}! I'm ${me.name}. I can tell you about Elder World Studio, show you our games, or book a demo for your business. What brings you in?` });
+      if (!history.length) { V.playLine('welcome'); speak(9500); } if (!history.length) history.push({ role: 'assistant', content: `Welcome to ${cfg.hall || 'Fólkvangr'}! I'm ${me.name}. I can tell you about Elder World Studio, show you our games, or book a demo for your business. What brings you in?` });
       history.forEach(h => add(h.content, h.role === 'user'));
       fm.onsubmit = async e => { e.preventDefault(); const q = fm.q.value.trim(); if (!q) return; fm.q.value = ''; add(q, true); history.push({ role: 'user', content: q }); const w = add('…');
-        try { const j = await (await fetch(cfg.chat || '/api/office/freyja', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ messages: history.slice(-8) }) })).json();
-          w.textContent = j.reply || 'Sorry, I lost my train of thought.'; history.push({ role: 'assistant', content: w.textContent });
-          if (j.action?.tour) { const go = document.createElement('button'); go.type = 'button'; go.className = 'ob go'; go.textContent = 'Take me there'; go.onclick = () => ctx.goTo(j.action.tour); w.after(go); }   /* guided moves only on an explicit click */ if (j.action?.lead) setTimeout(leadForm, 900); }
+        try { const j = await (await fetch(cfg.chat || '/api/office/freyja', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ messages: history.slice(-8), lang: V.lang() }) })).json();
+          w.textContent = j.reply || 'Sorry, I lost my train of thought.'; V.playReply(j.tts, () => speak(Math.min(30000, 600 + w.textContent.length * 70)), j.ttsReady); if (j.action?.lead) { const k = document.createElement('button'); k.type = 'button'; k.className = 'ob gold'; k.textContent = ctx.t('Open the request kiosk'); k.onclick = () => { V.playLine('form_open'); openKiosk(ctx, cfg.lead, sent); }; w.after(k); } history.push({ role: 'assistant', content: w.textContent });
+          if (j.action?.tour) { const go = document.createElement('button'); go.type = 'button'; go.className = 'ob go'; go.textContent = ctx.t('Take me there'); go.onclick = () => ctx.goTo(j.action.tour); w.after(go); }   /* guided moves only on an explicit click */ if (j.action?.lead) setTimeout(leadForm, 900); }
         catch { w.textContent = 'I can\u2019t reach my notes right now. Try the tour buttons below!'; } };
       fm.q.focus();
     };
@@ -40,17 +63,21 @@ export default {
       const st = new T.Mesh(new T.BoxGeometry(0.08, 0.16, 0.08), mat.rack); st.position.y = 0.08; K.add(st);
       const hd = new T.Mesh(new T.BoxGeometry(0.76, 0.5, 0.03), mat.dark); hd.position.set(0, 0.36, 0); hd.rotation.x = -0.35; K.add(hd);
       const sc = ctx.panel(ctx.textCanvas(['Instant sample', 'Tap: your site, kiosk or POS'], { w: 600, h: 400, size: 76, body: 50, bg: '#0b1626' }), 0.72, 0.46, 0, 0.36, 0.018, 0, K); sc.rotation.x = -0.35; sc.material.toneMapped = false; sc.userData.plate = 'Instant sample';
-      [hd, sc].forEach(o => ctx.onClick(o, () => openKiosk(ctx, cfg.lead))); }
+      [hd, sc].forEach(o => ctx.onClick(o, () => { V.playLine('form_type'); openKiosk(ctx, cfg.lead, sent); })); }
     ctx.provide('leadForm', leadForm);
     ctx.hudButton(`Talk to ${me.name}`, chat, true);
     // greeting: she turns to look at the visitor, waves and shows a speech bubble when they come within ~4 m
     const bubble = ctx.label(`Hi, I'm ${me.name}!`, ctx.touch ? 'Tap me to chat' : 'Click me or press E to chat', '#ffffff'); bubble.position.set(0, 2.45, 0); bubble.scale.set(1.9, 0.48, 1);
     bubble.material.transparent = true; bubble.material.opacity = 0; f.add(bubble);
     let greeted = 0, near = false; const cam = ctx.cam;
-    this.onFrame = dt => { const dx = cam.position.x - f.position.x, dz = cam.position.z - f.position.z, d = Math.hypot(dx, dz), u = f.userData;
+    this.onFrame = dt => {
+      for (let i = tickets.length - 1; i >= 0; i--) { const k = tickets[i]; k.t += dt / 6; const tk = k.tk;
+        if (k.t < 0) { tk.position.y = k.from.y + (0.25 + k.t) * 0.8; tk.rotation.x = -0.6; }           /* printing: rises out of the kiosk slot */
+        else if (k.t < 1) { tk.position.lerpVectors(k.from, k.to, k.t); tk.position.y += Math.sin(k.t * Math.PI) * 1.4 + 0.4; tk.rotation.y += dt * 2; }
+        else { ctx.scene.remove(tk); tk.geometry.dispose(); tk.material.dispose(); tickets.splice(i, 1); V.playLine('handoff_done'); speak(4500); } } const dx = cam.position.x - f.position.x, dz = cam.position.z - f.position.z, d = Math.hypot(dx, dz), u = f.userData;
       let want = 0; if (d < 9) want = Math.max(-1.7, Math.min(1.7, Math.atan2(dx, dz)));            // look toward the visitor, never turn her back to the desk
       let diff = want - f.rotation.y; f.rotation.y += diff * Math.min(1, dt * 3);
-      const isNear = d < 4; if (isNear && !near && performance.now() - greeted > 15000) { greeted = performance.now(); u.greetUntil = greeted + 2600; ctx.announce?.(`${me.name}: Hi! Welcome to Elder World Studio.`); }
+      const isNear = d < 4; if (isNear && !near && performance.now() - greeted > 15000) { greeted = performance.now(); u.greetUntil = greeted + 2600; ctx.announce?.(`${me.name}: Hi! Welcome to Elder World Studio.`); if (navigator.userActivation?.hasBeenActive) { V.playLine('greet'); speak(2400); } }
       near = isNear; u.greeting = (u.greetUntil || 0) > performance.now();
       const tgt = d < 4.5 ? 1 : 0; bubble.material.opacity += (tgt - bubble.material.opacity) * Math.min(1, dt * 4); bubble.visible = bubble.material.opacity > 0.02; };
   },
