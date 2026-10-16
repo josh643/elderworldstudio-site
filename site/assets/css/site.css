@@ -112,3 +112,12 @@ main{flex:1 0 auto}
 
 body{font-size:1.08rem;font-weight:500}
 h1{text-shadow:0 0 28px rgba(255,43,214,.45)}
+/* games page */
+.card.game .gmedia{aspect-ratio:16/10;background:#05030c;display:flex;align-items:center;justify-content:center;overflow:hidden;border-bottom:1px solid var(--line)}
+.card.game .gmedia img{display:block}
+.card.game .gmedia.wide img{width:100%;height:100%;object-fit:cover}
+.card.game .gmedia.shot img{height:100%;width:auto;max-width:100%;object-fit:contain}
+.card.game .gmedia.icon img{width:42%;max-width:150px;height:auto;border-radius:22%}
+.card.game .gmedia.text span{font-size:1.5rem;font-weight:700;letter-spacing:.04em;color:var(--soft);padding:0 16px;text-align:center}
+.cards.casual{grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr))}
+.cards.single{max-width:640px;margin:0 auto;grid-template-columns:1fr}

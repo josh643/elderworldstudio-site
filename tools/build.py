@@ -15,6 +15,7 @@ def play_ref(url, campaign, source="website", medium="site"):
     from urllib.parse import quote
     return url + "&referrer=" + quote(f"utm_source={source}&utm_medium={medium}&utm_campaign={campaign}", safe="")
 PLAY_SW = play_ref("https://play.google.com/store/apps/details?id=com.elderworlds.starwayfarer", "star-wayfarer")
+PLAY_ASTRO = play_ref("https://play.google.com/store/apps/details?id=com.elderworldstudio.astrododge", "astro-dodge")
 PLAY_TEST_ASTRO = "https://play.google.com/apps/testing/com.elderworldstudio.astrododge"
 PLAY_TEST_STACK = "https://play.google.com/apps/testing/com.elderworldstudio.stacktower"
 EWS_TESTERS_GROUP = "https://groups.google.com/g/ews_testers"
@@ -25,7 +26,7 @@ STEAM_COTR = utm("https://store.steampowered.com/app/2559510/", "chronicles")
 def page(path, title, desc, body, canonical, current="", noindex=False):
     depth = path.count("/")  # e.g. "privacy-policy/index.html" -> 1
     P = "../" * depth
-    nav = [("index.html", "Home", "home"), ("index.html#games", "Games", "games"),
+    nav = [("index.html", "Home", "home"), ("games/index.html", "Games", "games"),
            ("index.html#tools", "Assets", "tools"), ("testers/index.html", "Testers", "testers"), ("merch/index.html", "Merch", "merch"), ("services/index.html", "Services", "services"), ("contact/index.html", "Contact", "contact"),
            ("privacy-policy/index.html", "Privacy Policy", "privacy")]
     navhtml = "".join(f'<a href="{P}{h}"{" aria-current=\"page\"" if k == current else ""}>{t}</a>' for h, t, k in nav)
@@ -50,7 +51,7 @@ def page(path, title, desc, body, canonical, current="", noindex=False):
 <meta property="og:url" content="{DOMAIN}{canonical}">
 <meta property="og:image" content="{DOMAIN}/assets/img/brand/ews-og.png?v=4">
 <link rel="preload" href="{P}assets/fonts/michroma.woff" as="font" type="font/woff" crossorigin>
-<link rel="stylesheet" href="{P}assets/css/site.css?v=4">
+<link rel="stylesheet" href="{P}assets/css/site.css?v=5">
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
@@ -66,7 +67,7 @@ def page(path, title, desc, body, canonical, current="", noindex=False):
 <footer class="site-footer">
  <div class="wrap">
   <div>&copy; 2026 {STUDIO}. All rights reserved.</div>
-  <nav aria-label="Footer"><a href="{P}index.html#games">Games</a><a href="{P}testers/index.html">Testers</a><a href="{P}services/index.html">Services</a><a href="{P}merch/index.html">Merch</a><a href="{P}contact/index.html">Contact</a><a href="{P}privacy-policy/index.html">Privacy Policy</a><a href="mailto:{EMAIL}">{EMAIL}</a></nav>
+  <nav aria-label="Footer"><a href="{P}games/index.html">Games</a><a href="{P}testers/index.html">Testers</a><a href="{P}services/index.html">Services</a><a href="{P}merch/index.html">Merch</a><a href="{P}contact/index.html">Contact</a><a href="{P}privacy-policy/index.html">Privacy Policy</a><a href="mailto:{EMAIL}">{EMAIL}</a></nav>
  </div>
 </footer>
 </body>
@@ -88,15 +89,15 @@ HOME = f"""
 
 <section class="block" id="games">
  <div class="wrap">
-  <div class="center"><h2>Our Games</h2><p class="lead">Immersive worlds for PC and mobile.</p></div>
+  <div class="center"><h2>Our Games</h2><p class="lead">Immersive worlds for PC and mobile. <a class="link" href="{{P}}games/index.html">See all our games</a></p></div>
   <div class="grid cards">
    <article class="card">
     <img class="thumb" src="{{P}}assets/img/star-wayfarer.jpg" width="1024" height="576" alt="Star Wayfarer title screen with a starship in space" loading="lazy">
     <div class="body">
-     <span class="tag live">On Google Play</span>
+     <span class="tag live">Out now on Google Play</span>
      <h3>Star Wayfarer</h3>
      <p>An open space adventure built for mobile. Fly, trade, mine and fight across the stars, walk your own ship, land on planets, and build your crew, fleet and empire. Free to play, with no pay-to-win.</p>
-     <div class="actions"><!-- PLAY-RESTORE: when the Play listing is public, replace the span below with: <a class="btn btn-primary" href="(PLAY_SW from build.py)" rel="noopener">Get it on Google Play</a> --><span class="btn btn-primary" aria-disabled="true" style="cursor:default;opacity:.85">Coming soon to Google Play</span><a class="link" href="{{P}}star-wayfarer/privacy/index.html">Privacy</a></div>
+     <div class="actions"><a class="btn btn-primary" href="{PLAY_SW}" rel="noopener">Get it on Google Play</a><a class="link" href="{{P}}star-wayfarer/privacy/index.html">Privacy</a></div>
     </div>
    </article>
    <article class="card">
@@ -177,7 +178,7 @@ CONTACT = f"""
   </div>
   <div class="panel">
    <h3>Find our games</h3>
-   <p><!-- PLAY-RESTORE: <a class="link" href="(PLAY_SW from build.py)" rel="noopener">Star Wayfarer on Google Play</a> -->Star Wayfarer: coming soon to Google Play<br>
+   <p><a class="link" href="{PLAY_SW}" rel="noopener">Star Wayfarer: out now on Google Play</a><br>
    <a class="link" href="{STEAM_OMNI}" rel="noopener">Omnivael: Wayfarers Life on Steam</a><br>
    <a class="link" href="{STEAM_COTR}" rel="noopener">Chronicles of the Realm on Steam</a></p>
   </div>
@@ -547,6 +548,68 @@ def _merch_body():
 </section>
 """
 page("merch/index.html", f"Merch | {STUDIO}", f"Official {STUDIO} merch: crest tees and hoodies, Omnivael, Star Wayfarer and Chronicles of the Realm designs, mugs and stickers.", _merch_body(), "/merch/", "merch")
+
+def _gcard(name, tag, desc, img=None, kind="shot", actions="", alt=""):
+    import html as _h
+    media = (f'<div class="gmedia {kind}"><img src="{{P}}assets/img/games/{img}" alt="{_h.escape(alt)}" loading="lazy"></div>' if img
+             else f'<div class="gmedia text"><span>{_h.escape(name)}</span></div>')
+    return f"""   <article class="card game">
+    {media}
+    <div class="body">
+     {tag}
+     <h3>{_h.escape(name)}</h3>
+     <p>{desc}</p>
+     {f'<div class="actions">{actions}</div>' if actions else ''}
+    </div>
+   </article>"""
+SOON = '<span class="tag soon">Coming soon to Google Play</span>'
+CASUAL = [
+ ("Tile 2048", None, None, "Slide and merge numbered tiles to reach 2048."),
+ ("Brick Blitz", "brick-blitz.jpg", "shot", "Bounce the ball, break neon bricks, and clear arcade levels."),
+ ("Color Gate", None, None, "Match your color to pass through the right gates."),
+ ("Crystal Merge", "crystal-merge.jpg", "shot", "Merge glowing crystals, make combos, and grow your score in a neon puzzle."),
+ ("Gem Hopper", "gem-hopper-icon.png", "icon", "Tap to hop between floating gems and build your best score."),
+ ("Neon Snake", None, None, "The classic snake game, in neon."),
+ ("Spiral Drop", None, None, "Drop down the spiral tower without hitting the hazards."),
+ ("Stack Tower", None, None, "Time your taps to stack blocks as high as you can."),
+ ("Void Flip", None, None, "Tap to reverse gravity and guide a neon probe through energy gates."),
+]
+GAMES = f"""
+<section class="hero games-hero">
+ <div class="wrap">
+  <h1>Our Games</h1>
+  <p>PC and mobile games made by {STUDIO}.</p>
+  <div class="btns"><a class="btn btn-ghost" href="#live">Out now</a><a class="btn btn-ghost" href="#bigger">Bigger games</a><a class="btn btn-ghost" href="#casual">Casual games</a></div>
+ </div>
+</section>
+<section class="block" id="live">
+ <div class="wrap">
+  <div class="center"><h2>Out Now</h2></div>
+  <div class="grid cards">
+{_gcard("Astro Dodge", '<span class="tag live">On Google Play</span>', "Steer your ship through an endless field of asteroids, grab power-ups and chase your best score.", "astro-dodge-icon.png", "icon", f'<a class="btn btn-primary" href="{PLAY_ASTRO}" rel="noopener">Get it on Google Play</a>', "Astro Dodge app icon")}
+{_gcard("Star Wayfarer", '<span class="tag live">On Google Play</span>', "An open space adventure built for mobile. Fly, trade, mine and fight across the stars, land on planets, and build your crew, fleet and empire.", "../star-wayfarer.jpg", "wide", f'<a class="btn btn-primary" href="{PLAY_SW}" rel="noopener">Get it on Google Play</a><a class="link" href="{{P}}star-wayfarer/privacy/index.html">Privacy</a>', "Star Wayfarer title screen")}
+  </div>
+ </div>
+</section>
+<section class="block alt" id="bigger">
+ <div class="wrap">
+  <div class="center"><h2>Bigger Games</h2></div>
+  <div class="grid cards">
+{_gcard("Omnivael: Wayfarer's Life", '<span class="tag soon">Early Access &middot; Coming to Steam</span>', "A living sandbox RPG where your legacy unfolds through trade, exploration, relationships and time itself, in a medieval frontier whose economy runs on its people.", "../omnivael.jpg", "wide", f'<a class="btn btn-primary" href="{STEAM_OMNI}" rel="noopener">View on Steam</a>', "Omnivael key art")}
+{_gcard("Chronicles of the Realm", '<span class="tag soon">Free &middot; Coming to Steam</span>', "A free first-person dungeon game set in the world of Omnivael. Take up sword and shield, survive wave after wave of slimes and goblins in a torch-lit cave, and pick a boon between waves.", "../chronicles-of-the-realm.jpg", "wide", f'<a class="btn btn-primary" href="{STEAM_COTR}" rel="noopener">View on Steam</a>', "Chronicles of the Realm: fighting slimes in a torch-lit cave arena")}
+  </div>
+ </div>
+</section>
+<section class="block" id="casual">
+ <div class="wrap">
+  <div class="center"><h2>Casual Games</h2><p class="lead">Quick, free arcade and puzzle games for Android. Coming soon to Google Play.</p></div>
+  <div class="grid cards casual">
+{chr(10).join(_gcard(n, SOON, d, i, k, alt=f"{n} screenshot" if k=="shot" else f"{n} app icon") for n,i,k,d in CASUAL)}
+  </div>
+ </div>
+</section>
+"""
+page("games/index.html", f"Games | {STUDIO}", f"Games by {STUDIO}: Astro Dodge and Star Wayfarer on Google Play, Omnivael and Chronicles of the Realm on Steam, and casual mobile games coming soon.", GAMES, "/games/", "games")
 # 404 uses root-absolute links (served for any missing path)
 page("404.html", f"Page not found | {STUDIO}", "Page not found.", NOTFOUND, "/404.html", noindex=True)
 p404 = ROOT / "404.html"
