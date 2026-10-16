@@ -70,6 +70,7 @@ def page(path, title, desc, body, canonical, current="", noindex=False):
   <nav aria-label="Footer"><a href="{P}games/index.html">Games</a><a href="{P}testers/index.html">Testers</a><a href="{P}services/index.html">Services</a><a href="{P}merch/index.html">Merch</a><a href="{P}contact/index.html">Contact</a><a href="{P}privacy-policy/index.html">Privacy Policy</a><a href="mailto:{EMAIL}">{EMAIL}</a></nav>
  </div>
 </footer>
+{'<script src="/office/boot.js?v=1" defer></script>' if path == "index.html" else ""}
 </body>
 </html>
 """
@@ -616,3 +617,4 @@ p404 = ROOT / "404.html"
 t = p404.read_text().replace('href="favicon.png', 'href="/favicon.png').replace('href="assets/', 'href="/assets/').replace('src="assets/', 'src="/assets/').replace('href="index.html', 'href="/index.html').replace('href="contact/', 'href="/contact/').replace('href="merch/', 'href="/merch/').replace('href="privacy-policy/index.html"', 'href="/privacy-policy/"').replace('href="mailto', 'href="mailto')
 p404.write_text(t)
 print("built", sum(1 for _ in ROOT.rglob("*.html")), "html files")
+import subprocess, sys; subprocess.run([sys.executable, str(pathlib.Path(__file__).with_name("office_data.py"))], check=True)

@@ -1,0 +1,31 @@
+.office-root{position:fixed;inset:0;z-index:50;background:#07040e;color:#f3ead7;font:15px/1.4 Inter,system-ui,sans-serif;touch-action:none;user-select:none;-webkit-user-select:none}
+.office-root canvas{display:block;width:100%;height:100%}
+.office-load{position:absolute;inset:0;display:grid;place-items:center;font-family:Cinzel,serif;letter-spacing:.1em;color:#d9b45a;transition:opacity .6s}
+.office-hud{position:absolute;left:0;right:0;top:0;display:flex;gap:8px;align-items:center;padding:10px 12px;background:linear-gradient(#07040ecc,#07040e00);pointer-events:none}
+.office-hud>*{pointer-events:auto}
+.office-hud .t{font-family:Cinzel,serif;color:#d9b45a;font-size:15px;margin-right:auto;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ob{font:600 13px Inter,system-ui,sans-serif;background:#1c1230e6;color:#f3ead7;border:1px solid #d9b45a66;border-radius:999px;padding:9px 14px;min-height:40px;cursor:pointer}
+.ob:hover,.ob:focus-visible{border-color:#d9b45a;outline:none}
+.ob.gold{background:#d9b45a;color:#1a1024;border-color:#d9b45a}
+.office-tour{position:absolute;left:0;right:0;bottom:12px;display:flex;gap:6px;justify-content:center;flex-wrap:wrap;padding:0 8px}
+.office-joy{position:absolute;left:18px;bottom:76px;width:110px;height:110px;border-radius:50%;background:#ffffff10;border:1px solid #ffffff30;display:none}
+.office-joy i{position:absolute;left:35px;top:35px;width:40px;height:40px;border-radius:50%;background:#d9b45a99}
+@media (pointer:coarse){.office-joy{display:block}}
+.office-card{position:absolute;right:12px;top:64px;width:min(360px,calc(100% - 24px));max-height:calc(100% - 150px);overflow:auto;background:#140c22f2;border:1px solid #d9b45a55;border-radius:16px;padding:16px;box-shadow:0 10px 40px #0008}
+.office-card h3{margin:0 0 6px;font-family:Cinzel,serif;color:#d9b45a;font-size:18px}
+.office-card p{margin:6px 0;color:#e8dfcc}
+.office-card .x{position:absolute;right:8px;top:8px;background:none;border:0;color:#f3ead7;font-size:22px;cursor:pointer;min-width:40px;min-height:40px}
+.office-card .row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.office-card a.ob{text-decoration:none;display:inline-flex;align-items:center}
+.office-card img{width:100%;border-radius:10px;margin:6px 0}
+.office-chat .log{display:grid;gap:8px;margin:8px 0;max-height:46vh;overflow:auto}
+.office-chat .m{padding:8px 11px;border-radius:12px;background:#24183a;max-width:90%}
+.office-chat .m.me{background:#d9b45a22;justify-self:end}
+.office-chat form{display:flex;gap:6px}
+.office-chat input,.office-lead input,.office-lead textarea,.office-lead select{font:16px Inter,system-ui,sans-serif;flex:1;min-width:0;padding:10px 12px;border-radius:10px;border:1px solid #ffffff30;background:#0d0818;color:#f3ead7}
+.office-lead{display:grid;gap:8px}
+.office-lead label{display:grid;gap:4px;font-weight:600;font-size:13px}
+.office-lead .hp{position:absolute;left:-9999px}
+.office-tip{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);pointer-events:none;background:#0009;padding:6px 10px;border-radius:8px;font-size:13px;display:none}
+.office-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+html.office-on body{overflow:hidden}

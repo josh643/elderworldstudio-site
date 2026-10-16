@@ -1,0 +1,16 @@
+{
+ "_doc": "Module registry. Order = build order. Remove an entry to remove a feature; add one to add it. anchor = where the module snaps (metres). See /office/README.md.",
+ "modules": [
+  {"id": "base-avatar",    "src": "modules/base-avatar/index.js"},
+  {"id": "lobby",          "src": "modules/lobby/index.js",          "anchor": [0, 0]},
+  {"id": "receptionist",   "src": "modules/receptionist/index.js",   "anchor": [0, -2], "config": {"name": "Freyja", "hall": "Fólkvangr", "chat": "/api/office/freyja", "lead": "/api/office/lead"}},
+  {"id": "game-showrooms", "src": "modules/game-showrooms/index.js", "anchor": [-12, -2], "config": {"bay": 4}},
+  {"id": "services-wall",  "src": "modules/services-wall/index.js",  "anchor": [8, 9.6]},
+  {"id": "merch-display",  "src": "modules/merch-display/index.js",  "anchor": [9, -1]},
+  {"id": "devlog-screen",  "src": "modules/devlog-screen/index.js",  "anchor": [25.6, 1]},
+  {"id": "odin-dais",      "src": "modules/odin-dais/index.js",      "anchor": [0, -10]},
+  {"id": "team-halls",     "src": "modules/team-halls/index.js",     "anchor": [0, -14], "config": {"cols": 3, "w": 10, "d": 9}},
+  {"id": "datacenter",     "src": "modules/datacenter/index.js",     "anchor": [0, "after:team-halls"]},
+  {"id": "live-status",    "src": "modules/live-status/index.js",    "config": {"url": "/api/office/state", "everyMs": 15000}}
+ ]
+}

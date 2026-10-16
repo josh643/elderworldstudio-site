@@ -1,0 +1,37 @@
+// Receptionist feature (plugin): Freyja at the desk, text chat (Worker /api/office/freyja: rate-limited, $-capped,
+// FAQ fallback) and the demo-request lead form (stored as a lead record; no email). Remove from modules.json to disable.
+export default {
+  setup(ctx, cfg, [x, z]) {
+    const { box, mat, esc } = ctx, A = ctx.use('avatar');
+    box(4, 1.1, 1, mat.wood, x, 0.55, z + 1); box(4.2, 0.08, 1.2, mat.trim, x, 1.12, z + 1);
+    const me = { id: 'receptionist', name: cfg.name || ctx.roster.receptionist?.name || 'Freyja', role: 'receptionist' };
+    const f = A.make(me, 0x2f7d6a, () => chat()); f.position.set(x, 0, z); f.rotation.y = 0; f.userData.pose = 'wave'; ctx.scene.add(f);
+    const history = [];
+    const leadForm = () => {
+      const c = ctx.card(`<h3>Request a free demo</h3><p>Tell us what you need. Our client team builds a quick demo for your business first, no obligation.</p>
+      <form class="office-lead"><label>Your name *<input name="name" required maxlength="100" autocomplete="name"></label><label>Email *<input name="email" type="email" required maxlength="200" autocomplete="email"></label>
+      <label>Business name *<input name="business" required maxlength="150"></label><label>What do you need?<select name="type"><option>Website</option><option>AI tool</option><option>Custom software</option><option selected>Not sure</option></select></label>
+      <label>Tell us about it *<textarea name="description" required maxlength="2000" rows="4"></textarea></label><div class="hp" aria-hidden="true"><input name="website_url" tabindex="-1" autocomplete="off"></div>
+      <button class="ob gold" type="submit">Send to the client team</button><p class="msg" role="status"></p></form>`);
+      const fm = c.querySelector('form'), t0 = Date.now();
+      fm.onsubmit = async e => { e.preventDefault(); const d = Object.fromEntries(new FormData(fm)); d.t = t0; d.source = 'office'; const m = fm.querySelector('.msg'); m.textContent = 'Sending…';
+        try { const j = await (await fetch(cfg.lead || '/api/office/lead', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(d) })).json(); m.textContent = j.ok ? 'Thanks! Our client team has your request and will reply by email.' : (j.error || 'Could not send.'); if (j.ok) fm.querySelector('button').disabled = true; }
+        catch { m.textContent = 'Could not send right now. You can also use the classic services page.'; } };
+    };
+    const chat = () => {
+      const c = ctx.card(`<h3>${esc(me.name)} · receptionist</h3><div class="office-chat"><div class="log" aria-live="polite"></div><form><input name="q" maxlength="400" placeholder="Ask about our games, services or the studio" aria-label="Message ${esc(me.name)}" autocomplete="off"><button class="ob gold" type="submit">Send</button></form><p style="font-size:12px;opacity:.7">${esc(me.name)} is an AI receptionist. Don't share passwords or payment details.</p></div>`);
+      const log = c.querySelector('.log'), fm = c.querySelector('form');
+      const add = (t, mine) => { const m = document.createElement('div'); m.className = 'm' + (mine ? ' me' : ''); m.textContent = t; log.append(m); log.scrollTop = 1e6; return m; };
+      if (!history.length) history.push({ role: 'assistant', content: `Welcome to ${cfg.hall || 'Fólkvangr'}! I'm ${me.name}. I can tell you about Elder World Studio, show you our games, or help you request a free demo for your business. What brings you in?` });
+      history.forEach(h => add(h.content, h.role === 'user'));
+      fm.onsubmit = async e => { e.preventDefault(); const q = fm.q.value.trim(); if (!q) return; fm.q.value = ''; add(q, true); history.push({ role: 'user', content: q }); const w = add('…');
+        try { const j = await (await fetch(cfg.chat || '/api/office/freyja', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ messages: history.slice(-8) }) })).json();
+          w.textContent = j.reply || 'Sorry, I lost my train of thought.'; history.push({ role: 'assistant', content: w.textContent });
+          if (j.action?.tour) ctx.goTo(j.action.tour); if (j.action?.lead) setTimeout(leadForm, 900); }
+        catch { w.textContent = 'I can\u2019t reach my notes right now. Try the tour buttons below!'; } };
+      fm.q.focus();
+    };
+    ctx.provide('leadForm', leadForm);
+    ctx.hudButton(`Talk to ${me.name}`, chat, true);
+  },
+};
