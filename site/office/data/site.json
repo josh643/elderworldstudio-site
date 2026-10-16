@@ -9,7 +9,8 @@
   "name": "Elder World Studio",
   "tagline": "Forging Digital Realms",
   "about": "Elder World Studio Inc is a game development studio that blends the enchanting aesthetics of medieval worlds with the power of modern technology. We make PC and mobile games, and assets for other developers.",
-  "logo": "/assets/img/brand/ews-mark-512.png"
+  "logo": "/assets/img/logo.png",
+  "wallText": true
  },
  "games": [
   {

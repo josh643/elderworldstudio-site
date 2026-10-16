@@ -70,6 +70,27 @@ export default {
       const ht = new T.CanvasTexture(hc); ht.colorSpace = T.SRGBColorSpace; const halo = new T.Mesh(new T.PlaneGeometry(3.4, 3.4), new T.MeshBasicMaterial({ map: ht, transparent: true, depthWrite: false, toneMapped: false })); halo.position.set(x, 3.2, wz + 0.135); ctx.scene.add(halo);
       const lg = ctx.panel(ctx.image(ctx.site.brand.logo || '/assets/img/logo.png'), 1.2, 1.2, x, 3.2, wz + 0.15, 0); lg.material.toneMapped = false; lg.userData.label = 'Elder World Studio logo';
       const nm = ctx.panel(ctx.textCanvas(['ELDER WORLD STUDIO'], { w: 1600, h: 200, size: 104, bg: null, border: false, fg: '#e9c46a' }), 4.2, 0.6, x, 2.3, wz + 0.15, 0); nm.material.toneMapped = false; nm.userData.plate = 'ELDER WORLD STUDIO'; nm.visible = ctx.site.brand.wallText !== false; }
+    /* central elevator + stairs core (the building spine) right behind the logo wall; reached by stepping around the wall
+       through the RIGHT-side doorway. Same position on floors 2-5. Kept out of the entrance sightline (fully hidden by the wall). */
+    { const T = ctx.THREE, cz = z - 3.2 - 2.1, W = 4.6, D = 3.0, stone = mat.stone || mat.wall, metal = mat.trim;
+      const fz = cz, bz = cz - D;                                                   // front face (doors) and back face
+      box(1.0, 4.0, 0.25, stone, x - W / 2 + 0.5, 2.0, fz); box(1.0, 4.0, 0.25, stone, x + W / 2 - 0.5, 2.0, fz); box(0.4, 4.0, 0.25, stone, x, 2.0, fz);   // pillars between doors
+      box(W, 1.6, 0.25, stone, x, 3.2, fz);                                         // lintel above the doors (door height 2.4 m)
+      box(W, 4.0, 0.25, stone, x, 2.0, bz); for (const sx of [-1, 1]) box(0.25, 4.0, D, stone, x + sx * W / 2, 2.0, cz - D / 2);
+      const doors = []; for (const sx of [-0.65, 0.65]) { const d = box(1.25, 2.38, 0.06, metal, x + sx * 1.1, 1.19, fz + 0.02); doors.push(d);
+        box(0.02, 2.38, 0.07, mat.dark, x + sx * 1.1, 1.19, fz + 0.03); }          // brushed brass doors with a centre seam
+      for (const sx of [-1, 1]) { const ind = ctx.panel(ctx.textCanvas(['G'], { w: 128, h: 96, size: 64, bg: '#0b1626', fg: '#9fe8ff' }), 0.24, 0.18, x + sx * 1.1 * 0.65 * 2 / 1.3, 2.65, fz + 0.14, 0); ind.material.toneMapped = false; }
+      const btn = box(0.08, 0.18, 0.04, mat.dark, x, 1.15, fz + 0.15); 
+      const plate = ctx.panel(ctx.textCanvas([ctx.t ? ctx.t('Elevator') : 'Elevator', ctx.t ? ctx.t('Floors 2 to 5 open soon') : 'Floors 2 to 5 open soon'], { w: 640, h: 200, size: 64, body: 40 }), 1.3, 0.4, x, 3.25, fz + 0.14, 0); plate.userData.plate = 'Elevator';
+      const call = () => ctx.card(`<h3>${esc(ctx.t ? ctx.t('Elevator') : 'Elevator')}</h3><p>${esc(ctx.t ? ctx.t('The ground floor is open. Floors 2 to 5 (Games, Design & Marketing, Client Sites & Call Center, Ops & Leadership) open as each one is finished.') : 'The ground floor is open. Floors 2 to 5 open as each one is finished.')}</p>`);
+      [...doors, btn, plate].forEach(o => ctx.onClick(o, call));
+      /* stairs wrap the left side of the core: 10 risers climbing toward the back, brass handrail */
+      for (let k = 0; k < 10; k++) box(1.2, 0.18 * (k + 1), 0.28, stone, x - W / 2 - 0.75, 0.09 * (k + 1), fz - 0.2 - k * 0.28);
+      box(0.04, 0.04, 2.9, metal, x - W / 2 - 1.38, 1.9, fz - 1.4).rotation.x = -0.57;
+      const st = ctx.panel(ctx.textCanvas([ctx.t ? ctx.t('Stairs') : 'Stairs'], { w: 400, h: 140, size: 64 }), 0.8, 0.28, x - W / 2 - 0.75, 2.5, fz + 0.15, 0); st.userData.plate = 'Stairs';
+      /* small elevator sign beside the right-side doorway, visible from the red carpet (faces the entrance) */
+      const sg = ctx.panel(ctx.textCanvas(['Elevator  ›', ctx.t ? ctx.t('Floors 2 to 5') : 'Floors 2 to 5'], { w: 512, h: 200, size: 66, body: 42 }), 0.9, 0.35, x + 3.65, 2.35, z - 3.2 + 0.16, 0); sg.material.toneMapped = false; sg.userData.plate = 'Elevator';
+      box(0.06, 2.3, 0.06, metal, x + 3.65, 1.15, z - 3.2 + 0.1); ctx.onClick(sg, call); }
     ctx.provide('leadForm', leadForm);
     ctx.hudButton(`Talk to ${me.name}`, chat, true);
     // greeting: she turns to look at the visitor, waves and shows a speech bubble when they come within ~4 m

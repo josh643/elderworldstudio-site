@@ -98,7 +98,7 @@ for c in merch.cards:
               "img": clean_path(norm_img(c["img"], "merch/index.html")).split("?")[0], "href": b["href"] if b["href"].startswith("http") else "/merch/"})
 site = {"generated_from": ["index.html", "games/index.html", "services/index.html", "merch/index.html"],
         "brand": {"name": "Elder World Studio", "tagline": home.h1.strip() or "Forging Digital Realms", "about": re.sub(r"\s+", " ", home.hero_p).strip(),
-                  "logo": "/assets/img/brand/ews-mark-512.png"},
+                  "logo": "/assets/img/logo.png", "wallText": True},
         "games": G, "services": S, "merch": M,
         "devlog": {"title": "Devlogs on YouTube", "href": "https://www.youtube.com/@ElderWorldStudio"},
         "links": {"services": "/services/", "contact": "/contact/", "games": "/games/", "merch": "/merch/", "classic": "/?classic=1"}}
