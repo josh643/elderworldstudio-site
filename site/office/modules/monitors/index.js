@@ -19,6 +19,7 @@ export default {
     const draw = (i, t) => { const av = owner.get(i), u = av?.userData || {}, a = u.a || {}, s = u.state || {}, x0 = (i % cols) * cw, y0 = Math.floor(i / cols) * ch, f = cw / 256;
       g.save(); g.beginPath(); g.rect(x0, y0, cw, ch); g.clip(); g.translate(x0, y0); g.scale(f, f);
       const work = !!s.stage;
+      if (ctx.publicMode) { g.fillStyle = '#0f1420'; g.fillRect(0, 0, 256, 144); for (let r = 0; r < 9; r++) { const w0 = 30 + ((i * 37 + r * 53) % 150); g.fillStyle = ['#3a5a8c', '#6a8f5a', '#8c6a3a', '#5a5a7a'][(i + r) % 4]; g.fillRect(14 + ((r * 17) % 30), 14 + r * 13, w0, 6); } g.restore(); return; }   /* public: stylized generic UI only */
       if (!av) { g.fillStyle = '#07090d'; g.fillRect(0, 0, 256, 144); g.restore(); return; }          /* unowned screen: switched off, never filler */
       const STG = { waiting: 'Queued', plan: 'Planning', build: 'Building', 'self-check': 'Self-check', QA: 'In QA', review: 'Waiting for review', ready: 'Ready to ship', released: 'Released' };
       const cell = work && thumbs.img ? thumbs.map[a.id] : undefined;

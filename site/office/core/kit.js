@@ -1,6 +1,6 @@
 // Snap-together kit pieces. Every piece is a pure function of (ctx, options) and returns its THREE.Group.
 // Grid unit = 1 m. Rooms snap on their centre; walls/doors are optional per side.
-export function room(ctx, { x = 0, z = 0, w = 10, d = 8, floor = 0x2a2236, walls = '', title, sub, enclose = false }) {
+export function room(ctx, { x = 0, z = 0, w = 10, d = 8, floor = 0x2a2236, walls = '', title, sub, enclose = false, doorX = 0 }) {
   const { THREE, box, M } = ctx, g = new THREE.Group(); g.position.set(x, 0, z);
   box(w - 0.2, 0.04, d - 0.2, ctx.rug ? ctx.rug(new ctx.THREE.Color(0x8a8f9c).lerp(new ctx.THREE.Color(floor).multiplyScalar(3), 0.18).getHex()) : M(floor), 0, 0.02, 0, g);
   const W = (lx, lz, len, rot) => { const m = box(len, 3, 0.2, ctx.mat.wall, lx, 1.5, lz, g); m.rotation.y = rot; };
@@ -11,11 +11,12 @@ export function room(ctx, { x = 0, z = 0, w = 10, d = 8, floor = 0x2a2236, walls
     const t = 0.12, h = 3, hx = w / 2 - t / 2, hz = d / 2 - t / 2, dw = 1.6;
     const P = (len, lx, lz, rot) => { const m = box(len, h, t, ctx.mat.wall, lx, h / 2, lz, g); m.rotation.y = rot; m.userData.wall = 1; return m; };
     P(w, 0, -hz, 0); P(d, -hx, 0, Math.PI / 2); P(d, hx, 0, Math.PI / 2);
-    const side = (w - dw) / 2; P(side, -(dw / 2 + side / 2), hz, 0); P(side, dw / 2 + side / 2, hz, 0);
-    box(dw, h - 2.3, t, ctx.mat.wall, 0, 2.3 + (h - 2.3) / 2, hz, g);   /* lintel */
-    for (const s of [-1, 1]) box(0.06, 2.3, t + 0.04, ctx.mat.trim, s * (dw / 2 + 0.03), 1.15, hz, g);   /* door frame */
-    box(dw + 0.12, 0.06, t + 0.04, ctx.mat.trim, 0, 2.33, hz, g);
-    if (title) { const pl = ctx.panel(ctx.textCanvas([title, sub || ''], { w: 768, h: 192, size: 64 }), 1.5, 0.375, 0, 2.62, d / 2 + 0.012, 0, g); pl.userData.plate = title; box(1.58, 0.45, 0.03, ctx.mat.trim, 0, 2.62, d / 2 - 0.005, g); }
+    const dx = doorX, L = w / 2 + dx - dw / 2, Rr = w / 2 - dx - dw / 2;   /* doorway centre can be offset (doorX) */
+    P(L, -w / 2 + L / 2, hz, 0); P(Rr, w / 2 - Rr / 2, hz, 0);
+    box(dw, h - 2.3, t, ctx.mat.wall, dx, 2.3 + (h - 2.3) / 2, hz, g);   /* lintel */
+    for (const s of [-1, 1]) box(0.06, 2.3, t + 0.04, ctx.mat.trim, dx + s * (dw / 2 + 0.03), 1.15, hz, g);   /* door frame */
+    box(dw + 0.12, 0.06, t + 0.04, ctx.mat.trim, dx, 2.33, hz, g);
+    if (title) { const pl = ctx.panel(ctx.textCanvas([title, sub || ''], { w: 768, h: 192, size: 64 }), 1.5, 0.375, doorX, 2.62, d / 2 + 0.012, 0, g); pl.userData.plate = title; box(1.58, 0.45, 0.03, ctx.mat.trim, doorX, 2.62, d / 2 - 0.005, g); }
   } else if (title) { const pl = ctx.panel(ctx.textCanvas([title, sub || ''], { w: 768, h: 192, size: 64 }), 1.5, 0.375, 0, 2.62, d / 2 + 0.012, 0, g); pl.userData.plate = title; }
   ctx.scene.add(g); ctx.extend(x - w / 2, z - d / 2, x + w / 2, z + d / 2); return g;
 }

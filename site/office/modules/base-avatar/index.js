@@ -38,7 +38,10 @@ export default {
     let _skin = null; const skinMat = () => _skin ||= new THREE.MeshLambertMaterial({ vertexColors: true });
     const shirtMats = new Map(), hairMats = new Map();
     const shirt = (src, col) => { const k = src.uuid + col; if (!shirtMats.has(k)) { const m = src.clone(); m.color = new THREE.Color(col); shirtMats.set(k, m); } return shirtMats.get(k); };
-    const HAIR = [0x2a1a10, 0x4a2e18, 0x111111, 0x7a5a32, 0x9a6a3a, 0x5a2a14];
+    const HAIR = [0x2a1a10, 0x4a2e18, 0x111111, 0x7a5a32, 0xb08a5a, 0x5a2a14, 0x8a8a88];          // dark brown, brown, black, light brown, dark blonde, auburn, grey
+    const SKIN = [0xf1d3bd, 0xe0b897, 0xc99a74, 0xa8774f, 0x80583a, 0x5c3d28];                     // six realistic tones
+    const HEIGHT = [0.97, 0.985, 1, 1.015, 1.03], BUILD = [0.95, 1, 1.05], CHEST = [0.94, 1, 1.06], PANTS = [0x2b2f38, 0x3b3226, 0x1d2433, 0x4a4a4a];
+    const FEMALE = /^(Freyja|Frigg|Eir|Hlín|Iðunn|Saga|Skaði|Fulla|Vár|Gefjon|Gná|Var|Syn|Hnoss|Snotra|Rán|Vor|Lofn|Norns)$/; const sexCount = [];
     const hair = (src, i) => { const k = src.uuid + i; if (!hairMats.has(k)) { const m = src.clone(); m.color = new THREE.Color(HAIR[i]); hairMats.set(k, m); } return hairMats.get(k); };
     const hash = s => { let h = 7; for (const c of String(s)) h = (h * 31 + c.charCodeAt(0)) >>> 0; return h; };
     const folderGeo = new THREE.BoxGeometry(0.32, 0.24, 0.025), folderMat = M(0xd9b45a);
@@ -46,11 +49,20 @@ export default {
     const red = new THREE.MeshBasicMaterial({ color: 0xff4a4a }), barBg = new THREE.MeshBasicMaterial({ color: 0, transparent: true, opacity: .6 });
     const agents = new Map(), all = new Set();
     function make(a, col, onPick) {
-      const h = hash(a.id || a.name), base = bases[a.female ?? (h & 1)] || bases[0], scale = base.userData.k;
+      const h = hash(a.id || a.name), fem = a.female ?? (FEMALE.test(a.name || '') ? 1 : 0), base = bases[fem] || bases[0];
+      /* distinct look per agent: a unique (skin, hair colour) pair inside each body type, plus height, build, chest and trousers.
+         Realistic ranges only; height stays within +-3% so hands still land within the 5 cm contact gate. */
+      const k = (sexCount[fem] = (sexCount[fem] ?? -1) + 1), look = { skin: k % SKIN.length, hair: (Math.floor(k / SKIN.length) + k) % HAIR.length, height: HEIGHT[(k * 2 + fem) % HEIGHT.length], build: BUILD[(k * 7 + 1) % BUILD.length], chest: CHEST[(k * 5 + fem) % CHEST.length], pants: PANTS[(k * 3) % PANTS.length] };
+      const scale = base.userData.k * look.height;
       const g = new THREE.Group(), body = SkeletonUtils.clone(base); body.scale.setScalar(scale); body.rotation.y = 0; body.userData.cloneOf = a.id || a.name; g.add(body);   // UBC humans face +z = the group's forward
       const hit = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 1.8, 6), new THREE.MeshBasicMaterial({ visible: false })); hit.position.y = 0.9; g.add(hit);
       body.traverse(o => { if (!o.isMesh) return; const n = o.material?.name || '';
-        if (n === 'Shirt') o.material = shirt(o.material, col); else if (/hair/i.test(n)) o.material = hair(o.material, (h >> 3) % HAIR.length); });
+        if (n === 'Shirt') o.material = shirt(o.material, col); else if (/hair|eyebrow/i.test(n)) o.material = hair(o.material, look.hair);
+        else if (/superhero|skin|body/i.test(n)) { o.material = o.material.clone(); o.material.color = new THREE.Color(SKIN[look.skin]); }
+        else if (n === 'Pants') { o.material = o.material.clone(); o.material.color = new THREE.Color(look.pants); } });
+      { const B = {}; body.traverse(o => { if (o.isBone) B[o.name] = o; });                       /* build + chest via spine scale, children compensated so arms/neck keep length */
+        const sc = (b, v) => { if (!b) return; b.scale.multiply(v); for (const c of b.children) if (c.isBone) c.scale.divide(v); };
+        sc(B.spine_02, new THREE.Vector3(look.build, 1, look.build)); sc(B.spine_03, new THREE.Vector3(1, 1, look.chest)); }
       /* one draw call per agent: merge the untextured skinned parts (same skin) into a single vertex-coloured SkinnedMesh */
       { const parts = []; body.traverse(o => { if (o.isSkinnedMesh && !Array.isArray(o.material) && !o.material.map && !o.material.transparent) parts.push(o); });
         if (parts.length > 1 && parts.every(p => p.skeleton.bones.length === parts[0].skeleton.bones.length && p.skeleton.bones.every((b, i) => b === parts[0].skeleton.bones[i]))) {
@@ -64,13 +76,13 @@ export default {
         hand.add(folder); body.updateMatrixWorld(true); const ws = new THREE.Vector3(); hand.getWorldScale(ws); folder.scale.setScalar(1 / ws.x);
         const dir = mid ? mid.position.clone() : new THREE.Vector3(0, 0.08 * scale, 0); folder.position.copy(dir).multiplyScalar(0.9);
         folder.quaternion.setFromUnitVectors(new THREE.Vector3(1, 0, 0), dir.clone().normalize()); }
-      const tag = ctx.label(a.name, a.role); tag.position.y = 2.05; tag.material.transparent = true; tag.material.depthTest = true; tag.visible = false; g.add(tag);
+      const tag = ctx.publicMode && a.id !== 'receptionist' ? ctx.label(a.role ? a.role[0].toUpperCase() + a.role.slice(1) : 'Team', '') : ctx.label(a.name, a.role);   /* public: roles only; Freyja is the only named character */ tag.position.y = 2.05; tag.material.transparent = true; tag.material.depthTest = true; tag.visible = false; g.add(tag);
       const bar = new THREE.Mesh(geo.bar, mat.glow); bar.position.y = 2.36; bar.visible = false; g.add(bar);
       const bg = new THREE.Mesh(geo.bg, barBg); bg.position.set(0, 2.36, -0.01); bg.visible = false; g.add(bg);
       const flag = new THREE.Mesh(geo.flag, red); flag.position.y = 2.62; flag.visible = false; g.add(flag);
       const mixer = new THREE.AnimationMixer(body), actions = {};
       const C = base === bases[1] ? clipsF : clips; const act = k => actions[k] ||= mixer.clipAction(C[CLIP[k]] || C[CLIP.stand] || C.Idle_Loop);
-      g.userData = { a, body, tag, bones: bonesOf(body), lw: 0, layer: null, bar, bg, flag, folder, mixer, act, cur: null, state: {}, target: null, home: null, phase: Math.random() * 6, pose: null, acc: 0, frame: 0 };
+      g.userData = { a, look, body, tag, bones: bonesOf(body), lw: 0, layer: null, bar, bg, flag, folder, mixer, act, cur: null, state: {}, target: null, home: null, phase: Math.random() * 6, pose: null, acc: 0, frame: 0 };
       play(g, 'idle', 0); mixer.update(0.05); g.userData.posed = true; /* never show a bind/T-pose: pose the rig before its first frame */ ctx.onClick(hit, () => { ctx.revealTag(g); onPick && onPick(); });
       all.add(g); if (a.id) agents.set(a.id, g); return g;
     }

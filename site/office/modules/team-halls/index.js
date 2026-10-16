@@ -9,7 +9,7 @@ export default {
     teams.forEach((t, i) => {
       const cx = x0 - totalW / 2 + (i % cols) * W + W / 2, cz = z0 - Math.floor(i / cols) * D - D / 2, col = COLS[i % COLS.length];
       (ctx.teamSpot ||= {})[t.key || t.id] = [cx, cz];   /* Freyja's ticket handoff target */
-      ctx.kit.room(ctx, { x: cx, z: cz, w: W, d: D, floor: new THREE.Color(col).multiplyScalar(0.25).getHex(), title: t.name, sub: `${t.members.length} agents`, enclose: true });
+      ctx.kit.room(ctx, { x: cx, z: cz, w: W, d: D, floor: new THREE.Color(col).multiplyScalar(0.25).getHex(), title: ctx.publicMode && /money|cfo/i.test(t.key + t.name) ? 'Private Office' : t.name, sub: ctx.publicMode ? '' : `${t.members.length} agents`, enclose: true, doorX: Math.abs(cx - x0) < 0.5 ? W / 2 - 1.4 : 0 });   /* the room straight behind the lobby logo wall gets its door at the side */
       // QA bench: a real work table with a test tablet; review tray: a low filing cabinet with an in-tray on top
       const qx = cx + W / 2 - 1.3, qz = cz + D / 2 - 1.4, tx = cx - W / 2 + 1.1, tz = cz + D / 2 - 1.3, mt = ctx.mat;
       /* QA station: a full seated desk (chair, monitor with test results, keyboard, mouse) plus a test phone and tablet on stands */
@@ -49,6 +49,7 @@ export default {
     const work = s.work || [], last = s.last || {};
     for (const [k, b] of Object.entries(this.boards || {})) { const g = b.c.getContext('2d'); g.fillStyle = '#f4f6f8'; g.fillRect(0, 0, 1024, 560);
       g.fillStyle = '#1d2a44'; g.font = '700 46px Inter, sans-serif'; g.fillText(b.name, 30, 60); g.fillStyle = '#c9ced6'; g.fillRect(30, 80, 964, 3);
+      if (this.ctx.publicMode) { g.fillStyle = '#4a5568'; g.font = '500 30px Inter, sans-serif'; g.fillText('Plan · Build · Test · Ship', 30, 150); b.tx.needsUpdate = true; continue; }
       const mine = work.filter(w => w.team === k || b.ids.has(w.agent));
       const cols = [['Now', mine.filter(w => !['waiting', 'ready', 'released'].includes(w.stage))], ['Next', mine.filter(w => w.stage === 'waiting')], ['Done', [...mine.filter(w => ['ready', 'released'].includes(w.stage)), ...Object.entries(last).filter(([a]) => b.ids.has(a)).map(([a, t]) => ({ task: t }))]]];
       cols.forEach(([h, L], i) => { const x = 30 + i * 330; g.fillStyle = ['#b8452f', '#a07a1c', '#2f7d4a'][i]; g.font = '700 34px Inter, sans-serif'; g.fillText(this.ctx.t ? this.ctx.t(h) : h, x, 130);
