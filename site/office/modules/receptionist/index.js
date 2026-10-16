@@ -68,7 +68,7 @@ export default {
     { const T = ctx.THREE, wz = z - 3.2; box(6.4, 3.7, 0.25, mat.wood, x, 1.85, wz); box(6.6, 0.1, 0.3, mat.trim, x, 3.75, wz); box(6.6, 0.1, 0.3, mat.trim, x, 0.05, wz);
       const hc = document.createElement('canvas'); hc.width = hc.height = 256; { const g = hc.getContext('2d'), r = g.createRadialGradient(128, 128, 10, 128, 128, 128); r.addColorStop(0, 'rgba(255,214,140,.85)'); r.addColorStop(1, 'rgba(255,214,140,0)'); g.fillStyle = r; g.fillRect(0, 0, 256, 256); }
       const ht = new T.CanvasTexture(hc); ht.colorSpace = T.SRGBColorSpace; const halo = new T.Mesh(new T.PlaneGeometry(3.4, 3.4), new T.MeshBasicMaterial({ map: ht, transparent: true, depthWrite: false, toneMapped: false })); halo.position.set(x, 3.2, wz + 0.135); ctx.scene.add(halo);
-      const lg = ctx.panel(ctx.image('/assets/img/logo-gold.png'), 1.2, 1.2, x, 3.2, wz + 0.15, 0); lg.material.toneMapped = false; lg.userData.label = 'Elder World Studio logo';
+      const lg = ctx.panel(ctx.image(ctx.site.brand.logo || '/assets/img/logo-gold.png'), 1.2, 1.2, x, 3.2, wz + 0.15, 0); lg.material.toneMapped = false; lg.userData.label = 'Elder World Studio logo';
       const nm = ctx.panel(ctx.textCanvas(['ELDER WORLD STUDIO'], { w: 1600, h: 200, size: 104, bg: null, border: false, fg: '#e9c46a' }), 4.2, 0.6, x, 2.3, wz + 0.15, 0); nm.material.toneMapped = false; nm.userData.plate = 'ELDER WORLD STUDIO'; }
     ctx.provide('leadForm', leadForm);
     ctx.hudButton(`Talk to ${me.name}`, chat, true);
