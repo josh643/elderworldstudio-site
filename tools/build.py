@@ -549,7 +549,7 @@ def _merch_body():
 page("merch/index.html", f"Merch | {STUDIO}", f"Official {STUDIO} merch: crest tees and hoodies, Omnivael, Star Wayfarer and Chronicles of the Realm designs, mugs and stickers.", _merch_body(), "/merch/", "merch")
 # ---- Kiosk leasing page (staging only until Joshua publishes) ----
 KIOSK_IMG_V = "1"
-KIOSK_LD = """<script type="application/ld+json">{"@context":"https://schema.org","@type":"Product","name":"EWS Order Kiosk","brand":{"@type":"Organization","name":"Elder World Studio Inc"},"description":"Self-order kiosk for small businesses: mini PC, 19-inch touchscreen and 58mm ticket printer in a locking floor stand. Leased on a 12-month term.","image":"https://elderworldstudio.com/assets/img/kiosk/01-hero-capbar-shop.jpg","offers":[{"@type":"Offer","name":"Kiosk only","price":"149.00","priceCurrency":"USD","priceSpecification":{"@type":"UnitPriceSpecification","price":"149.00","priceCurrency":"USD","unitText":"MONTH"},"availability":"https://schema.org/PreOrder"},{"@type":"Offer","name":"Kiosk + Elder POS","price":"129.00","priceCurrency":"USD","priceSpecification":{"@type":"UnitPriceSpecification","price":"129.00","priceCurrency":"USD","unitText":"MONTH"},"availability":"https://schema.org/PreOrder"}]}</script>"""
+KIOSK_LD = """<script type="application/ld+json">{"@context":"https://schema.org","@type":"Product","name":"EWS Order Kiosk","brand":{"@type":"Organization","name":"Elder World Studio Inc"},"description":"Self-order kiosk for small businesses: mini PC, 19-inch touchscreen and 58mm ticket printer in a locking floor stand. Leased on a 12-month term.","image":"https://elderworldstudio.com/assets/img/kiosk/01-hero-capbar-shop.jpg","offers":[{"@type":"Offer","name":"Kiosk only","price":"149.00","priceCurrency":"USD","priceSpecification":{"@type":"UnitPriceSpecification","price":"149.00","priceCurrency":"USD","unitText":"MONTH"},"availability":"https://schema.org/PreOrder"},{"@type":"Offer","name":"Kiosk + Elder POS","description":"$129/mo plus a $1 application fee per card or scan-to-pay sale (no fee on cash)","price":"129.00","priceCurrency":"USD","priceSpecification":{"@type":"UnitPriceSpecification","price":"129.00","priceCurrency":"USD","unitText":"MONTH"},"availability":"https://schema.org/PreOrder"}]}</script>"""
 KIOSK = f"""
 <section class="block kiosk-hero center" style="padding-top:56px">
  <div class="wrap">
@@ -590,7 +590,7 @@ KIOSK = f"""
    <li>Use your own register or POS</li><li>$149 refundable deposit <em>(waived for our first 3 stores)</em></li><li>No per-sale fees</li><li>Remote updates included</li></ul>
    <a class="btn btn-ghost" href="#demo" data-plan="Kiosk only">Book a demo</a></div>
   <div class="panel plan-best"><span class="tag live">Best value</span><h3>Kiosk + Elder POS</h3><p class="price-big">$129<small>/mo</small></p><ul style="color:var(--soft);padding-left:1.2em">
-   <li>Includes the Elder POS register system</li><li>Scan the ticket&rsquo;s QR code to ring it up instantly</li><li>$1 per card or scan-to-pay sale</li><li>No fee on cash sales</li><li>Remote updates included</li></ul>
+   <li>Includes the Elder POS register system</li><li>Scan the ticket&rsquo;s QR code to ring it up instantly</li><li>$1 application fee per card or scan-to-pay sale (no fee on cash)</li><li>Remote updates included</li></ul>
    <a class="btn btn-primary" href="#demo" data-plan="Kiosk + Elder POS">Book a demo</a></div>
  </div>
  <img class="kiosk-img" style="margin-top:24px" src="{{P}}assets/img/kiosk/04-kiosk-only-vs-kiosk-plus-elderpos.jpg?v={KIOSK_IMG_V}" width="1600" height="923" alt="Side-by-side comparison of the Kiosk only and Kiosk plus Elder POS plans" loading="lazy">
@@ -625,7 +625,7 @@ KIOSK = f"""
 <script>document.getElementById('lead-t').value=Date.now();document.querySelectorAll('[data-plan]').forEach(function(a){{a.addEventListener('click',function(){{document.getElementById('kiosk-plan').value=a.dataset.plan;}});}});(function(){{var q=new URLSearchParams(location.search),s=document.getElementById('form-status');if(!q.has('sent'))return;s.hidden=false;s.textContent=q.get('sent')==='1'?'Thanks! Your demo request was sent. We will reply by email soon.':('Sorry, that did not go through: '+(q.get('e')||'please try again')+' You can also email annaews@agentmail.to.');}})();</script>
 {KIOSK_LD}
 """
-page("kiosk/index.html", f"Self-Order Kiosk Leasing for Small Businesses | {STUDIO}", "Lease the EWS Order Kiosk: 19-inch touchscreen, mini PC and ticket printer in a locking stand. From $129/mo with Elder POS or $149/mo kiosk only. Book a free demo.", KIOSK, "/kiosk/")
+page("kiosk/index.html", f"Self-Order Kiosk Leasing for Small Businesses | {STUDIO}", "Lease the EWS Order Kiosk: 19-inch touchscreen, mini PC and ticket printer in a locking stand. From $129/mo with Elder POS ($1 application fee per card or scan-to-pay sale, no fee on cash) or $149/mo kiosk only. Book a free demo.", KIOSK, "/kiosk/")
 # 404 uses root-absolute links (served for any missing path)
 page("404.html", f"Page not found | {STUDIO}", "Page not found.", NOTFOUND, "/404.html", noindex=True)
 p404 = ROOT / "404.html"
