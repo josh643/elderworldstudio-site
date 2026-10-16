@@ -25,7 +25,7 @@ export default {
       const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return new THREE.MeshBasicMaterial({ map: t, toneMapped: false }); };
     games.forEach((g, i) => {
       const side = i % 2 ? 1 : -1, x = x0 - 2 - Math.floor(i / 2) * bay, z = z0 + side * 2.6, ry = side > 0 ? Math.PI : 0, col = NEON[i % NEON.length];
-      const G = new THREE.Group(); G.position.set(x, 0, z); G.rotation.y = ry; ctx.scene.add(G);   // local +z faces the aisle
+      const G = new THREE.Group(); G.position.set(x, 0, z); G.rotation.y = ry; G.userData.cabinet = g.title; ctx.scene.add(G);   // local +z faces the aisle
       box(0.95, 1.05, 0.75, body, 0, 0.525, 0, G);                                   // base
       box(0.97, 0.92, 0.5, body, 0, 1.5, -0.12, G);                                   // screen housing
       box(0.95, 0.34, 0.6, body, 0, 2.12, -0.06, G);                                 // marquee box
@@ -57,7 +57,7 @@ export default {
     // key-art posters on the walls between cabinets (cycling the games that have art), lit frames
     const arts = games.filter(g => g.img); let ai = 0;
     if (arts.length) for (let k = 0; k <= Math.ceil(games.length / 2); k++) for (const sz of [-1, 1]) {
-      const g = arts[ai++ % arts.length], px = x0 - 2 + bay / 2 - k * bay; if (px < x0 + 2 - len + 0.6) continue;
+      if (ai >= arts.length) continue; const g = arts[ai++], px = x0 - 2 + bay / 2 - k * bay; if (px < x0 + 2 - len + 0.6) continue;
       box(1.24, 1.24, 0.04, ctx.mat.wood, px, 2.0, z0 + sz * 3.52);
       const pp = panel(sharp(ctx.image(g.img)), 1.15, 1.15, px, 2.0, z0 + sz * 3.49, sz > 0 ? Math.PI : 0); pp.material.toneMapped = false; pp.userData.label = g.title + ' poster'; ctx.onClick(pp, () => show(g)); }
     // far-end feature wall: studio logo + neon sign, closes the hall

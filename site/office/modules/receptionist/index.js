@@ -6,7 +6,8 @@ export default {
     const dk = box(4, 1.1, 1, mat.wood, x, 0.55, z + 1); box(4.2, 0.08, 1.2, mat.trim, x, 1.12, z + 1);
     const me = { id: 'receptionist', name: cfg.name || ctx.roster.receptionist?.name || 'Freyja', role: 'receptionist' };
     const f = A.make({ ...me, female: 1 }, 0x2f7d6a, () => chat()); f.position.set(x, 0, z); f.rotation.y = 0; f.userData.pose = 'host'; ctx.scene.add(f);
-    const history = [];
+    const history = (() => { try { return JSON.parse(sessionStorage.getItem('ews-freyja') || '[]'); } catch { return []; } })();   /* chat survives reloads */
+    addEventListener('pagehide', () => { try { sessionStorage.setItem('ews-freyja', JSON.stringify(history.slice(-20))); } catch {} });
     const leadForm = () => {
       const c = ctx.card(`<h3>Request a demo</h3><p>Tell us what you need. Our client team builds a quick demo for your business first.</p>
       <form class="office-lead"><label>Your name *<input name="name" required maxlength="100" autocomplete="name"></label><label>Email *<input name="email" type="email" required maxlength="200" autocomplete="email"></label>

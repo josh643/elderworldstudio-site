@@ -4,11 +4,10 @@ export default {
     const { site, box, M, mat, panel, textCanvas, kit } = ctx;
     box(8, 0.05, 6, ctx.rug ? ctx.rug(0x8a3040) : M(0x5a1f2c), x, 0.02, z + 2);
     // back wall feature: framed logo mounted on the wall, brand banner, then the directory (wayfinding adds tiles via ctx.directory)
-    box(7.4, 5.4, 0.12, mat.dark || M(0x1a1220), x, 2.7, z + 9.82);
-    box(2.25, 2.25, 0.06, M(0xb08d3c), x, 4.25, z + 9.74);
-    panel(ctx.image(site.brand.logo), 2.0, 2.0, x, 4.25, z + 9.70, Math.PI);
-    panel(textCanvas([site.brand.name, site.brand.tagline], { w: 1280, h: 250, size: 92 }), 4.9, 0.96, x, 2.75, z + 9.74, Math.PI);
-    ctx.directoryAt = { x, y: 1.85, z: z + 9.72, ry: Math.PI };
+    box(7.4, 4.0, 0.12, mat.wood || M(0x6b4a2e), x, 2.0, z + 9.82);   /* warm wood feature wall */
+    const lg = panel(ctx.image('/assets/img/logo-gold.png'), 0.95, 1.1, x, 3.42, z + 9.70, Math.PI); lg.userData.label = 'Elder World logo';   /* full shield logo, clear of the ceiling */
+    panel(textCanvas([site.brand.name, site.brand.tagline], { w: 1280, h: 250, size: 92 }), 4.2, 0.82, x, 2.42, z + 9.74, Math.PI);
+    ctx.directoryAt = { x, y: 1.7, z: z + 9.72, ry: Math.PI };
     // pillars only in room corners, flush to the walls (the east side opens onto the services hall, so none there)
     for (const pz of [-3.6, 9.4]) box(0.5, 4.2, 0.5, mat.stone, x - 7.7, 2.1, z + pz);
     /* wall-mounted offering display on the west wall: every EWS line of work, one line each, with the room it lives in */
