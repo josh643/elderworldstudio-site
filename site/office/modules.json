@@ -2,6 +2,10 @@
  "_doc": "Module registry. Order = build order. Remove an entry to remove a feature; add one to add it. anchor = where the module snaps (metres). See /office/README.md.",
  "modules": [
   {
+   "id": "materials",
+   "src": "modules/materials/index.js"
+  },
+  {
    "id": "base-avatar",
    "src": "modules/base-avatar/index.js"
   },

@@ -1,0 +1,2 @@
+Textures from ambientCG (https://ambientcg.com), CC0 1.0 Universal (public domain). Resized to 1024/512 px JPG.
+floor=WoodFloor051 concrete=Concrete034 metal=Metal032 plaster=PaintedPlaster017 wood=Wood066 rackmetal=MetalPlates006

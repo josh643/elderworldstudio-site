@@ -4,16 +4,16 @@ const STAGE_POSE = { plan: 'type', build: 'type', 'self-check': 'type', QA: 'ins
 export default {
   setup(ctx) {
     const { THREE, M, mat } = ctx, skin = M(0xe8c8a8);
-    const geo = { body: new THREE.CapsuleGeometry(0.22, 0.5, 3, 8), head: new THREE.SphereGeometry(0.18, 12, 10), arm: new THREE.CapsuleGeometry(0.06, 0.38, 2, 6), hand: new THREE.SphereGeometry(0.07, 8, 6), leg: new THREE.CapsuleGeometry(0.08, 0.42, 2, 6), bar: new THREE.PlaneGeometry(0.9, 0.07), flag: new THREE.OctahedronGeometry(0.12) };
+    const geo = { body: new THREE.CapsuleGeometry(0.17, 0.5, 4, 12), head: new THREE.SphereGeometry(0.115, 16, 12), arm: new THREE.CapsuleGeometry(0.045, 0.58, 3, 8), hand: new THREE.SphereGeometry(0.05, 10, 8), leg: new THREE.CapsuleGeometry(0.065, 0.78, 3, 8), bar: new THREE.PlaneGeometry(0.9, 0.07), flag: new THREE.OctahedronGeometry(0.12) };
     const red = new THREE.MeshBasicMaterial({ color: 0xff4a4a }), barBg = new THREE.MeshBasicMaterial({ color: 0, transparent: true, opacity: .6 });
     const agents = new Map(); const all = new Set();
     function make(a, col, onPick) {
       const g = new THREE.Group(), cm = M(col);
-      const body = new THREE.Mesh(geo.body, cm); body.position.y = 0.98; g.add(body);
-      const head = new THREE.Mesh(geo.head, skin); head.position.y = 1.52; g.add(head);
-      const arms = [-1, 1].map(s => { const sh = new THREE.Group(); sh.position.set(s * 0.3, 1.25, 0); const ar = new THREE.Mesh(geo.arm, cm); ar.position.y = -0.24; const hd = new THREE.Mesh(geo.hand, skin); hd.position.y = -0.5; sh.add(ar, hd); g.add(sh); return sh; });
-      const legs = [-1, 1].map(s => { const l = new THREE.Mesh(geo.leg, mat.dark); l.position.set(s * 0.11, 0.33, 0); g.add(l); return l; });
-      const tag = ctx.label(a.name, a.role); tag.position.y = 2.05; g.add(tag);
+      const body = new THREE.Mesh(geo.body, cm); body.position.y = 1.2; body.scale.set(1, 1, 0.65); g.add(body);
+      const head = new THREE.Mesh(geo.head, skin); head.position.y = 1.66; head.scale.set(0.9, 1.1, 1); g.add(head);
+      const arms = [-1, 1].map(s => { const sh = new THREE.Group(); sh.position.set(s * 0.22, 1.45, 0); const ar = new THREE.Mesh(geo.arm, cm); ar.position.y = -0.33; const hd = new THREE.Mesh(geo.hand, skin); hd.position.y = -0.7; sh.add(ar, hd); g.add(sh); return sh; });
+      const legs = [-1, 1].map(s => { const l = new THREE.Mesh(geo.leg, mat.dark); l.position.set(s * 0.09, 0.46, 0); g.add(l); return l; });
+      const tag = ctx.label(a.name, a.role); tag.position.y = 2.1; g.add(tag);
       const bar = new THREE.Mesh(geo.bar, mat.glow); bar.position.y = 2.32; bar.visible = false; g.add(bar);
       const bg = new THREE.Mesh(new THREE.PlaneGeometry(0.94, 0.11), barBg); bg.position.set(0, 2.32, -0.01); bg.visible = false; g.add(bg);
       const flag = new THREE.Mesh(geo.flag, red); flag.position.y = 2.6; flag.visible = false; g.add(flag);
@@ -36,7 +36,7 @@ export default {
       else if (pose === 'cheer') { la.rotation.z = -2.6; ra.rotation.z = 2.6; }
       else if (pose === 'wave') { ra.rotation.z = 2.4 + (Math.sin(t * 0.5) > 0.6 ? Math.sin(ph * 4) * 0.3 : 0); }
       else { la.rotation.x = Math.sin(ph) * 0.05; ra.rotation.x = -la.rotation.x; }
-      u.body.position.y = 0.98 + Math.sin(ph * 2) * 0.01;
+      u.body.position.y = 1.2 + Math.sin(ph * 2) * 0.01;
       const p = s.progress; u.bar.visible = u.bg.visible = p != null && !!s.stage;
       if (u.bar.visible) { u.bar.scale.x = Math.max(0.02, p); u.bar.position.x = -0.45 * (1 - p); u.bar.quaternion.copy(ctx.cam.quaternion); u.bg.quaternion.copy(ctx.cam.quaternion); }
       u.flag.visible = !!s.blocked; if (s.blocked) u.flag.rotation.y = t * 2;
