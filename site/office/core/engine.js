@@ -67,6 +67,7 @@ export async function start(opts = {}) {
   // load + set up modules in registry order
   const mods = [];
   for (const m of registry.modules) {
+    await new Promise(r => setTimeout(r, 0));   // yield between modules: no long main-thread tasks
     try {
       let anchor = m.anchor || [0, 0];
       if (typeof anchor[1] === 'string' && anchor[1].startsWith('after:')) anchor = [anchor[0], (after[anchor[1].slice(6)] ?? bounds.minZ) - 4];
