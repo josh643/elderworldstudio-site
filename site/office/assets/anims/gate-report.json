@@ -1,0 +1,466 @@
+{
+ "Chair_PullOut": {
+  "seam_ratio": 0,
+  "contact_cm": 1.46,
+  "bind_frames": 0,
+  "pen_frames": 0,
+  "pen_what": "",
+  "pass": true
+ },
+ "Sit_Coffee": {
+  "seam_ratio": 0,
+  "contact_cm": 1.89,
+  "bind_frames": 0,
+  "pen_frames": 0,
+  "pen_what": "",
+  "pass": true
+ },
+ "Sit_LeanBack_Loop": {
+  "seam_ratio": 0.96,
+  "contact_cm": 0.23,
+  "bind_frames": 0,
+  "pen_frames": 0,
+  "pen_what": "",
+  "pass": true
+ },
+ "Sit_Mouse_Loop": {
+  "seam_ratio": 0.27,
+  "contact_cm": 0.29,
+  "bind_frames": 0,
+  "pen_frames": 0,
+  "pen_what": "",
+  "pass": true
+ },
+ "Sit_Phone_Loop": {
+  "seam_ratio": 1,
+  "contact_cm": 0.15,
+  "bind_frames": 0,
+  "pen_frames": 0,
+  "pen_what": "",
+  "pass": true
+ },
+ "Sit_ReadMonitor_Loop": {
+  "seam_ratio": 1.05,
+  "contact_cm": 0.05,
+  "bind_frames": 0,
+  "pen_frames": 0,
+  "pen_what": "",
+  "pass": true
+ },
+ "Sit_ShufflePapers": {
+  "seam_ratio": 0,
+  "contact_cm": 0.6,
+  "bind_frames": 0,
+  "pen_frames": 0,
+  "pen_what": "",
+  "pass": true
+ },
+ "Sit_Stretch": {
+  "seam_ratio": 0,
+  "contact_cm": 2.43,
+  "bind_frames": 0,
+  "pen_frames": 0,
+  "pen_what": "",
+  "pass": true
+ },
+ "Sit_Type_Loop": {
+  "seam_ratio": 0.13,
+  "contact_cm": 0.53,
+  "bind_frames": 0,
+  "pen_frames": 0,
+  "pen_what": "",
+  "pass": true
+ },
+ "Sit_Write_Loop": {
+  "seam_ratio": 0.75,
+  "contact_cm": 0.77,
+  "bind_frames": 0,
+  "pen_frames": 0,
+  "pen_what": "",
+  "pass": true
+ },
+ "Door_Close": {
+  "seam_ratio": 0,
+  "contact_cm": 1.5,
+  "bind_frames": 0,
+  "pen_frames": 0,
+  "pen_what": "",
+  "pass": true
+ },
+ "Door_Open_Pull": {
+  "seam_ratio": 0,
+  "contact_cm": 1.48,
+  "bind_frames": 0,
+  "pen_frames": 0,
+  "pen_what": "",
+  "pass": true
+ },
+ "Door_Push_Open": {
+  "seam_ratio": 0,
+  "contact_cm": 3.5,
+  "bind_frames": 0,
+  "pen_frames": 0,
+  "pen_what": "",
+  "pass": true
+ },
+ "Idle_CheckWatch": {
+  "seam_ratio": 0,
+  "contact_cm": 2.53,
+  "bind_frames": 0,
+  "pen_frames": 0,
+  "pen_what": "",
+  "pass": true
+ },
+ "Idle_LookAround": {
+  "seam_ratio": 0,
+  "contact_cm": 0,
+  "bind_frames": 0,
+  "pen_frames": 0,
+  "pen_what": "",
+  "pass": true
+ },
+ "Idle_WeightShift": {
+  "seam_ratio": 0,
+  "contact_cm": 0,
+  "bind_frames": 0,
+  "pen_frames": 0,
+  "pen_what": "",
+  "pass": true
+ },
+ "Turn_L90": {
+  "seam_ratio": 0,
+  "contact_cm": 0,
+  "bind_frames": 0,
+  "pen_frames": 0,
+  "pen_what": "",
+  "pass": true
+ },
+ "Turn_R90": {
+  "seam_ratio": 0,
+  "contact_cm": 0,
+  "bind_frames": 0,
+  "pen_frames": 0,
+  "pen_what": "",
+  "pass": true
+ },
+ "Arcade_Play_Loop": {
+  "seam_ratio": 0.58,
+  "contact_cm": 0.77,
+  "bind_frames": 0,
+  "pen_frames": 0,
+  "pen_what": "",
+  "pass": true
+ },
+ "Freyja_Desk_Idle": {
+  "seam_ratio": 0,
+  "contact_cm": 0.04,
+  "bind_frames": 0,
+  "pen_frames": 0,
+  "pen_what": "",
+  "pass": true
+ },
+ "Freyja_Greet": {
+  "seam_ratio": 0,
+  "contact_cm": 1.23,
+  "bind_frames": 0,
+  "pen_frames": 0,
+  "pen_what": "",
+  "pass": true
+ },
+ "Freyja_Guide": {
+  "seam_ratio": 0,
+  "contact_cm": 1.86,
+  "bind_frames": 0,
+  "pen_frames": 0,
+  "pen_what": "",
+  "pass": true
+ },
+ "Handshake": {
+  "seam_ratio": 0,
+  "contact_cm": 1.73,
+  "bind_frames": 0,
+  "pen_frames": 0,
+  "pen_what": "",
+  "pass": true
+ },
+ "Hermod_HandOver": {
+  "seam_ratio": 0,
+  "contact_cm": 1.28,
+  "bind_frames": 0,
+  "pen_frames": 0,
+  "pen_what": "",
+  "pass": true
+ },
+ "Hermod_Register_Scan": {
+  "seam_ratio": 0,
+  "contact_cm": 2.15,
+  "bind_frames": 0,
+  "pen_frames": 0,
+  "pen_what": "",
+  "pass": true
+ },
+ "Hermod_Shelve": {
+  "seam_ratio": 0,
+  "contact_cm": 1.94,
+  "bind_frames": 0,
+  "pen_frames": 0,
+  "pen_what": "",
+  "pass": true
+ },
+ "Point_Fwd": {
+  "seam_ratio": 0,
+  "contact_cm": 4.78,
+  "bind_frames": 0,
+  "pen_frames": 0,
+  "pen_what": "",
+  "pass": true
+ },
+ "Present_Loop": {
+  "seam_ratio": 0.52,
+  "contact_cm": 0.62,
+  "bind_frames": 0,
+  "pen_frames": 0,
+  "pen_what": "",
+  "pass": true
+ },
+ "Wave": {
+  "seam_ratio": 0,
+  "contact_cm": 1.39,
+  "bind_frames": 0,
+  "pen_frames": 0,
+  "pen_what": "",
+  "pass": true
+ },
+ "ClimbUp_1m": {
+  "seam_ratio": 0,
+  "contact_cm": 0,
+  "bind_frames": 0,
+  "pen_frames": 0,
+  "pen_what": "",
+  "pass": true
+ },
+ "Crouch_Idle_Loop": {
+  "seam_ratio": 1.08,
+  "contact_cm": 0,
+  "bind_frames": 0,
+  "pen_frames": 0,
+  "pen_what": "",
+  "pass": true
+ },
+ "Idle_Loop": {
+  "seam_ratio": 1,
+  "contact_cm": 0,
+  "bind_frames": 0,
+  "pen_frames": 0,
+  "pen_what": "",
+  "pass": true
+ },
+ "Interact": {
+  "seam_ratio": 0,
+  "contact_cm": 0,
+  "bind_frames": 0,
+  "pen_frames": 0,
+  "pen_what": "",
+  "pass": true
+ },
+ "Jog_Fwd_Loop": {
+  "seam_ratio": 2.99,
+  "contact_cm": 0,
+  "bind_frames": 0,
+  "pen_frames": 0,
+  "pen_what": "",
+  "pass": true
+ },
+ "Push_Loop": {
+  "seam_ratio": 0.46,
+  "contact_cm": 0,
+  "bind_frames": 0,
+  "pen_frames": 0,
+  "pen_what": "",
+  "pass": true
+ },
+ "Sprint_Loop": {
+  "seam_ratio": 1.87,
+  "contact_cm": 0,
+  "bind_frames": 0,
+  "pen_frames": 0,
+  "pen_what": "",
+  "pass": true
+ },
+ "Walk_Carry_Loop": {
+  "seam_ratio": 0.9,
+  "contact_cm": 0,
+  "bind_frames": 0,
+  "pen_frames": 0,
+  "pen_what": "",
+  "pass": true
+ },
+ "Walk_Formal_Loop": {
+  "seam_ratio": 0.92,
+  "contact_cm": 0,
+  "bind_frames": 0,
+  "pen_frames": 0,
+  "pen_what": "",
+  "pass": true
+ },
+ "Walk_Loop": {
+  "seam_ratio": 1.22,
+  "contact_cm": 0,
+  "bind_frames": 0,
+  "pen_frames": 0,
+  "pen_what": "",
+  "pass": true
+ },
+ "Dance_Loop": {
+  "seam_ratio": 1.12,
+  "contact_cm": 0,
+  "bind_frames": 0,
+  "pen_frames": 0,
+  "pen_what": "",
+  "pass": true
+ },
+ "Idle_FoldArms_Loop": {
+  "seam_ratio": 0.98,
+  "contact_cm": 0,
+  "bind_frames": 0,
+  "pen_frames": 0,
+  "pen_what": "",
+  "pass": true
+ },
+ "Idle_No_Loop": {
+  "seam_ratio": 0.45,
+  "contact_cm": 0,
+  "bind_frames": 0,
+  "pen_frames": 0,
+  "pen_what": "",
+  "pass": true
+ },
+ "Idle_Talking_Loop": {
+  "seam_ratio": 0.22,
+  "contact_cm": 0,
+  "bind_frames": 0,
+  "pen_frames": 0,
+  "pen_what": "",
+  "pass": true
+ },
+ "Idle_TalkingPhone_Loop": {
+  "seam_ratio": 0.29,
+  "contact_cm": 0,
+  "bind_frames": 0,
+  "pen_frames": 0,
+  "pen_what": "",
+  "pass": true
+ },
+ "PickUp_Table": {
+  "seam_ratio": 0,
+  "contact_cm": 0,
+  "bind_frames": 0,
+  "pen_frames": 0,
+  "pen_what": "",
+  "pass": true
+ },
+ "Sitting_Enter": {
+  "seam_ratio": 0,
+  "contact_cm": 0,
+  "bind_frames": 0,
+  "pen_frames": 0,
+  "pen_what": "",
+  "pass": true
+ },
+ "Sitting_Exit": {
+  "seam_ratio": 0,
+  "contact_cm": 0,
+  "bind_frames": 0,
+  "pen_frames": 0,
+  "pen_what": "",
+  "pass": true
+ },
+ "Sitting_Idle_Loop": {
+  "seam_ratio": 1,
+  "contact_cm": 0,
+  "bind_frames": 0,
+  "pen_frames": 0,
+  "pen_what": "",
+  "pass": true
+ },
+ "Sitting_Talking_Loop": {
+  "seam_ratio": 0.24,
+  "contact_cm": 0,
+  "bind_frames": 0,
+  "pen_frames": 0,
+  "pen_what": "",
+  "pass": true
+ },
+ "Yes": {
+  "seam_ratio": 0,
+  "contact_cm": 0,
+  "bind_frames": 0,
+  "pen_frames": 0,
+  "pen_what": "",
+  "pass": true
+ },
+ "Chest_Open": {
+  "seam_ratio": 0,
+  "contact_cm": 0,
+  "bind_frames": 0,
+  "pen_frames": 0,
+  "pen_what": "",
+  "pass": true
+ },
+ "Consume": {
+  "seam_ratio": 0,
+  "contact_cm": 0,
+  "bind_frames": 0,
+  "pen_frames": 0,
+  "pen_what": "",
+  "pass": true
+ },
+ "Farm_Watering": {
+  "seam_ratio": 0,
+  "contact_cm": 0,
+  "bind_frames": 0,
+  "pen_frames": 0,
+  "pen_what": "",
+  "pass": true
+ },
+ "Idle_Lantern_Loop": {
+  "seam_ratio": 1,
+  "contact_cm": 0,
+  "bind_frames": 0,
+  "pen_frames": 0,
+  "pen_what": "",
+  "pass": true
+ },
+ "Idle_Rail_Call": {
+  "seam_ratio": 0,
+  "contact_cm": 0,
+  "bind_frames": 0,
+  "pen_frames": 0,
+  "pen_what": "",
+  "pass": true
+ },
+ "Idle_Rail_Loop": {
+  "seam_ratio": 1,
+  "contact_cm": 0,
+  "bind_frames": 0,
+  "pen_frames": 0,
+  "pen_what": "",
+  "pass": true
+ },
+ "LayToIdle": {
+  "seam_ratio": 0,
+  "contact_cm": 0,
+  "bind_frames": 0,
+  "pen_frames": 0,
+  "pen_what": "",
+  "pass": true
+ },
+ "Swim_Idle_Loop": {
+  "seam_ratio": 1.2,
+  "contact_cm": 0,
+  "bind_frames": 0,
+  "pen_frames": 0,
+  "pen_what": "",
+  "pass": true
+ }
+}
