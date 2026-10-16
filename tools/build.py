@@ -602,7 +602,7 @@ KIOSK = f"""
   <img class="kiosk-img" src="{{P}}assets/img/kiosk/03-white-label-generic.jpg?v={KIOSK_IMG_V}" width="1600" height="1000" alt="White-label kiosk with a generic shop brand" loading="lazy">
  </div>
 </div></section>
-<section class="block" id="demo"><div class="wrap">
+<section class="block" id="demo"><div class="wrap"><span id="request"></span>
  <h2>Book a free demo</h2>
  <div id="form-status" class="panel" hidden style="margin-bottom:16px"></div>
  <form class="panel lead-form" method="post" action="/api/lead">
