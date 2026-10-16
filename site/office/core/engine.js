@@ -4,8 +4,8 @@
 //   onState?(snapshot), onFrame?(dt, t) }. Modules share things with ctx.provide(name, v) / ctx.use(name).
 import * as THREE from '../vendor/three.module.min.js?v=169';
 import { mergeGeometries } from '../vendor/jsm/utils/BufferGeometryUtils.js?v=169';
-import * as kit from './kit.js?v=23';
-const V = 23, GOLD = 0xd9b45a;
+import * as kit from './kit.js?v=24';
+const V = 24, GOLD = 0xd9b45a;
 const $ = (t, a = {}, h = '') => { const e = document.createElement(t); for (const k in a) e.setAttribute(k, a[k]); e.innerHTML = h; return e; };
 export const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -30,7 +30,7 @@ export async function start(opts = {}) {
   let tier = lowEnd ? 0 : devicePixelRatio > 1.5 ? 1 : 2; if (tier === 2 && matchMedia('(pointer: fine)').matches) RATIOS[2] = igpu ? 1.25 : 2;   // desktop: native res up to 2x, 1.25 on integrated GPUs
   if (igpu) { RATIOS[1] = Math.min(RATIOS[1], 1.0); if (tier > 1) tier = 1; }   /* integrated GPUs start on the mid tier: no 2K maps, no MSAA */
   if (matchMedia('(pointer: fine)').matches) { RATIOS[0] = RATIOS[1] = 1; }   // desktops/kiosks never drop below native resolution; LOD and effects go first
-  const DSCALE = matchMedia('(pointer: fine)').matches ? [1] : [1, 0.85, 0.72]; /* desktop never renders below native size; it sheds LOD instead */ let dstep = 0; const FINE = matchMedia('(pointer: fine)').matches; const applyRatio = () => R.setPixelRatio(FINE ? 1 : Math.min(devicePixelRatio, RATIOS[tier]) * DSCALE[dstep]);   // desktop/kiosk: exactly 1.0 (native CSS pixels)
+  const DESK = !matchMedia('(pointer: coarse)').matches; const DSCALE = DESK ? [1] : [1, 0.85, 0.72]; /* desktop never renders below native size; it sheds LOD instead */ let dstep = 0; const FINE = DESK; const applyRatio = () => R.setPixelRatio(FINE ? 1 : Math.min(devicePixelRatio, RATIOS[tier]) * DSCALE[dstep]);   // desktop/kiosk: exactly 1.0 (native CSS pixels)
   applyRatio(); R.outputColorSpace = THREE.SRGBColorSpace;
   root.prepend(R.domElement);
   const scene = new THREE.Scene(); scene.background = new THREE.Color(0x0b0716); scene.fog = new THREE.Fog(0x0b0716, 25, 70);
@@ -120,13 +120,22 @@ export async function start(opts = {}) {
   box(fX - fx, 0.2, fZ - fz, mat.floor, (fx + fX) / 2, -0.1, (fz + fZ) / 2);
   const wall = (x1, z1, x2, z2) => { const l = Math.hypot(x2 - x1, z2 - z1); const w = box(l, 4, 0.3, mat.wall, (x1 + x2) / 2, 2, (z1 + z2) / 2); w.rotation.y = -Math.atan2(z2 - z1, x2 - x1); };
   wall(fx, fZ, fX, fZ); wall(fx, fz, fX, fz); wall(fx, fz, fx, fZ); wall(fX, fz, fX, fZ);
-  /* hallway wall art: framed key art + studio pieces along the outer walls (same image = same material, so they batch) */
-  { const imgs = [...(ctx.site?.games || []).filter(g => g.img).map(g => g.img), ctx.site?.brand?.logo].filter(Boolean), artM = new Map(), frameM = mat.wood; let ai = 0;
+  /* hallway dressing along the outer walls: wainscot band, big framed prints at eye height with sconces, pillars between bays,
+     benches, plants and runner rugs. Same material = one batched draw call. Prints are game key art (no logo stretch). */
+  { const imgs = (ctx.site?.games || []).filter(g => g.img).map(g => g.img), artM = new Map(), wood = mat.wood, warm = new THREE.MeshBasicMaterial({ color: 0xffe2b0 }), fab = mat.fabric || mat.dark; let ai = 0;
     const artMat = u => { if (!artM.has(u)) { const t = ctx.image(u); t.colorSpace = THREE.SRGBColorSpace; artM.set(u, new THREE.MeshBasicMaterial({ map: t, toneMapped: false })); } return artM.get(u); };
-    const run = (x1, z1, x2, z2, nx, nz) => { const l = Math.hypot(x2 - x1, z2 - z1), n = Math.floor((l - 4) / 6.5); if (!imgs.length || n < 1) return; const ry = Math.atan2(nx, nz);
-      for (let i = 0; i < n; i++) { const t = (i + 0.5) / n, x = x1 + (x2 - x1) * t + nx * 0.17, z = z1 + (z2 - z1) * t + nz * 0.17;
-        const f = box(1.7, 1.25, 0.05, frameM, x, 2.1, z); f.rotation.y = ry; f.userData.noCollide = 1;
-        const a = new THREE.Mesh(new THREE.PlaneGeometry(1.56, 1.11), artMat(imgs[ai++ % imgs.length])); a.position.set(x + nx * 0.03, 2.1, z + nz * 0.03); a.rotation.y = ry; a.userData.noCollide = 1; scene.add(a); } };
+    const leaf = new THREE.MeshStandardMaterial({ color: 0x3f7a3a, roughness: 0.8 }), clay = new THREE.MeshStandardMaterial({ color: 0xa0593a, roughness: 0.9 });
+    const put = (geo, m, x, y, z, ry) => { const o = new THREE.Mesh(geo, m); o.position.set(x, y, z); o.rotation.y = ry; scene.add(o); return o; };
+    const G = { frame: new THREE.BoxGeometry(2.1, 1.5, 0.06), art: new THREE.PlaneGeometry(1.95, 1.35), sconce: new THREE.BoxGeometry(0.12, 0.22, 0.1), pillar: new THREE.BoxGeometry(0.45, 4, 0.45), seat: new THREE.BoxGeometry(1.4, 0.08, 0.42), leg: new THREE.BoxGeometry(0.08, 0.4, 0.38), pot: new THREE.CylinderGeometry(0.22, 0.17, 0.42, 12), bush: new THREE.IcosahedronGeometry(0.38, 1), rug: new THREE.BoxGeometry(2.6, 0.02, 1.1) };
+    const run = (x1, z1, x2, z2, nx, nz) => { const l = Math.hypot(x2 - x1, z2 - z1), ry = Math.atan2(nx, nz), ux = (x2 - x1) / l, uz = (z2 - z1) / l;
+      const wc = box(l, 1.0, 0.04, wood, (x1 + x2) / 2 + nx * 0.17, 0.5, (z1 + z2) / 2 + nz * 0.17); wc.rotation.y = ry; wc.userData.noCollide = 1;
+      const n = Math.floor((l - 2) / 4.6); if (n < 1) return;
+      for (let i = 0; i < n; i++) { const t = (i + 0.5) / n, cx = x1 + (x2 - x1) * t, cz = z1 + (z2 - z1) * t, at = (d, s = 0) => [cx + nx * d + ux * s, cz + nz * d + uz * s];
+        let x, z;   /* no repeated poster run: sconces, pillars, benches, plants and rugs only */
+        [x, z] = at(0.22); put(G.sconce, warm, x, 2.35, z, ry).userData.noCollide = 1;
+        [x, z] = at(0.4, 2.3); put(G.pillar, mat.wall, x, 2, z, ry);
+        if (i % 2 === 0) { [x, z] = at(0.55); put(G.seat, wood, x, 0.44, z, ry); for (const s of [-0.6, 0.6]) { [x, z] = at(0.55, s); put(G.leg, mat.rack, x, 0.2, z, ry); } [x, z] = at(1.6); put(G.rug, ctx.rug ? ctx.rug(0x8a5a44) : fab, x, 0.03, z, ry).userData.noCollide = 1; }
+        else { [x, z] = at(0.5, 0.0); put(G.pot, clay, x, 0.21, z, 0); put(G.bush, leaf, x, 0.75, z, 0); } } };
     run(fx, fZ, fX, fZ, 0, -1); run(fx, fz, fX, fz, 0, 1); run(fx, fz, fx, fZ, 1, 0); run(fX, fz, fX, fZ, -1, 0); }
   // ceiling + recessed light panels (one instanced draw call), so there is no black void overhead
   box(fX - fx, 0.1, fZ - fz, new THREE.MeshStandardMaterial({ color: 0x3a3442, roughness: 0.9 }), (fx + fX) / 2, 4.05, (fz + fZ) / 2);
@@ -179,6 +188,7 @@ export async function start(opts = {}) {
         const hM = o.geometry.parameters.height * o.getWorldScale(new THREE.Vector3()).y, ch = hM * o.material.map.userData.minFrac; if (o.userData.plate && ch < 0.045) out.push({ type: 'illegible-text', name: o.material.map.userData.text.slice(0, 40), charHeightM: +ch.toFixed(3) }); });
       for (let i = 0; i < ps.length; i++) for (let j = i + 1; j < ps.length; j++) { const A = ps[i], B = ps[j]; if (A.o.parent === B.o.parent && A.o.parent !== scene) continue; if (Math.abs(A.n.dot(B.n)) < 0.95) continue;
         const I = A.b.clone().intersect(B.b); if (I.isEmpty()) continue; const sz = I.getSize(new THREE.Vector3()), area = Math.max(sz.x, sz.z) * sz.y; if (area > 0.02) out.push({ type: 'text-overlap', a: A.o.material.map.userData.text.slice(0, 30), b: B.o.material.map.userData.text.slice(0, 30) }); } }
+    scene.traverse(o => { if (!o.userData.art || !o.visible) return; const sz = new THREE.Box3().setFromObject(o).getSize(new THREE.Vector3()); if (Math.max(sz.x, sz.z) < 1.4 || sz.y < 1.0) out.push({ type: 'art-too-small', w: +Math.max(sz.x, sz.z).toFixed(2), h: +sz.y.toFixed(2) }); });
     { const seen = new Set(); scene.traverse(o => { const c = o.userData.cabinet; if (!c) return; if (seen.has(c)) out.push({ type: 'duplicate-cabinet', name: c }); seen.add(c); }); }
     scene.traverse(o => { if (!o.userData.plate) return; const im = o.material.map?.image; let ok = false; try { const d = im.getContext('2d').getImageData(0, 0, im.width, im.height).data; let gold = 0; for (let i = 0; i < d.length; i += 64) if (d[i] > 150 && d[i + 2] < 140) gold++; ok = gold > 40; } catch {} if (!ok || !o.material.map.userData.text) out.push({ type: 'blank-plate', name: o.userData.plate }); });
     return out; }

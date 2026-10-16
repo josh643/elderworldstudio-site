@@ -2,13 +2,14 @@
 export default {
   setup(ctx, cfg, [x0, z0]) {
     const { site, box, mat, panel, textCanvas, esc, M } = ctx, lead = () => (ctx.use('leadForm') || (() => location.href = '/services/#request'))();
-    const short = t => { const f = String(t).split(/(?<=[.!?])\s/)[0]; return f.length > 64 ? f.slice(0, 62).replace(/\s\S*$/, '') + '…' : f; };
+    const SHORT = { 'Demo first': 'We build a quick demo for your business first.', 'Websites': 'Mobile-friendly sites with booking, menus and quote forms.', 'AI tools & chat assistants': 'A chat assistant that answers customers 24/7.', 'Automation': 'Connect your forms, email and spreadsheets.', 'Custom software & dashboards': 'Portals and dashboards that replace paper forms.' };
+    const short = (t, title) => SHORT[title] || String(t).split(/(?<=[.!?])\s/)[0];   /* hand-written one-liners, no truncation */
     const n = site.services.length, W = 2.75, gap = 0.2, span = n * (W + gap);
     // feature wall + neon trims behind the service panels, carpet in front
     box(span + 0.6, 3.6, 0.1, mat.wall, x0 - 1.3 + span / 2 - W / 2 + 0.05, 1.8, z0 + 0.12);
     for (const y of [0.25, 3.45]) box(span + 0.6, 0.08, 0.04, mat.wood, x0 - 1.3 + span / 2 - W / 2 + 0.05, y, z0 + 0.05);
     if (ctx.rug) box(span, 0.03, 4.5, ctx.rug(0x8a5a44), x0 - 1.3 + span / 2 - W / 2 + 0.05, 0.035, z0 - 2.6);
-    site.services.forEach((s, i) => { const p = panel(textCanvas([s.title, short(s.text)], { w: 1024, h: 690, size: 96, body: 68 }), W, W * 0.674, x0 - 1.3 + i * (W + gap), 1.85, z0, Math.PI); p.userData.plate = s.title;
+    site.services.forEach((s, i) => { const p = panel(textCanvas([s.title, short(s.text, s.title)], { w: 1024, h: 690, size: 96, body: 68 }), W, W * 0.674, x0 - 1.3 + i * (W + gap), 1.85, z0, Math.PI); p.userData.plate = s.title;
       p.userData.label = s.title;
       ctx.onClick(p, () => ctx.card(`<h3>${esc(s.title)}</h3><p>${esc(s.text)}</p><div class="row"><button class="ob gold" type="button" data-lead>Request a demo</button>${s.links.map(l => ctx.btn({ ...l, primary: false })).join('')}</div>`).querySelector('[data-lead]').onclick = lead); });
     // demo kiosk: plinth, column, angled touchscreen with a lit bezel, gold base ring

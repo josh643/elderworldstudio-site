@@ -1,5 +1,6 @@
 // Receptionist feature (plugin): Freyja at the desk, text chat (Worker /api/office/freyja: rate-limited, $-capped,
 // FAQ fallback) and the demo-request lead form (stored as a lead record; no email). Remove from modules.json to disable.
+import { openKiosk } from './kiosk-ui.js?v=1';
 export default {
   setup(ctx, cfg, [x, z]) {
     const { box, mat, esc } = ctx, A = ctx.use('avatar');
@@ -34,6 +35,12 @@ export default {
       fm.q.focus();
     };
     ctx.onClick(dk, () => chat()); ctx.sign(`Ask ${me.name}`, `${ctx.verb} to chat`, x, 0.62, z + 1.52, 0, () => chat(), 1.6);
+    /* digital demo kiosk on the desk: angled touchscreen facing the visitor */
+    { const T = ctx.THREE, K = new T.Group(); K.position.set(x - 1.3, 1.16, z + 1.25); ctx.scene.add(K);
+      const st = new T.Mesh(new T.BoxGeometry(0.08, 0.16, 0.08), mat.rack); st.position.y = 0.08; K.add(st);
+      const hd = new T.Mesh(new T.BoxGeometry(0.76, 0.5, 0.03), mat.dark); hd.position.set(0, 0.36, 0); hd.rotation.x = -0.35; K.add(hd);
+      const sc = ctx.panel(ctx.textCanvas(['Instant sample', 'Tap: your site, kiosk or POS'], { w: 600, h: 400, size: 76, body: 50, bg: '#0b1626' }), 0.72, 0.46, 0, 0.36, 0.018, 0, K); sc.rotation.x = -0.35; sc.material.toneMapped = false; sc.userData.plate = 'Instant sample';
+      [hd, sc].forEach(o => ctx.onClick(o, () => openKiosk(ctx, cfg.lead))); }
     ctx.provide('leadForm', leadForm);
     ctx.hudButton(`Talk to ${me.name}`, chat, true);
     // greeting: she turns to look at the visitor, waves and shows a speech bubble when they come within ~4 m

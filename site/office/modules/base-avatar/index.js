@@ -10,6 +10,7 @@ import { DRACOLoader } from '../../vendor/jsm/loaders/DRACOLoader.js?v=169';
 import { KTX2Loader } from '../../vendor/jsm/loaders/KTX2Loader.js?v=169';
 import { pose, bonesOf } from './poses.js?v=1';
 import capsule from './capsule.js?v=6';
+import { mergeGeometries } from '../../vendor/jsm/utils/BufferGeometryUtils.js?v=169';
 const CLIP = { idle: 'Sitting_Idle_Loop', type: 'Sitting_Idle_Loop', stand: 'Idle_Loop', walk: 'Walk_Loop', run: 'Jog_Fwd_Loop', carry: 'Walk_Carry_Loop',
   inspect: 'Interact', talk: 'Idle_Talking_Loop', pickup: 'PickUp_Table', blocked: 'Idle_FoldArms_Loop', cheer: 'Dance_Loop', greet: 'Idle_Loop', phone: 'Idle_TalkingPhone_Loop', nod: 'Yes' };
 // authored ground speed of the locomotion clips (m/s, from the root-motion versions) so feet don't slide
@@ -27,6 +28,7 @@ export default {
     const clips = Object.fromEntries(gltf.animations.map(c => [c.name, c]));
     const bases = humans.map(h => { const b = h.scene; const bb = new THREE.Box3().setFromObject(b); b.userData.k = 1.78 / (bb.max.y - bb.min.y || 1.78);
       b.traverse(o => { if (o.isMesh) { o.frustumCulled = false; o.castShadow = false; } }); return b; });
+    let _skin = null; const skinMat = () => _skin ||= new THREE.MeshLambertMaterial({ vertexColors: true });
     const shirtMats = new Map(), hairMats = new Map();
     const shirt = (src, col) => { const k = src.uuid + col; if (!shirtMats.has(k)) { const m = src.clone(); m.color = new THREE.Color(col); shirtMats.set(k, m); } return shirtMats.get(k); };
     const HAIR = [0x2a1a10, 0x4a2e18, 0x111111, 0x7a5a32, 0x9a6a3a, 0x5a2a14];
@@ -42,6 +44,13 @@ export default {
       const hit = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 1.8, 6), new THREE.MeshBasicMaterial({ visible: false })); hit.position.y = 0.9; g.add(hit);
       body.traverse(o => { if (!o.isMesh) return; const n = o.material?.name || '';
         if (n === 'Shirt') o.material = shirt(o.material, col); else if (/hair/i.test(n)) o.material = hair(o.material, (h >> 3) % HAIR.length); });
+      /* one draw call per agent: merge the untextured skinned parts (same skin) into a single vertex-coloured SkinnedMesh */
+      { const parts = []; body.traverse(o => { if (o.isSkinnedMesh && !Array.isArray(o.material) && !o.material.map && !o.material.transparent) parts.push(o); });
+        if (parts.length > 1 && parts.every(p => p.skeleton.bones.length === parts[0].skeleton.bones.length && p.skeleton.bones.every((b, i) => b === parts[0].skeleton.bones[i]))) {
+          const geos = parts.map(p => { let g = p.geometry.clone(); for (const k of Object.keys(g.attributes)) if (!['position', 'normal', 'skinIndex', 'skinWeight'].includes(k)) g.deleteAttribute(k); if (g.index) g = g.toNonIndexed();
+            const n = g.attributes.position.count, c = new Float32Array(n * 3), col = p.material.color; for (let i = 0; i < n; i++) { c[i * 3] = col.r; c[i * 3 + 1] = col.g; c[i * 3 + 2] = col.b; } g.setAttribute('color', new THREE.BufferAttribute(c, 3)); return g; });
+          const mg = mergeGeometries(geos, false);
+          if (mg) { const m0 = parts[0], sm = new THREE.SkinnedMesh(mg, skinMat()); sm.frustumCulled = false; m0.parent.add(sm); sm.position.copy(m0.position); sm.quaternion.copy(m0.quaternion); sm.scale.copy(m0.scale); sm.bind(m0.skeleton, m0.bindMatrix); parts.forEach(p => p.parent.remove(p)); } } }
       let hand = null, mid = null; body.traverse(o => { if (o.isBone && /^hand_r$/i.test(o.name)) hand = o; if (o.isBone && /^middle_01_r$/i.test(o.name)) mid = o; });
       const folder = new THREE.Mesh(folderGeo, folderMat); folder.visible = false;
       if (hand) { // seat the folder in the palm: halfway to the finger root, long side along the hand, scale undone
