@@ -20,7 +20,7 @@
             es: { h: '¿Cómo quieres visitarnos?', d3: 'Oficina 3D', d3s: 'Recorre el estudio, conoce a Freyja y mira al equipo de IA trabajar en vivo', cl: 'Sitio clásico', cls: 'Páginas rápidas y sencillas', rec: 'Recomendado para este dispositivo', rem: 'Recordar mi elección', lang: 'Idioma' } };
   function choice() {
     var t = T[window.EWS_LANG], o = document.createElement('div'); o.className = 'ews-choice'; o.setAttribute('role', 'dialog'); o.setAttribute('aria-modal', 'true'); o.setAttribute('aria-labelledby', 'ews-ch-h');
-    o.innerHTML = '<div class="box"><img src="/assets/img/logo-gold.png" alt="Elder World Studio" width="88" height="88"><h2 id="ews-ch-h">' + t.h + '</h2><div class="opts">' +
+    o.innerHTML = '<div class="box"><img src="/assets/img/logo.png" alt="Elder World Studio" width="88" height="88"><h2 id="ews-ch-h">' + t.h + '</h2><div class="opts">' +
       '<button type="button" class="opt" data-v="3d"><b>' + t.d3 + '</b><span>' + t.d3s + '</span>' + (weak ? '' : '<em>' + t.rec + '</em>') + '</button>' +
       '<button type="button" class="opt" data-v="classic"><b>' + t.cl + '</b><span>' + t.cls + '</span>' + (weak ? '<em>' + t.rec + '</em>' : '') + '</button></div>' +
       '<label class="rem"><input type="checkbox"> ' + t.rem + '</label><label class="lang">' + t.lang + ' <select><option value="en">English</option><option value="es">Español</option></select></label></div>';

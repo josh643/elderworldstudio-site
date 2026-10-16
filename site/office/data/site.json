@@ -1,263 +1,264 @@
 {
- "generated_from": [
-  "index.html",
-  "games/index.html",
-  "services/index.html",
-  "merch/index.html"
- ],
- "brand": {
-  "name": "Elder World Studio",
-  "tagline": "Forging Digital Realms",
-  "about": "Elder World Studio Inc is a game development studio that blends the enchanting aesthetics of medieval worlds with the power of modern technology. We make PC and mobile games, and assets for other developers.",
-  "logo": "/assets/img/brand/ews-mark-512.png"
- },
- "games": [
-  {
-   "title": "Astro Dodge",
-   "tag": "On Google Play",
-   "text": "Steer your ship through an endless field of asteroids, grab power-ups and chase your best score.",
-   "status": "live",
-   "tier": "live",
-   "img": "/assets/img/games/astro-dodge-icon.png",
-   "alt": "Astro Dodge app icon",
-   "buttons": [
+  "generated_from": [
+    "index.html",
+    "games/index.html",
+    "services/index.html",
+    "merch/index.html"
+  ],
+  "brand": {
+    "name": "Elder World Studio",
+    "tagline": "Forging Digital Realms",
+    "about": "Elder World Studio Inc is a game development studio that blends the enchanting aesthetics of medieval worlds with the power of modern technology. We make PC and mobile games, and assets for other developers.",
+    "logo": "/assets/img/logo.png",
+    "wallText": true
+  },
+  "games": [
     {
-     "label": "Get it on Google Play",
-     "href": "https://play.google.com/store/apps/details?id=com.elderworldstudio.astrododge&referrer=utm_source%3Dwebsite%26utm_medium%3Dsite%26utm_campaign%3Dastro-dodge",
-     "store": "play"
-    }
-   ]
-  },
-  {
-   "title": "Star Wayfarer",
-   "tag": "On Google Play",
-   "text": "An open space adventure built for mobile. Fly, trade, mine and fight across the stars, land on planets, and build your crew, fleet and empire.",
-   "status": "live",
-   "tier": "live",
-   "img": "/assets/img/star-wayfarer.jpg",
-   "alt": "Star Wayfarer title screen",
-   "buttons": [
+      "title": "Astro Dodge",
+      "tag": "On Google Play",
+      "text": "Steer your ship through an endless field of asteroids, grab power-ups and chase your best score.",
+      "status": "live",
+      "tier": "live",
+      "img": "/assets/img/games/astro-dodge-icon.png",
+      "alt": "Astro Dodge app icon",
+      "buttons": [
+        {
+          "label": "Get it on Google Play",
+          "href": "https://play.google.com/store/apps/details?id=com.elderworldstudio.astrododge&referrer=utm_source%3Dwebsite%26utm_medium%3Dsite%26utm_campaign%3Dastro-dodge",
+          "store": "play"
+        }
+      ]
+    },
     {
-     "label": "Get it on Google Play",
-     "href": "https://play.google.com/store/apps/details?id=com.elderworlds.starwayfarer&referrer=utm_source%3Dwebsite%26utm_medium%3Dsite%26utm_campaign%3Dstar-wayfarer",
-     "store": "play"
-    }
-   ]
-  },
-  {
-   "title": "Omnivael: Wayfarer's Life",
-   "tag": "Early Access · Coming to Steam",
-   "text": "A living sandbox RPG where your legacy unfolds through trade, exploration, relationships and time itself, in a medieval frontier whose economy runs on its people.",
-   "status": "soon",
-   "tier": "bigger",
-   "img": "/assets/img/omnivael.jpg",
-   "alt": "Omnivael key art",
-   "buttons": [
+      "title": "Star Wayfarer",
+      "tag": "On Google Play",
+      "text": "An open space adventure built for mobile. Fly, trade, mine and fight across the stars, land on planets, and build your crew, fleet and empire.",
+      "status": "live",
+      "tier": "live",
+      "img": "/assets/img/star-wayfarer.jpg",
+      "alt": "Star Wayfarer title screen",
+      "buttons": [
+        {
+          "label": "Get it on Google Play",
+          "href": "https://play.google.com/store/apps/details?id=com.elderworlds.starwayfarer&referrer=utm_source%3Dwebsite%26utm_medium%3Dsite%26utm_campaign%3Dstar-wayfarer",
+          "store": "play"
+        }
+      ]
+    },
     {
-     "label": "View on Steam",
-     "href": "https://store.steampowered.com/app/4121760/?utm_source=website&utm_medium=site&utm_campaign=omnivael",
-     "store": "steam"
-    }
-   ]
-  },
-  {
-   "title": "Chronicles of the Realm",
-   "tag": "Free · Coming to Steam",
-   "text": "A free first-person dungeon game set in the world of Omnivael. Take up sword and shield, survive wave after wave of slimes and goblins in a torch-lit cave, and pick a boon between waves.",
-   "status": "soon",
-   "tier": "bigger",
-   "img": "/assets/img/chronicles-of-the-realm.jpg",
-   "alt": "Chronicles of the Realm: fighting slimes in a torch-lit cave arena",
-   "buttons": [
+      "title": "Omnivael: Wayfarer's Life",
+      "tag": "Early Access · Coming to Steam",
+      "text": "A living sandbox RPG where your legacy unfolds through trade, exploration, relationships and time itself, in a medieval frontier whose economy runs on its people.",
+      "status": "soon",
+      "tier": "bigger",
+      "img": "/assets/img/omnivael.jpg",
+      "alt": "Omnivael key art",
+      "buttons": [
+        {
+          "label": "View on Steam",
+          "href": "https://store.steampowered.com/app/4121760/?utm_source=website&utm_medium=site&utm_campaign=omnivael",
+          "store": "steam"
+        }
+      ]
+    },
     {
-     "label": "View on Steam",
-     "href": "https://store.steampowered.com/app/2559510/?utm_source=website&utm_medium=site&utm_campaign=chronicles",
-     "store": "steam"
+      "title": "Chronicles of the Realm",
+      "tag": "Free · Coming to Steam",
+      "text": "A free first-person dungeon game set in the world of Omnivael. Take up sword and shield, survive wave after wave of slimes and goblins in a torch-lit cave, and pick a boon between waves.",
+      "status": "soon",
+      "tier": "bigger",
+      "img": "/assets/img/chronicles-of-the-realm.jpg",
+      "alt": "Chronicles of the Realm: fighting slimes in a torch-lit cave arena",
+      "buttons": [
+        {
+          "label": "View on Steam",
+          "href": "https://store.steampowered.com/app/2559510/?utm_source=website&utm_medium=site&utm_campaign=chronicles",
+          "store": "steam"
+        }
+      ]
+    },
+    {
+      "title": "Tile 2048",
+      "tag": "Coming soon to Google Play",
+      "text": "Slide and merge numbered tiles to reach 2048.",
+      "status": "soon",
+      "tier": "casual",
+      "img": "",
+      "alt": "",
+      "buttons": []
+    },
+    {
+      "title": "Brick Blitz",
+      "tag": "Coming soon to Google Play",
+      "text": "Bounce the ball, break neon bricks, and clear arcade levels.",
+      "status": "soon",
+      "tier": "casual",
+      "img": "/assets/img/games/brick-blitz.jpg",
+      "alt": "Brick Blitz screenshot",
+      "buttons": []
+    },
+    {
+      "title": "Color Gate",
+      "tag": "Coming soon to Google Play",
+      "text": "Match your color to pass through the right gates.",
+      "status": "soon",
+      "tier": "casual",
+      "img": "",
+      "alt": "",
+      "buttons": []
+    },
+    {
+      "title": "Crystal Merge",
+      "tag": "Coming soon to Google Play",
+      "text": "Merge glowing crystals, make combos, and grow your score in a neon puzzle.",
+      "status": "soon",
+      "tier": "casual",
+      "img": "/assets/img/games/crystal-merge.jpg",
+      "alt": "Crystal Merge screenshot",
+      "buttons": []
+    },
+    {
+      "title": "Gem Hopper",
+      "tag": "Coming soon to Google Play",
+      "text": "Tap to hop between floating gems and build your best score.",
+      "status": "soon",
+      "tier": "casual",
+      "img": "/assets/img/games/gem-hopper-icon.png",
+      "alt": "Gem Hopper app icon",
+      "buttons": []
+    },
+    {
+      "title": "Neon Snake",
+      "tag": "Coming soon to Google Play",
+      "text": "The classic snake game, in neon.",
+      "status": "soon",
+      "tier": "casual",
+      "img": "",
+      "alt": "",
+      "buttons": []
+    },
+    {
+      "title": "Spiral Drop",
+      "tag": "Coming soon to Google Play",
+      "text": "Drop down the spiral tower without hitting the hazards.",
+      "status": "soon",
+      "tier": "casual",
+      "img": "",
+      "alt": "",
+      "buttons": []
+    },
+    {
+      "title": "Stack Tower",
+      "tag": "Coming soon to Google Play",
+      "text": "Time your taps to stack blocks as high as you can.",
+      "status": "soon",
+      "tier": "casual",
+      "img": "",
+      "alt": "",
+      "buttons": []
+    },
+    {
+      "title": "Void Flip",
+      "tag": "Coming soon to Google Play",
+      "text": "Tap to reverse gravity and guide a neon probe through energy gates.",
+      "status": "soon",
+      "tier": "casual",
+      "img": "",
+      "alt": "",
+      "buttons": []
     }
-   ]
+  ],
+  "services": [
+    {
+      "title": "Demo first",
+      "text": "Tell us what you need. We build a quick demo of it for your business and share it by link. You only decide on anything after you’ve seen it working. No pressure and no obligation.",
+      "links": []
+    },
+    {
+      "title": "Websites",
+      "text": "New sites, refreshes and fixes: mobile-friendly pages, online booking, menus, quote forms and simple online stores.",
+      "links": []
+    },
+    {
+      "title": "AI tools & chat assistants",
+      "text": "A chat assistant on your site that answers questions from your hours, menu and prices 24/7, takes requests and emails real leads to you.",
+      "links": [
+        {
+          "href": "https://ews-ai-assistant.pages.dev/",
+          "label": "Try a live demo →"
+        }
+      ]
+    },
+    {
+      "title": "Automation",
+      "text": "Stop retyping things. We connect forms, email, spreadsheets and the tools you already use so routine work happens on its own.",
+      "links": []
+    },
+    {
+      "title": "Custom software & dashboards",
+      "text": "Internal tools, client portals and dashboards that replace paper forms and messy spreadsheets.",
+      "links": []
+    }
+  ],
+  "merch": [
+    {
+      "title": "Elder World Crest Tee",
+      "price": "$26",
+      "tag": "Coming soon",
+      "text": "Elder World Studio Our gold crest and “Forging Digital Realms” on a soft black Bella+Canvas tee.",
+      "img": "/assets/img/merch/crest-tee.jpg",
+      "href": "/merch/"
+    },
+    {
+      "title": "Omnivael “No Chosen One” Tee",
+      "price": "$26",
+      "tag": "Coming soon",
+      "text": "Omnivael: Wayfarers Life No Chosen One. No war to win. Just a world to live in. The Wayfarers Life motto in gold.",
+      "img": "/assets/img/merch/omnivael-tee.jpg",
+      "href": "/merch/"
+    },
+    {
+      "title": "Star Wayfarer Shuttle Tee",
+      "price": "$26",
+      "tag": "Coming soon",
+      "text": "Star Wayfarer The Wayfarer shuttle from Star Wayfarer, rendered from the in-game model.",
+      "img": "/assets/img/merch/shuttle-tee.jpg",
+      "href": "/merch/"
+    },
+    {
+      "title": "Elder World Crest Hoodie",
+      "price": "$48",
+      "tag": "Coming soon",
+      "text": "Elder World Studio Big crest on the back, small crest on the chest. Heavy blend, double-lined hood.",
+      "img": "/assets/img/merch/crest-hoodie.jpg",
+      "href": "/merch/"
+    },
+    {
+      "title": "“Just One More Wave” Mug",
+      "price": "$16",
+      "tag": "Coming soon",
+      "text": "Chronicles of the Realm 11 oz glossy mug for the arena regulars of Chronicles of the Realm.",
+      "img": "/assets/img/merch/wave-mug.jpg",
+      "href": "/merch/"
+    },
+    {
+      "title": "Die-Cut Stickers",
+      "price": "$5 each",
+      "tag": "Coming soon",
+      "text": "All games 3-inch vinyl stickers: the crest, the Wayfarer shuttle and the Omnivael badge.",
+      "img": "/assets/img/merch/stickers.jpg",
+      "href": "/merch/"
+    }
+  ],
+  "devlog": {
+    "title": "Devlogs on YouTube",
+    "href": "https://www.youtube.com/@ElderWorldStudio"
   },
-  {
-   "title": "Tile 2048",
-   "tag": "Coming soon to Google Play",
-   "text": "Slide and merge numbered tiles to reach 2048.",
-   "status": "soon",
-   "tier": "casual",
-   "img": "",
-   "alt": "",
-   "buttons": []
-  },
-  {
-   "title": "Brick Blitz",
-   "tag": "Coming soon to Google Play",
-   "text": "Bounce the ball, break neon bricks, and clear arcade levels.",
-   "status": "soon",
-   "tier": "casual",
-   "img": "/assets/img/games/brick-blitz.jpg",
-   "alt": "Brick Blitz screenshot",
-   "buttons": []
-  },
-  {
-   "title": "Color Gate",
-   "tag": "Coming soon to Google Play",
-   "text": "Match your color to pass through the right gates.",
-   "status": "soon",
-   "tier": "casual",
-   "img": "",
-   "alt": "",
-   "buttons": []
-  },
-  {
-   "title": "Crystal Merge",
-   "tag": "Coming soon to Google Play",
-   "text": "Merge glowing crystals, make combos, and grow your score in a neon puzzle.",
-   "status": "soon",
-   "tier": "casual",
-   "img": "/assets/img/games/crystal-merge.jpg",
-   "alt": "Crystal Merge screenshot",
-   "buttons": []
-  },
-  {
-   "title": "Gem Hopper",
-   "tag": "Coming soon to Google Play",
-   "text": "Tap to hop between floating gems and build your best score.",
-   "status": "soon",
-   "tier": "casual",
-   "img": "/assets/img/games/gem-hopper-icon.png",
-   "alt": "Gem Hopper app icon",
-   "buttons": []
-  },
-  {
-   "title": "Neon Snake",
-   "tag": "Coming soon to Google Play",
-   "text": "The classic snake game, in neon.",
-   "status": "soon",
-   "tier": "casual",
-   "img": "",
-   "alt": "",
-   "buttons": []
-  },
-  {
-   "title": "Spiral Drop",
-   "tag": "Coming soon to Google Play",
-   "text": "Drop down the spiral tower without hitting the hazards.",
-   "status": "soon",
-   "tier": "casual",
-   "img": "",
-   "alt": "",
-   "buttons": []
-  },
-  {
-   "title": "Stack Tower",
-   "tag": "Coming soon to Google Play",
-   "text": "Time your taps to stack blocks as high as you can.",
-   "status": "soon",
-   "tier": "casual",
-   "img": "",
-   "alt": "",
-   "buttons": []
-  },
-  {
-   "title": "Void Flip",
-   "tag": "Coming soon to Google Play",
-   "text": "Tap to reverse gravity and guide a neon probe through energy gates.",
-   "status": "soon",
-   "tier": "casual",
-   "img": "",
-   "alt": "",
-   "buttons": []
+  "links": {
+    "services": "/services/",
+    "contact": "/contact/",
+    "games": "/games/",
+    "merch": "/merch/",
+    "classic": "/?classic=1"
   }
- ],
- "services": [
-  {
-   "title": "Demo first",
-   "text": "Tell us what you need. We build a quick demo of it for your business and share it by link. You only decide on anything after you’ve seen it working. No pressure and no obligation.",
-   "links": []
-  },
-  {
-   "title": "Websites",
-   "text": "New sites, refreshes and fixes: mobile-friendly pages, online booking, menus, quote forms and simple online stores.",
-   "links": []
-  },
-  {
-   "title": "AI tools & chat assistants",
-   "text": "A chat assistant on your site that answers questions from your hours, menu and prices 24/7, takes requests and emails real leads to you.",
-   "links": [
-    {
-     "href": "https://ews-ai-assistant.pages.dev/",
-     "label": "Try a live demo →"
-    }
-   ]
-  },
-  {
-   "title": "Automation",
-   "text": "Stop retyping things. We connect forms, email, spreadsheets and the tools you already use so routine work happens on its own.",
-   "links": []
-  },
-  {
-   "title": "Custom software & dashboards",
-   "text": "Internal tools, client portals and dashboards that replace paper forms and messy spreadsheets.",
-   "links": []
-  }
- ],
- "merch": [
-  {
-   "title": "Elder World Crest Tee",
-   "price": "$26",
-   "tag": "Coming soon",
-   "text": "Elder World Studio Our gold crest and “Forging Digital Realms” on a soft black Bella+Canvas tee.",
-   "img": "/assets/img/merch/crest-tee.jpg",
-   "href": "/merch/"
-  },
-  {
-   "title": "Omnivael “No Chosen One” Tee",
-   "price": "$26",
-   "tag": "Coming soon",
-   "text": "Omnivael: Wayfarers Life No Chosen One. No war to win. Just a world to live in. The Wayfarers Life motto in gold.",
-   "img": "/assets/img/merch/omnivael-tee.jpg",
-   "href": "/merch/"
-  },
-  {
-   "title": "Star Wayfarer Shuttle Tee",
-   "price": "$26",
-   "tag": "Coming soon",
-   "text": "Star Wayfarer The Wayfarer shuttle from Star Wayfarer, rendered from the in-game model.",
-   "img": "/assets/img/merch/shuttle-tee.jpg",
-   "href": "/merch/"
-  },
-  {
-   "title": "Elder World Crest Hoodie",
-   "price": "$48",
-   "tag": "Coming soon",
-   "text": "Elder World Studio Big crest on the back, small crest on the chest. Heavy blend, double-lined hood.",
-   "img": "/assets/img/merch/crest-hoodie.jpg",
-   "href": "/merch/"
-  },
-  {
-   "title": "“Just One More Wave” Mug",
-   "price": "$16",
-   "tag": "Coming soon",
-   "text": "Chronicles of the Realm 11 oz glossy mug for the arena regulars of Chronicles of the Realm.",
-   "img": "/assets/img/merch/wave-mug.jpg",
-   "href": "/merch/"
-  },
-  {
-   "title": "Die-Cut Stickers",
-   "price": "$5 each",
-   "tag": "Coming soon",
-   "text": "All games 3-inch vinyl stickers: the crest, the Wayfarer shuttle and the Omnivael badge.",
-   "img": "/assets/img/merch/stickers.jpg",
-   "href": "/merch/"
-  }
- ],
- "devlog": {
-  "title": "Devlogs on YouTube",
-  "href": "https://www.youtube.com/@ElderWorldStudio"
- },
- "links": {
-  "services": "/services/",
-  "contact": "/contact/",
-  "games": "/games/",
-  "merch": "/merch/",
-  "classic": "/?classic=1"
- }
 }
