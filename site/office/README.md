@@ -38,3 +38,7 @@ Anchors can be `"after:<module>"` to snap below that module's returned `minZ` (d
 - `freyja` POST: receptionist chat, gpt-4o-mini if `OPENAI_API_KEY` is set. Per-IP limits, daily $ cap (`OFFICE_FREYJA_CAP_USD`, default 0.50), canned FAQ fallback.
 - `lead` POST: demo request -> KV lead record (no email). `leads` GET/POST (bearer): CT111 pulls and acknowledges.
 - Multiplayer later: a Durable Object room per hall pushing the same snapshot shape over WebSockets (swap the `live-status` module).
+
+## VR and kiosk (feature modules)
+- `webxr`: shows "Enter VR" only when the browser supports immersive-vr (Quest Browser, PC VR). Teleport by pointing a controller at the floor and pulling the trigger; snap turn on the thumbstick; "VR comfort" sets snap angle, seated mode and teleport fade. Nothing VR-related runs on phones.
+- `kiosk`: open `/?kiosk=1` on store screens. It goes fullscreen on first touch, hides the classic-site button, resets after 90 s idle and loops through the tour stops (attract mode). Set the timings in `modules.json`.

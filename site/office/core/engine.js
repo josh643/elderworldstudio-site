@@ -22,7 +22,7 @@ export async function start(opts = {}) {
   let tier = lowEnd ? 0 : devicePixelRatio > 1.5 ? 1 : 2; R.setPixelRatio(Math.min(devicePixelRatio, RATIOS[tier])); R.outputColorSpace = THREE.SRGBColorSpace;
   root.prepend(R.domElement);
   const scene = new THREE.Scene(); scene.background = new THREE.Color(0x0b0716); scene.fog = new THREE.Fog(0x0b0716, 25, 70);
-  const cam = new THREE.PerspectiveCamera(62, 1, 0.1, 120);
+  const cam = new THREE.PerspectiveCamera(62, 1, 0.1, 120); const rig = new THREE.Group(); rig.add(cam); scene.add(rig);   // rig = player body (XR moves the camera inside it)
   scene.add(new THREE.HemisphereLight(0xfff1d6, 0x1a1030, 1.3)); const sun = new THREE.DirectionalLight(0xffe2b0, 1.1); sun.position.set(8, 20, 6); scene.add(sun);
   const mcache = new Map(); const M = c => { if (!mcache.has(c)) mcache.set(c, new THREE.MeshLambertMaterial({ color: c })); return mcache.get(c); };
   const mat = { floor: M(0x2a2236), wall: M(0x3a2f4a), trim: M(GOLD), dark: M(0x15101f), wood: M(0x6b4a2e), stone: M(0x4b4458), rack: M(0x1d1d24), glow: new THREE.MeshBasicMaterial({ color: GOLD }) };
@@ -47,7 +47,7 @@ export async function start(opts = {}) {
   }
   const clickables = [], spots = {}, tours = [], services = {}, bounds = { minX: -8, maxX: 8, minZ: -4, maxZ: 10 }, after = {};
   const ctx = {
-    THREE, kit, scene, cam, mat, M, box, panel, image, textCanvas, label, site, roster, esc, root,
+    THREE, kit, scene, cam, rig, renderer: R, mat, M, box, panel, image, textCanvas, label, site, roster, esc, root,
     onClick: (obj, handler) => { obj.userData.onPick = handler; clickables.push(obj); return obj; },
     spot: (name, pos, look, tourLabel) => { spots[name] = { pos, look }; if (tourLabel) tours.push([name, tourLabel]); },
     extend: (x1, z1, x2, z2) => { bounds.minX = Math.min(bounds.minX, x1); bounds.minZ = Math.min(bounds.minZ, z1); bounds.maxX = Math.max(bounds.maxX, x2); bounds.maxZ = Math.max(bounds.maxZ, z2); },
@@ -55,6 +55,8 @@ export async function start(opts = {}) {
     goTo: n => goTo(n), card: html => cardOf(html), closeCard: () => closeCard(),
     btn: b => `<a class="ob ${b.primary !== false ? 'gold' : ''}" href="${esc(b.href)}" target="_blank" rel="noopener">${esc(b.label)}</a>`,
     hudButton: (text, fn, gold) => { const b = $('button', { class: 'ob' + (gold ? ' gold' : ''), type: 'button' }, esc(text)); b.onclick = fn; hud.insertBefore(b, bClassic); return b; },
+    player: { get pos() { return pos; }, get yaw() { return yaw; }, set yaw(v) { yaw = v; }, teleport: (x, z) => { pos.x = x; pos.z = z; glide = null; } },
+    activity: () => { lastInput = performance.now(); },
     setTitle: t => { hud.querySelector('.t').textContent = t; }, announce: t => { live.textContent = t; },
   };
   // HUD (built before modules so they can add buttons)
@@ -79,6 +81,8 @@ export async function start(opts = {}) {
   wall(fx, fZ, fX, fZ); wall(fx, fz, fX, fz); wall(fx, fz, fx, fZ); wall(fX, fz, fX, fZ);
 
   // controls: drag look, WASD/arrows, joystick, tap to pick, glide tours
+  let lastInput = performance.now(); addEventListener('pointerdown', () => lastInput = performance.now(), true); addEventListener('keydown', () => lastInput = performance.now(), true);
+  ctx.idleMs = () => performance.now() - lastInput;
   let yaw = Math.PI, pitch = 0; const pos = new THREE.Vector3(0, 1.65, 7.5); let glide = null;
   const lookAt = (p, l) => { const d = new THREE.Vector3(l[0] - p[0], l[1] - p[1], l[2] - p[2]); return { yaw: Math.atan2(-d.x, -d.z), pitch: Math.atan2(d.y, Math.hypot(d.x, d.z)) }; };
   function goTo(name) { const s = spots[name]; if (!s) return; const t = lookAt(s.pos, s.look); glide = { from: pos.clone(), to: new THREE.Vector3(...s.pos), y0: yaw, y1: yaw + (((t.yaw - yaw) % (2 * Math.PI)) + 3 * Math.PI) % (2 * Math.PI) - Math.PI, p0: pitch, p1: t.pitch, t: 0 }; }
@@ -98,7 +102,7 @@ export async function start(opts = {}) {
   tours.forEach(([k, t]) => { const b = $('button', { class: 'ob', type: 'button' }, esc(t)); b.onclick = () => goTo(k); tour.append(b); }); root.append(tour);
   let card = null; function closeCard() { card?.remove(); card = null; }
   function cardOf(html) { closeCard(); card = $('section', { class: 'office-card', role: 'dialog', 'aria-modal': 'false' }, `<button class="x" type="button" aria-label="Close">×</button>${html}`); card.querySelector('.x').onclick = closeCard; root.append(card); const h = card.querySelector('h3'); if (h) { h.tabIndex = -1; h.focus(); } return card; }
-  function close() { running = false; root.remove(); document.documentElement.classList.remove('office-on'); R.dispose(); }
+  function close() { running = false; R.setAnimationLoop(null); root.remove(); document.documentElement.classList.remove('office-on'); R.dispose(); }
   document.querySelector('.skip')?.addEventListener('click', () => { if (opts.overlay) close(); });
   ctx.state = s => mods.forEach(m => { try { m.onState?.(s); } catch (e) { console.warn(e); } });
 
@@ -107,17 +111,18 @@ export async function start(opts = {}) {
   function resize() { const w = root.clientWidth, h = root.clientHeight; R.setSize(w, h, false); cam.aspect = w / h; cam.updateProjectionMatrix(); }
   addEventListener('resize', resize); resize();
   function frame() {
-    if (!running) return; requestAnimationFrame(frame); if (document.hidden) return;
+    if (!running) return; if (document.hidden && !R.xr.isPresenting) return;
     const rdt = clock.getDelta(), dt = Math.min(rdt, 0.05), t = clock.elapsedTime;
     fa += rdt; fn++; if (fa > 4) { const fps = fn / fa; fa = fn = 0; if (fps < 24 && tier > 0) { tier--; R.setPixelRatio(Math.min(devicePixelRatio, RATIOS[tier])); resize(); } else if (fps < 14 && tier === 0 && !slow) { slow = true; cardOf('<h3>Running slowly?</h3><p>Your device is struggling with the 3D office.</p><div class="row"><a class="ob gold" href="/?classic=1">Switch to the classic site</a></div>'); } }
     if (glide) { glide.t = Math.min(1, glide.t + dt / 1.6); const k = glide.t * glide.t * (3 - 2 * glide.t); pos.lerpVectors(glide.from, glide.to, k); yaw = glide.y0 + (glide.y1 - glide.y0) * k; pitch = glide.p0 + (glide.p1 - glide.p0) * k; if (glide.t >= 1) glide = null; }
     const mvF = (keys.w || keys.arrowup ? 1 : 0) - (keys.s || keys.arrowdown ? 1 : 0) - jv.y, mvR = (keys.d ? 1 : 0) - (keys.a ? 1 : 0) + jv.x;
     if (keys.arrowleft) yaw += dt * 1.8; if (keys.arrowright) yaw -= dt * 1.8;
     if (mvF || mvR) { glide = null; fwd.set(-Math.sin(yaw), 0, -Math.cos(yaw)); right.set(-fwd.z, 0, fwd.x); pos.addScaledVector(fwd, mvF * dt * 4).addScaledVector(right, mvR * dt * 4); pos.x = Math.max(fx + 1, Math.min(fX - 1, pos.x)); pos.z = Math.max(fz + 1, Math.min(fZ - 1, pos.z)); }
-    cam.position.copy(pos); cam.rotation.set(pitch, yaw, 0, 'YXZ');
+    if (R.xr.isPresenting) { rig.position.set(pos.x, 0, pos.z); rig.rotation.set(0, yaw, 0); cam.position.set(0, 0, 0); }
+    else { rig.position.set(0, 0, 0); rig.rotation.set(0, 0, 0); cam.position.copy(pos); cam.rotation.set(pitch, yaw, 0, 'YXZ'); }
     for (const m of mods) m.onFrame?.(dt, t);
     R.render(scene, cam);
   }
   root.querySelector('.office-load').style.opacity = 0; setTimeout(() => root.querySelector('.office-load')?.remove(), 700);
-  frame(); return { goTo, close, ctx };
+  R.setAnimationLoop(frame); return { goTo, close, ctx };   // setAnimationLoop also drives WebXR frames
 }
