@@ -28,7 +28,7 @@ export default {
       fm.onsubmit = async e => { e.preventDefault(); const q = fm.q.value.trim(); if (!q) return; fm.q.value = ''; add(q, true); history.push({ role: 'user', content: q }); const w = add('…');
         try { const j = await (await fetch(cfg.chat || '/api/office/freyja', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ messages: history.slice(-8) }) })).json();
           w.textContent = j.reply || 'Sorry, I lost my train of thought.'; history.push({ role: 'assistant', content: w.textContent });
-          if (j.action?.tour) ctx.goTo(j.action.tour); if (j.action?.lead) setTimeout(leadForm, 900); }
+          if (j.action?.tour) { const go = document.createElement('button'); go.type = 'button'; go.className = 'ob go'; go.textContent = 'Take me there'; go.onclick = () => ctx.goTo(j.action.tour); w.after(go); }   /* guided moves only on an explicit click */ if (j.action?.lead) setTimeout(leadForm, 900); }
         catch { w.textContent = 'I can\u2019t reach my notes right now. Try the tour buttons below!'; } };
       fm.q.focus();
     };

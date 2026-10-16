@@ -38,6 +38,11 @@ export async function onRequestPost({ request, env }) {
   const ip = visitor(request);
   const lim = await doLimit(env, 'ip:' + ip, [['min', 6, 60000], ['day', 30, 864e5]]);
   if (!lim.ok) return json({ reply: 'I\u2019m getting a lot of questions! Give me a minute. Meanwhile the tour buttons below still work, or request a demo with the form.', action: { lead: false }, limited: true, retryMs: lim.retryMs }, 429);
+  /* answer cache: first-turn questions are normalised and cached at the edge for 6 h (no per-visitor data in the key) */
+  const norm = last.toLowerCase().replace(/[^a-z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim(), firstTurn = msgs.filter(m => m.role === 'user').length === 1;
+  const ckey = firstTurn && norm.length < 160 ? new Request('https://cache.ews/freyja/' + encodeURIComponent(norm)) : null, cache = globalThis.caches?.default;
+  if (ckey && cache) { const hit = await cache.match(ckey); if (hit) { const j = await hit.json(); return json({ ...j, cached: true, remaining: lim.remaining }); } }
+  const put = (o) => { if (ckey && cache && o.mode === 'llm') cache.put(ckey, new Response(JSON.stringify(o), { headers: { 'content-type': 'application/json', 'cache-control': 'max-age=21600' } })).catch(() => {}); return json(o); };
   const cap = Math.round(Number(env.OFFICE_FREYJA_CAP_USD || 0.5) * 1e6);
   const spent = env.OPENAI_API_KEY ? (await doLimit(env, 'global-budget', [])).spent : cap;   // daily $ budget, one global DO
   if (!env.OPENAI_API_KEY || spent >= cap) { const f = faq(last); return json({ ...f, mode: 'faq', remaining: lim.remaining }); }
@@ -49,6 +54,6 @@ export async function onRequestPost({ request, env }) {
     await doLimit(env, 'global-budget', [], micro);
     let o = {}; try { o = JSON.parse(j.choices[0].message.content); } catch {}
     const reply = String(o.reply || '').slice(0, 600) || faq(last).reply;
-    return json({ reply, action: { tour: TOURS.includes(o.tour) ? o.tour : null, lead: !!o.lead }, mode: 'llm' });
+    return put({ reply, action: { tour: TOURS.includes(o.tour) ? o.tour : null, lead: !!o.lead }, mode: 'llm' });
   } catch { const f = faq(last); return json({ ...f, mode: 'faq' }); }
 }

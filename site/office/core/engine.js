@@ -4,8 +4,8 @@
 //   onState?(snapshot), onFrame?(dt, t) }. Modules share things with ctx.provide(name, v) / ctx.use(name).
 import * as THREE from '../vendor/three.module.min.js?v=169';
 import { mergeGeometries } from '../vendor/jsm/utils/BufferGeometryUtils.js?v=169';
-import * as kit from './kit.js?v=20';
-const V = 20, GOLD = 0xd9b45a;
+import * as kit from './kit.js?v=22';
+const V = 22, GOLD = 0xd9b45a;
 const $ = (t, a = {}, h = '') => { const e = document.createElement(t); for (const k in a) e.setAttribute(k, a[k]); e.innerHTML = h; return e; };
 export const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -25,10 +25,10 @@ export async function start(opts = {}) {
   // GPU class: integrated/mobile GPUs get a lower pixel-ratio cap and no MSAA
   const gpuName = (() => { try { const g = document.createElement('canvas').getContext('webgl'); const x = g.getExtension('WEBGL_debug_renderer_info'); const n = x ? g.getParameter(x.UNMASKED_RENDERER_WEBGL) : ''; g.getExtension('WEBGL_lose_context')?.loseContext(); return String(n); } catch { return ''; } })();
   const igpu = /intel|uhd|iris|mali|adreno|powervr|apple gpu|llvmpipe|swiftshader|videocore/i.test(gpuName);
-  const R = new THREE.WebGLRenderer({ antialias: devicePixelRatio < 1.5, powerPreference: 'high-performance' });
+  const R = new THREE.WebGLRenderer({ antialias: !igpu && devicePixelRatio < 1.5, powerPreference: 'high-performance' });
   const lowEnd = (navigator.deviceMemory || 8) <= 4 || (navigator.hardwareConcurrency || 8) <= 4, RATIOS = [0.75, 1, 1.5];   // tier base ratios; DSCALE steps below these at runtime
   let tier = lowEnd ? 0 : devicePixelRatio > 1.5 ? 1 : 2; if (tier === 2 && matchMedia('(pointer: fine)').matches) RATIOS[2] = igpu ? 1.25 : 2;   // desktop: native res up to 2x, 1.25 on integrated GPUs
-  if (igpu) RATIOS[1] = Math.min(RATIOS[1], 1.0);
+  if (igpu) { RATIOS[1] = Math.min(RATIOS[1], 1.0); if (tier > 1) tier = 1; }   /* integrated GPUs start on the mid tier: no 2K maps, no MSAA */
   if (matchMedia('(pointer: fine)').matches) { RATIOS[0] = RATIOS[1] = 1; }   // desktops/kiosks never drop below native resolution; LOD and effects go first
   const DSCALE = matchMedia('(pointer: fine)').matches ? [1] : [1, 0.85, 0.72]; /* desktop never renders below native size; it sheds LOD instead */ let dstep = 0; const FINE = matchMedia('(pointer: fine)').matches; const applyRatio = () => R.setPixelRatio(FINE ? 1 : Math.min(devicePixelRatio, RATIOS[tier]) * DSCALE[dstep]);   // desktop/kiosk: exactly 1.0 (native CSS pixels)
   applyRatio(); R.outputColorSpace = THREE.SRGBColorSpace;
@@ -126,6 +126,7 @@ export async function start(opts = {}) {
     for (let i = 0; i < cols; i++) for (let j = 0; j < rows; j++) { m4.makeTranslation(fx + 2 + i * 4, 3.99, fz + 2 + j * 4); lp.setMatrixAt(k++, m4); } scene.add(lp); }
 
   // controls: drag look, WASD/arrows, joystick, tap to pick, glide tours
+  for (const ev of ['keydown', 'pointerdown', 'wheel', 'touchstart']) addEventListener(ev, e => { if (glide && !e.target.closest?.('button,.office-card,a')) glide = null; }, true);   /* any input cancels a guided move instantly */
   let lastInput = performance.now(); addEventListener('pointerdown', () => lastInput = performance.now(), true); addEventListener('keydown', () => lastInput = performance.now(), true);
   ctx.idleMs = () => performance.now() - lastInput;
   let yaw = Math.PI, pitch = 0; const pos = new THREE.Vector3(0, 1.65, 7.5); let glide = null;
@@ -249,9 +250,13 @@ export async function start(opts = {}) {
       list.forEach(m => m.parent?.remove(m)); }
     ctx.batched = { before, after }; }
   const farCull = []; function collectFar() { farCull.length = 0; const clickSet = new Set(clickables); for (const o of scene.children) { if (o.userData.batched || o.isLight || o.userData.a || o.isSkinnedMesh || o.isInstancedMesh || o === rip) continue; let skin = false; o.traverse(c => { if (c.isSkinnedMesh || c.userData.a) skin = true; }); if (!skin && !displays.includes(o) && o.visible) { const bx = new THREE.Box3().setFromObject(o); if (bx.isEmpty()) continue; const sp = bx.getBoundingSphere(new THREE.Sphere()); if (sp.radius > 12) continue; o.userData.fc = { c: sp.center, r: sp.radius }; farCull.push(o); } } }
-  buildColliders(); baseCols = cols.slice(); batchStatic(); collectFar();
-  setTimeout(() => { buildColliders(); const b0 = ctx.batched; batchStatic(); ctx.batched = { before: b0.before + ctx.batched.before, after: b0.after + ctx.batched.after }; collectFar(); }, 10500);   /* second pass: lazy GLB props */
-  { let n = 0; const iv = setInterval(() => { buildColliders(); if (++n >= 24) clearInterval(iv); }, 500); }  /* lazy desks/props get colliders within 0.5 s of landing */   // again once the lazy props have landed
+  /* integrated GPUs: swap PBR for Lambert (keeps colour/map/emissive, drops normal/roughness/metal maps) */
+  const lam = new Map(); function lowMats() { if (!igpu) return; scene.traverse(o => { if (!o.isMesh) return; const conv = M => { if (!M?.isMeshStandardMaterial) return M; let L = lam.get(M.uuid);
+      if (!L) { L = new THREE.MeshLambertMaterial({ color: M.color, map: M.map, emissive: M.emissive, emissiveMap: M.emissiveMap, emissiveIntensity: M.emissiveIntensity, transparent: M.transparent, opacity: M.opacity, side: M.side, vertexColors: M.vertexColors, alphaTest: M.alphaTest, depthWrite: M.depthWrite }); L.name = M.name; lam.set(M.uuid, L); } return L; };
+    o.material = Array.isArray(o.material) ? o.material.map(conv) : conv(o.material); }); }
+  buildColliders(); baseCols = cols.slice(); batchStatic(); collectFar(); lowMats();
+  setTimeout(() => { buildColliders(); const b0 = ctx.batched; batchStatic(); ctx.batched = { before: b0.before + ctx.batched.before, after: b0.after + ctx.batched.after }; collectFar(); lowMats(); }, 10500);   /* second pass: lazy GLB props */
+  { let n = 0; const iv = setInterval(() => { buildColliders(); if (n % 4 === 3) lowMats(); if (++n >= 24) clearInterval(iv); }, 500); }  /* lazy desks/props get colliders within 0.5 s of landing */   // again once the lazy props have landed
   window.__ewsOffice.pos = () => pos.toArray().map(v => +v.toFixed(3)); window.__ewsOffice.breakdown = () => { const fr = new THREE.Frustum().setFromProjectionMatrix(new THREE.Matrix4().multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse)); const m = {}; scene.traverseVisible(o => { if (!(o.isMesh || o.isSprite || o.isPoints || o.isLine)) return; if (o.frustumCulled && !o.isSkinnedMesh && o.geometry && !fr.intersectsObject(o)) return; let r = o; while (r.parent && r.parent !== scene) r = r.parent; const k = (o.isSkinnedMesh ? "skin:" : o.isSprite ? "sprite:" : o.isInstancedMesh ? "inst:" : "") + (r.userData.mod || r.name || r.type); m[k] = (m[k] || 0) + (Array.isArray(o.material) ? o.material.length : 1); }); return Object.entries(m).sort((a, b) => b[1] - a[1]).slice(0, 40); }; window.__ewsOffice.colliders = () => cols.length; window.__ewsOffice.orphans = () => { const out = []; scene.traverse(o => { if (!o.isSkinnedMesh) return; let p = o, ok = false; while (p) { if (p.userData?.a) ok = true; p = p.parent; } if (!ok) { let r = o; while (r.parent && r.parent !== scene) r = r.parent; out.push('ROOT ' + JSON.stringify(r.userData).slice(0, 120) + ' pos ' + r.position.toArray().join(',')); const chain = []; let q = o; while (q) { chain.push((q.type || '') + ':' + (q.name || '')); q = q.parent; } out.push(chain.join(' < ')); } }); return out; }; window.__ewsOffice.avatars = () => [...(ctx.use('avatar')?.all || [])].map(g => ({ id: g.userData.a?.id, name: g.userData.a?.name, p: g.position.toArray().map(v => +v.toFixed(2)), ry: +g.rotation.y.toFixed(2), clip: g.userData.cur, hip: (() => { const h = g.userData.bones?.pelvis || g.userData.bones?.hips || g.userData.bones?.Hips; return h ? h.getWorldPosition(new THREE.Vector3()).toArray().map(v => +v.toFixed(2)) : null; })(), vis: g.visible, inScene: !!g.parent })); window.__ewsOffice.look = (x, z, lx, lz) => { pos.set(x, EYE, z); glide = null; ({ yaw, pitch } = lookAt([x, EYE, z], [lx, 1.2, lz])); }; window.__ewsOffice.info = () => ({ calls: R.info.render.calls, tris: R.info.render.triangles, geos: R.info.memory.geometries, tex: R.info.memory.textures, batched: ctx.batched, ratio: R.getPixelRatio(), buf: R.getDrawingBufferSize(new THREE.Vector2()).toArray(), tier, lod: ctx.lod }); window.__ewsOffice.desks = () => ctx.desks || []; window.__ewsOffice.walk = (x, z, ang, secs) => { pos.set(x, EYE, z); glide = null; yaw = ang; keys.w = 1; return new Promise(r => setTimeout(() => { keys.w = 0; r([pos.x, pos.z]); }, secs * 1000)); };
   R.setAnimationLoop(frame); return { goTo, close, ctx };   // setAnimationLoop also drives WebXR frames
 }
