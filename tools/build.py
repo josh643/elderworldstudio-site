@@ -549,7 +549,7 @@ def _merch_body():
 page("merch/index.html", f"Merch | {STUDIO}", f"Official {STUDIO} merch: crest tees and hoodies, Omnivael, Star Wayfarer and Chronicles of the Realm designs, mugs and stickers.", _merch_body(), "/merch/", "merch")
 # ---- Kiosk leasing page (staging only until Joshua publishes) ----
 KIOSK_IMG_V = "1"
-KIOSK_LD = """<script type="application/ld+json">{"@context":"https://schema.org","@type":"Product","name":"EWS Order Kiosk","brand":{"@type":"Organization","name":"Elder World Studio Inc"},"description":"Self-order kiosk for small businesses: mini PC, 19-inch touchscreen and 58mm ticket printer in a locking floor stand. Leased on a 12-month term.","image":"https://elderworldstudio.com/assets/img/kiosk/01-hero-capbar-shop.jpg","offers":[{"@type":"Offer","name":"Kiosk only","price":"149.00","priceCurrency":"USD","priceSpecification":{"@type":"UnitPriceSpecification","price":"149.00","priceCurrency":"USD","unitText":"MONTH"},"availability":"https://schema.org/PreOrder"},{"@type":"Offer","name":"Kiosk + Elder POS","description":"$129/mo plus a $1 application fee per card or scan-to-pay sale (no fee on cash)","price":"129.00","priceCurrency":"USD","priceSpecification":{"@type":"UnitPriceSpecification","price":"129.00","priceCurrency":"USD","unitText":"MONTH"},"availability":"https://schema.org/PreOrder"}]}</script>"""
+KIOSK_LD = """<script type="application/ld+json">{"@context":"https://schema.org","@type":"Product","name":"EWS Order Kiosk","brand":{"@type":"Organization","name":"Elder World Studio Inc"},"description":"Self-order kiosk for small businesses: mini PC, 19-inch touchscreen and 58mm ticket printer in a locking floor stand. Leased on a 12-month term.","offers":[{"@type":"Offer","name":"Kiosk only","price":"149.00","priceCurrency":"USD","priceSpecification":{"@type":"UnitPriceSpecification","price":"149.00","priceCurrency":"USD","unitText":"MONTH"},"availability":"https://schema.org/PreOrder"},{"@type":"Offer","name":"Kiosk + Elder POS","description":"$129/mo plus a $1 application fee per card or scan-to-pay sale (no fee on cash)","price":"129.00","priceCurrency":"USD","priceSpecification":{"@type":"UnitPriceSpecification","price":"129.00","priceCurrency":"USD","unitText":"MONTH"},"availability":"https://schema.org/PreOrder"}]}</script>"""
 KIOSK = f"""
 <section class="block kiosk-hero center" style="padding-top:56px">
  <div class="wrap">
@@ -560,19 +560,16 @@ KIOSK = f"""
  </div>
 </section>
 <section class="block"><div class="wrap">
- <img class="kiosk-img" src="{{P}}assets/img/kiosk/01-hero-capbar-shop.jpg?v={KIOSK_IMG_V}" width="1600" height="1000" alt="EWS Order Kiosk on a locking floor stand inside a retail shop" fetchpriority="high">
-</div></section>
-<section class="block"><div class="wrap">
  <div class="center"><h2>How it works</h2></div>
  <div class="grid contact-grid">
-  <div class="panel"><h3>1. Customer orders</h3><p>Your menu or catalog on a bright 19&Prime; touchscreen. Big buttons, your logo, your colors.</p></div>
-  <div class="panel"><h3>2. Ticket prints</h3><p>A 58mm thermal printer in the stand prints an order ticket with the items and total.</p></div>
-  <div class="panel"><h3>3. Pay at the register</h3><p>The kiosk takes no payments. Customers bring the ticket to your counter and pay the way they always do.</p></div>
+  <div class="panel"><div class="k-ico" aria-hidden="true">&#128070;</div><h3>1. Customer orders</h3><p>Your menu or catalog on a bright 19&Prime; touchscreen. Big buttons, your logo, your colors.</p></div>
+  <div class="panel"><div class="k-ico" aria-hidden="true">&#129534;</div><h3>2. Ticket prints</h3><p>A 58mm thermal printer in the stand prints an order ticket with the items and total.</p></div>
+  <div class="panel"><div class="k-ico" aria-hidden="true">&#128181;</div><h3>3. Pay at the register</h3><p>The kiosk takes no payments. Customers bring the ticket to your counter and pay the way they always do.</p></div>
  </div>
 </div></section>
 <section class="block"><div class="wrap">
  <div class="grid contact-grid kiosk-two">
-  <img class="kiosk-img" src="{{P}}assets/img/kiosk/02-closeup-screen-and-ticket.jpg?v={KIOSK_IMG_V}" width="1600" height="1000" alt="Close-up of the kiosk order screen and a printed order ticket" loading="lazy">
+  <div class="panel"><h3>What it looks like</h3><div class="k-spec"><div><div class="k-ico" aria-hidden="true">&#128421;&#65039;</div><b>19&Prime; touchscreen</b><span>10-point touch, eye level</span></div><div><div class="k-ico" aria-hidden="true">&#128274;</div><b>Locking floor stand</b><span>Mini PC and printer locked inside</span></div><div><div class="k-ico" aria-hidden="true">&#129534;</div><b>58mm ticket printer</b><span>Prints each order</span></div></div></div>
   <div class="panel"><h3>What&rsquo;s inside</h3><ul style="color:var(--soft);padding-left:1.2em;margin:0">
    <li>Business-grade mini PC, locked inside the stand</li>
    <li>19&Prime; 10-point touchscreen</li>
@@ -593,13 +590,12 @@ KIOSK = f"""
    <li>Includes the Elder POS register system</li><li>Scan the ticket&rsquo;s QR code to ring it up instantly</li><li>$1 application fee per card or scan-to-pay sale (no fee on cash)</li><li>Remote updates included</li></ul>
    <a class="btn btn-primary" href="#demo" data-plan="Kiosk + Elder POS">Book a demo</a></div>
  </div>
- <img class="kiosk-img" style="margin-top:24px" src="{{P}}assets/img/kiosk/04-kiosk-only-vs-kiosk-plus-elderpos.jpg?v={KIOSK_IMG_V}" width="1600" height="923" alt="Side-by-side comparison of the Kiosk only and Kiosk plus Elder POS plans" loading="lazy">
  <p class="meta center" style="margin-top:12px">Prices in USD, before tax. Lease terms are set out in the written lease agreement you sign.</p>
 </div></section>
 <section class="block"><div class="wrap">
  <div class="grid contact-grid kiosk-two">
   <div class="panel"><h3>Made for your brand</h3><p>Barbershops, cafes, boutiques, food trucks and more. We set up the kiosk with your logo, items and prices before it arrives.</p></div>
-  <img class="kiosk-img" src="{{P}}assets/img/kiosk/03-white-label-generic.jpg?v={KIOSK_IMG_V}" width="1600" height="1000" alt="White-label kiosk with a generic shop brand" loading="lazy">
+  <div class="panel"><div class="k-ico" aria-hidden="true">&#127978;</div><h3>Set up for you</h3><p>We load your items, prices and logo, deliver it, and keep it updated remotely.</p></div>
  </div>
 </div></section>
 <section class="block" id="demo"><div class="wrap"><span id="request"></span>
@@ -620,7 +616,7 @@ KIOSK = f"""
   <p class="meta">We reply by email, usually within one business day. We only use your details to answer your request (see our <a href="{{P}}privacy-policy/index.html">Privacy Policy</a>).</p>
  </form>
 </div></section>
-<style>.kiosk-img{{width:100%;height:auto;border-radius:16px;display:block}}.kiosk-two{{align-items:center}}.price-big{{font-size:2.4rem;font-weight:700;margin:6px 0}}.price-big small{{font-size:1rem;color:var(--soft)}}.plan-best{{outline:2px solid var(--accent)}}.lead-form{{display:grid;gap:14px;max-width:640px}}.lead-form label{{display:grid;gap:6px;font-weight:600}}.lead-form input,.lead-form select,.lead-form textarea{{font:inherit;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:#130B22;color:inherit}}.lead-form .hp{{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}}
+<style>.k-ico{{font-size:2rem;line-height:1;margin-bottom:10px}}.k-spec{{display:grid;gap:16px}}.k-spec div{{display:grid;gap:2px}}.k-spec .k-ico{{margin-bottom:4px}}.k-spec span{{color:var(--soft)}}.kiosk-img{{width:100%;height:auto;border-radius:16px;display:block}}.kiosk-two{{align-items:center}}.price-big{{font-size:2.4rem;font-weight:700;margin:6px 0}}.price-big small{{font-size:1rem;color:var(--soft)}}.plan-best{{outline:2px solid var(--accent)}}.lead-form{{display:grid;gap:14px;max-width:640px}}.lead-form label{{display:grid;gap:6px;font-weight:600}}.lead-form input,.lead-form select,.lead-form textarea{{font:inherit;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:#130B22;color:inherit}}.lead-form .hp{{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}}
 .lead-form input,.lead-form select,.lead-form textarea{{width:100%;min-width:0;max-width:100%;font-size:16px;min-height:44px}}.lead-form label{{min-width:0}}.lead-form .btn{{min-height:48px}}
 .kiosk-plans .btn,.kiosk-hero .btn{{min-height:44px;display:inline-flex;align-items:center;justify-content:center}}
 .menu-btn{{display:none}}.sr{{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}}
