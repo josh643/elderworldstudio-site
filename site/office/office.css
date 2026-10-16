@@ -29,3 +29,13 @@
 .office-tip{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);pointer-events:none;background:#0009;padding:6px 10px;border-radius:8px;font-size:13px;display:none}
 .office-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
 html.office-on body{overflow:hidden}
+
+.office-srnav{position:absolute;left:8px;top:48px;display:flex;flex-direction:column;gap:6px;clip-path:inset(50%);width:1px;height:1px;overflow:hidden}
+.office-srnav:focus-within{clip-path:none;width:auto;height:auto;overflow:visible;z-index:5}
+.office-hud{pointer-events:none}.office-hud .t{opacity:.75;font-size:13px}
+.office-joy,.office-tour{display:none!important}
+
+.office-xhair{position:absolute;left:50%;top:50%;width:6px;height:6px;margin:-3px;border-radius:50%;background:#d9b45a;box-shadow:0 0 0 2px #0008;display:none;pointer-events:none}
+.office-hint{position:absolute;left:50%;bottom:22px;transform:translateX(-50%);background:#0b0716cc;color:#e8dfcc;font-size:13px;padding:8px 14px;border-radius:10px;pointer-events:none;transition:opacity 1.2s;white-space:nowrap}
+.office-hint.gone{opacity:0}
+.office-hud{display:none!important}

@@ -18,6 +18,9 @@ export default {
       dark: new THREE.MeshStandardMaterial({ color: 0x0c0c10, roughness: 0.15, metalness: 0.2 }),
       glass: new THREE.MeshPhysicalMaterial({ color: 0xffffff, roughness: 0.05, transmission: 0.9, thickness: 0.05, transparent: true, opacity: 0.35 }),
     });
+    mat.fabric = pbr('fabric', 2, { color: 0x2a2a30 });
+    const carpetMaps = { map: tex('carpet', 'c', 4, true), normalMap: tex('carpet', 'n', 4), roughnessMap: tex('carpet', 'r', 4) }, rugs = new Map();
+    ctx.rug = (col, rep = 1) => { const k = col + ':' + rep; if (!rugs.has(k)) rugs.set(k, new THREE.MeshStandardMaterial({ ...carpetMaps, color: col, envMapIntensity: 0.5 })); return rugs.get(k); };
     ctx.M.standard = true;
   },
 };

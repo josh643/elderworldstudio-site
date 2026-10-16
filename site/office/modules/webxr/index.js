@@ -35,17 +35,17 @@ export default {
       if (fade.material.opacity > 0) fade.material.opacity = Math.max(0, fade.material.opacity - 0.08);
       rig.position.y = comfort.seated ? 0.45 : 0;
     };
-    const b = ctx.hudButton('Enter VR', async () => {
-      const s = await navigator.xr.requestSession('immersive-vr', { optionalFeatures: ['local-floor', 'bounded-floor'] }); R.xr.setSession(s);
-    });
-    ctx.hudButton('VR comfort', () => {
+    const enter = async () => { const s = await navigator.xr.requestSession('immersive-vr', { optionalFeatures: ['local-floor', 'bounded-floor'] }); R.xr.setSession(s); };
+    const b = ctx.hudButton('Enter VR', enter); ctx.sign('Enter VR', 'Headset detected', -5.2, 1.25, 5.2, 0.45, enter, 1.5);
+    const comfortCard = () => {
       const c = ctx.card(`<h3>VR comfort</h3><div class="office-lead"><label>Snap turn<select name="snap">${[15, 30, 45, 90].map(d => `<option ${d === comfort.snap ? 'selected' : ''}>${d}</option>`).join('')}</select></label>
         <label><span><input type="checkbox" name="seated" ${comfort.seated ? 'checked' : ''}> Seated mode (raises you to standing height)</span></label>
         <label><span><input type="checkbox" name="fade" ${comfort.fade ? 'checked' : ''}> Fade when teleporting</span></label></div>`);
       c.querySelector('[name=snap]').onchange = e => { comfort.snap = +e.target.value; save(); };
       c.querySelector('[name=seated]').onchange = e => { comfort.seated = e.target.checked; save(); };
       c.querySelector('[name=fade]').onchange = e => { comfort.fade = e.target.checked; save(); };
-    });
+    };
+    ctx.hudButton('VR comfort', comfortCard); ctx.sign('VR comfort', 'Turning, seated mode', -5.2, 0.8, 5.2, 0.45, comfortCard, 1.2);
     b.setAttribute('aria-label', 'Enter virtual reality');
   },
   onFrame() { if (this.tick && this.ctrls?.length && this.ctrls[0].parent) this.tick(); },

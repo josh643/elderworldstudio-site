@@ -8,7 +8,6 @@ export default {
     try { localStorage.removeItem('ews-classic'); } catch {}
     const fs = () => { document.documentElement.requestFullscreen?.().catch(() => {}); removeEventListener('pointerdown', fs); };
     addEventListener('pointerdown', fs);
-    const st = document.createElement('style'); st.textContent = '.office-hud .ob:not(.gold){display:none}'; document.head.append(st);
   },
   onFrame() {
     if (!this.on) return; const idle = this.ctx.idleMs(), now = performance.now();

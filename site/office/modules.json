@@ -96,6 +96,10 @@
    ]
   },
   {
+   "id": "props",
+   "src": "modules/props/index.js"
+  },
+  {
    "id": "live-status",
    "src": "modules/live-status/index.js",
    "config": {
@@ -117,6 +121,10 @@
     "idleSeconds": 90,
     "attractSeconds": 9
    }
+  },
+  {
+   "id": "wayfinding",
+   "src": "modules/wayfinding/index.js"
   }
  ]
 }
