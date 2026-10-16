@@ -14,7 +14,7 @@
     if (/swiftshader|llvmpipe|software|basic render/i.test(rn) && !q.has('office')) return false;   // no real GPU: classic site
   } catch (e) { return false; }
 
- import('/office/office.js?v=19').then(function (m) { m.start({ overlay: true }); }).catch(function (e) { console.warn('office failed, classic site stays', e); }); };
+ import('/office/office.js?v=20').then(function (m) { m.start({ overlay: true }); }).catch(function (e) { console.warn('office failed, classic site stays', e); }); };
   var later = function () { setTimeout(function () { (window.requestIdleCallback || setTimeout)(go, { timeout: 1500 }); }, 1800); };   // after first paint/interactive, so the classic page stays fast
   document.documentElement.classList.add('office-pending');
   if (document.readyState === 'complete') later(); else addEventListener('load', later);

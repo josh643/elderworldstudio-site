@@ -11,6 +11,9 @@ const facts = () => [
   'Games: ' + site.games.map(g => `${g.title} [${g.tag}]` + (g.buttons[0] ? ` link: ${g.buttons[0].href.split('?')[0]}` : '')).join('; '),
   'Services: ' + site.services.map(s => `${s.title}: ${s.text}`).join(' | '),
   'Merch: ' + site.merch.map(m => `${m.title} ${m.price} (${m.tag})`).join('; ') + '. Page: /merch/',
+  'What EWS does for businesses: (1) Websites for local businesses, built and hosted for you. (2) Elder POS: point-of-sale registers and self-order kiosks; the only per-sale cost is a $1 application fee per sale (always call it an application fee). (3) AI call center: AI phone agents that answer calls, take bookings and messages 24/7. (4) ElderAI: AI chat assistants and agents for a business website or social pages. (5) Custom software and 3D assets. Games: Star Wayfarer, Omnivael and casual titles.',
+  'Example for a barber shop: online booking website, AI phone agent that books appointments after hours, a POS register or check-in kiosk, and an ElderAI chat assistant answering questions and reminders. Next step is always Book a demo (collects name, email, business).',
+  'Never offer anything free, no free trials or free periods. Do not quote any price except the $1 application fee. Make no promises about results or dates.',
   `Devlogs: ${site.devlog.href}. Contact page: /contact/. Services and demo requests: /services/.`,
 ].join('\n');
 const SYSTEM = () => `You are Freyja, the friendly receptionist of Elder World Studio's 3D office (your hall is Fólkvangr). Greet visitors, explain the studio, give tours, answer FAQs from the FACTS only, point game fans to Steam/Google Play links, and help businesses request a free demo.
@@ -20,7 +23,7 @@ FACTS:
 ${facts()}`;
 function faq(q) {
   q = q.toLowerCase();
-  if (/demo|website|hire|quote|price|cost|business|chat ?bot|assistant|kiosk|pos/.test(q)) return { reply: 'We build websites, AI chat assistants and custom tools for small businesses, and we always start with a demo. I\u2019ll open the request form for you.', action: { lead: true, tour: 'services' } };
+  if (/demo|website|hire|quote|price|cost|business|shop|store|salon|barber|restaurant|future|phone|call|chat ?bot|assistant|kiosk|pos|help me|what can you/.test(q)) return { reply: 'For a business like yours we build: a booking website, an AI phone agent that answers calls and books appointments 24/7, Elder POS registers and check-in kiosks, and an ElderAI chat assistant for your site. Book a demo and we\u2019ll show you it working for your business. I\u2019ll open the request form.', action: { lead: true, tour: 'services' } };
   if (/game|steam|play|download|omnivael|wayfarer|chronicles|astro/.test(q)) return { reply: 'Our games are in the showrooms to the west: Star Wayfarer and Astro Dodge are on Google Play, and Omnivael and Chronicles of the Realm are coming to Steam. Tap a showroom to get the store link!', action: { tour: 'games' } };
   if (/merch|shirt|tee|hoodie|mug|sticker/.test(q)) return { reply: 'The merch display is just east of the lobby. Tap any item for details.', action: { tour: 'merch' } };
   if (/agent|team|odin|who works|ai/.test(q)) return { reply: 'Our studio is run day to day by AI agents with Norse names, led by Odin, our Sub-CEO. Head north to the Team Halls to watch them work.', action: { tour: 'teams' } };

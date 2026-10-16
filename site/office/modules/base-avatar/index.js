@@ -62,21 +62,22 @@ export default {
       const u = g.userData; if (u.cur === k) return; const next = u.act(k); next.reset().play();
       next.timeScale = 1; if (k === 'pickup') next.setLoop(THREE.LoopRepeat, Infinity);
       if (u.cur) u.act(u.cur).crossFadeTo(next, fade, false); else next.time = u.phase; u.cur = k;
-      u.body.position.y = 0; u.body.position.z = SEATED.has(k) ? -0.1 : 0; /* seat the pelvis on the chair, 0.1 m behind the agent's spot */ u.folder.visible = k === 'carry' || k === 'pickup';
+      u.body.position.y = 0; u.body.position.z = SEATED.has(k) ? 0.25 : 0; /* the sitting clip puts the pelvis 0.33 m behind the root: pull it forward onto the seat centre */ u.folder.visible = k === 'carry' || k === 'pickup';
     }
     const tmp = new THREE.Vector3(), frustum = new THREE.Frustum(), pm = new THREE.Matrix4(), sph = new THREE.Sphere(new THREE.Vector3(), 1.2);
     function animate(av, dt) {
       const u = av.userData, s = u.state || {}; let moving = false, dist = 0;
       if (u.target) { tmp.set(u.target.x - av.position.x, 0, u.target.z - av.position.z); dist = tmp.length();
         if (dist > 0.08) { moving = true; tmp.normalize(); const carryNow = ['QA', 'ready', 'review'].includes(s.stage), sp = carryNow ? 0.9 : dist > 4 ? 3.2 : 1.3; u.speed = sp; av.position.addScaledVector(tmp, Math.min(dist, dt * sp)); av.rotation.y = Math.atan2(tmp.x, tmp.z); }
-        else if (u.home && u.target.equals(u.home)) av.rotation.y = u.homeRot ?? Math.PI; }
+        }
+      if (!moving && u.home && Math.hypot(av.position.x - u.home.x, av.position.z - u.home.z) < 0.1) av.rotation.y = u.homeRot ?? Math.PI;   /* at the own desk: always face the monitor */
       const carrying = ['QA', 'ready', 'review'].includes(s.stage);
       let k;
       if (moving) k = carrying ? 'carry' : dist > 4 ? 'run' : 'walk';
       else if (u.pose === 'wave') k = u.talking ? 'talk' : (Math.sin(performance.now() / 4000 + u.phase) > 0.75 ? 'greet' : 'stand');
       else if (u.pose === 'host') k = u.greeting ? 'greet' : u.talking ? 'talk' : 'stand';
       else if (u.pose === 'talk') k = 'talk';
-      else if (s.blocked) k = 'blocked';
+      else if (s.blocked && !(u.team && u.home)) k = 'blocked';   /* team agents stay seated at their desk when blocked */
       else if (s.stage === 'QA') k = 'inspect';
       else if (s.stage === 'review') k = 'talk';
       else if (s.stage === 'ready') k = 'pickup';
@@ -95,7 +96,7 @@ export default {
       const p = s.progress; u.bar.visible = u.bg.visible = visible && p != null && !!s.stage;
       if (u.bar.visible) { u.bar.scale.x = Math.max(0.02, p); u.bar.position.x = -0.45 * (1 - p); u.bar.quaternion.copy(ctx.cam.quaternion); u.bg.quaternion.copy(ctx.cam.quaternion); }
       u.tagD = visible ? d : Infinity;
-      u.flag.visible = !!s.blocked; if (s.blocked) u.flag.rotation.y += dt * 2;
+      u.flag.visible = false; if (s.blocked) u.flag.rotation.y += dt * 2;
       
     }
     this.pre = () => { ctx.cam.updateMatrixWorld(); pm.multiplyMatrices(ctx.cam.projectionMatrix, ctx.cam.matrixWorldInverse); frustum.setFromProjectionMatrix(pm); };
