@@ -78,7 +78,7 @@ export default {
       else if (u.pose === 'host') k = u.greeting ? 'greet' : u.talking ? 'talk' : 'stand';
       else if (u.pose === 'talk') k = 'talk';
       else if (s.blocked && !(u.team && u.home)) k = 'blocked';   /* team agents stay seated at their desk when blocked */
-      else if (s.stage === 'QA') k = 'inspect';
+      else if (s.stage === 'QA') { k = 'type'; if (u.target) av.rotation.y = Math.PI; }   /* seated at the QA station, facing its monitor */
       else if (s.stage === 'review') k = 'talk';
       else if (s.stage === 'ready') k = 'pickup';
       else if (s.stage === 'released') k = 'cheer';

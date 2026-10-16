@@ -4,8 +4,8 @@
 //   onState?(snapshot), onFrame?(dt, t) }. Modules share things with ctx.provide(name, v) / ctx.use(name).
 import * as THREE from '../vendor/three.module.min.js?v=169';
 import { mergeGeometries } from '../vendor/jsm/utils/BufferGeometryUtils.js?v=169';
-import * as kit from './kit.js?v=22';
-const V = 22, GOLD = 0xd9b45a;
+import * as kit from './kit.js?v=23';
+const V = 23, GOLD = 0xd9b45a;
 const $ = (t, a = {}, h = '') => { const e = document.createElement(t); for (const k in a) e.setAttribute(k, a[k]); e.innerHTML = h; return e; };
 export const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -120,6 +120,14 @@ export async function start(opts = {}) {
   box(fX - fx, 0.2, fZ - fz, mat.floor, (fx + fX) / 2, -0.1, (fz + fZ) / 2);
   const wall = (x1, z1, x2, z2) => { const l = Math.hypot(x2 - x1, z2 - z1); const w = box(l, 4, 0.3, mat.wall, (x1 + x2) / 2, 2, (z1 + z2) / 2); w.rotation.y = -Math.atan2(z2 - z1, x2 - x1); };
   wall(fx, fZ, fX, fZ); wall(fx, fz, fX, fz); wall(fx, fz, fx, fZ); wall(fX, fz, fX, fZ);
+  /* hallway wall art: framed key art + studio pieces along the outer walls (same image = same material, so they batch) */
+  { const imgs = [...(ctx.site?.games || []).filter(g => g.img).map(g => g.img), ctx.site?.brand?.logo].filter(Boolean), artM = new Map(), frameM = mat.wood; let ai = 0;
+    const artMat = u => { if (!artM.has(u)) { const t = ctx.image(u); t.colorSpace = THREE.SRGBColorSpace; artM.set(u, new THREE.MeshBasicMaterial({ map: t, toneMapped: false })); } return artM.get(u); };
+    const run = (x1, z1, x2, z2, nx, nz) => { const l = Math.hypot(x2 - x1, z2 - z1), n = Math.floor((l - 4) / 6.5); if (!imgs.length || n < 1) return; const ry = Math.atan2(nx, nz);
+      for (let i = 0; i < n; i++) { const t = (i + 0.5) / n, x = x1 + (x2 - x1) * t + nx * 0.17, z = z1 + (z2 - z1) * t + nz * 0.17;
+        const f = box(1.7, 1.25, 0.05, frameM, x, 2.1, z); f.rotation.y = ry; f.userData.noCollide = 1;
+        const a = new THREE.Mesh(new THREE.PlaneGeometry(1.56, 1.11), artMat(imgs[ai++ % imgs.length])); a.position.set(x + nx * 0.03, 2.1, z + nz * 0.03); a.rotation.y = ry; a.userData.noCollide = 1; scene.add(a); } };
+    run(fx, fZ, fX, fZ, 0, -1); run(fx, fz, fX, fz, 0, 1); run(fx, fz, fx, fZ, 1, 0); run(fX, fz, fX, fZ, -1, 0); }
   // ceiling + recessed light panels (one instanced draw call), so there is no black void overhead
   box(fX - fx, 0.1, fZ - fz, new THREE.MeshStandardMaterial({ color: 0x3a3442, roughness: 0.9 }), (fx + fX) / 2, 4.05, (fz + fZ) / 2);
   { const cols = Math.floor((fX - fx) / 4), rows = Math.floor((fZ - fz) / 4), lp = new THREE.InstancedMesh(new THREE.PlaneGeometry(1.4, 0.5).rotateX(Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0xfff1dc, toneMapped: false }), cols * rows), m4 = new THREE.Matrix4(); let k = 0;
@@ -162,7 +170,7 @@ export async function start(opts = {}) {
       const gap = hits.length ? (bb.min.y + 0.02) - hits[0].point.y : bb.min.y; if (Math.abs(gap) > 0.05) out.push({ type: 'floating-prop', name: o.userData.prop, gap: +gap.toFixed(2), at: c.toArray().map(v => +v.toFixed(1)) }); });
     for (const av of ctx.use('avatar')?.all || []) { const B = av.userData.bones; if (!B?.upperarm_l || !B?.lowerarm_l) continue; const a = B.upperarm_l.getWorldPosition(new THREE.Vector3()), b = B.lowerarm_l.getWorldPosition(new THREE.Vector3());
       const dy = Math.abs(b.y - a.y) / a.distanceTo(b); if (av.visible && dy < 0.35) out.push({ type: 'bind-pose', name: av.userData.a?.name, clip: av.userData.cur }); }
-    for (const av of ctx.use('avatar')?.all || []) { const u = av.userData, st = u.state || {}; if (!u.team || !u.home || !['plan', 'build', 'self-check'].includes(st.stage)) continue;
+    for (const av of ctx.use('avatar')?.all || []) { const u = av.userData, st = u.state || {}; if (u.team && !u.monitor) out.push({ type: 'agent-without-station', name: u.a?.name }); if (!u.team || !u.home || !['plan', 'build', 'self-check'].includes(st.stage)) continue;
       const d = Math.hypot(av.position.x - u.home.x, av.position.z - u.home.z), f = new THREE.Vector3(Math.sin(av.rotation.y), 0, Math.cos(av.rotation.y)), m = u.monitor ? u.monitor.getWorldPosition(new THREE.Vector3()).sub(av.position).setY(0).normalize() : f;
       if (d > 0.3 || f.dot(m) < 0.8 || u.cur !== 'type') out.push({ type: 'working-not-seated', name: u.a?.name, d: +d.toFixed(2), dot: +f.dot(m).toFixed(2), clip: u.cur }); }
     scene.traverse(o => { if (!o.isMesh || !o.visible || o.userData.batched) return; let v = true; for (let p = o; p; p = p.parent) if (!p.visible) v = false; if (!v) return; const e = o.material?.emissive, wp = o.getWorldPosition(new THREE.Vector3());

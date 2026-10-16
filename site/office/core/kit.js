@@ -7,7 +7,6 @@ export function room(ctx, { x = 0, z = 0, w = 10, d = 8, floor = 0x2a2236, walls
   if (walls.includes('n')) W(0, -d / 2, w, 0); if (walls.includes('s')) W(0, d / 2, w, 0);
   if (walls.includes('w')) W(-w / 2, 0, d, Math.PI / 2); if (walls.includes('e')) W(w / 2, 0, d, Math.PI / 2);
   // team accent strip at the room's front edge (the carpet itself is neutral office tiles)
-  box(w - 0.2, 0.012, 0.25, M(new ctx.THREE.Color(floor).multiplyScalar(3).getHex()), 0, 0.045, d / 2 - 0.25, g);
   if (enclose) {   /* walled room: inset walls (neighbours sit back to back), doorway centred on the south side */
     const t = 0.12, h = 3, hx = w / 2 - t / 2, hz = d / 2 - t / 2, dw = 1.6;
     const P = (len, lx, lz, rot) => { const m = box(len, h, t, ctx.mat.wall, lx, h / 2, lz, g); m.rotation.y = rot; m.userData.wall = 1; return m; };

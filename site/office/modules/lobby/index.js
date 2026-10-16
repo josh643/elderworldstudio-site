@@ -16,6 +16,7 @@ export default {
       'Websites for businesses  \u2192 Client Sites', 'Elder POS registers & order kiosks  \u2192 Services',
       'AI call center & phone agents  \u2192 Call Center', 'ElderAI: AI chat & agents for businesses  \u2192 Services',
       'Custom software & 3D assets  \u2192 Services', 'Run live by our AI team. Watch them work in the halls. Book a demo with Freyja.'];
+    box(0.25, 4.0, 5.6, mat.wall, x - 8.12, 2.0, z + 4);   /* full-height feature wall the display is mounted on */
     box(0.08, 2.6, 4.7, mat.trim || M(0xb08d3c), x - 7.96, 2.1, z + 4);
     const od = panel(textCanvas(offer, { w: 1400, h: 760, size: 84 }), 4.5, 2.44, x - 7.9, 2.1, z + 4, Math.PI / 2); od.userData.plate = 'What we do';
     ctx.extend(x - 8, z - 4, x + 8, z + 10);
