@@ -8,7 +8,7 @@ export default {
     const f = A.make({ ...me, female: 1 }, 0x2f7d6a, () => chat()); f.position.set(x, 0, z); f.rotation.y = 0; f.userData.pose = 'host'; ctx.scene.add(f);
     const history = [];
     const leadForm = () => {
-      const c = ctx.card(`<h3>Request a free demo</h3><p>Tell us what you need. Our client team builds a quick demo for your business first, no obligation.</p>
+      const c = ctx.card(`<h3>Request a demo</h3><p>Tell us what you need. Our client team builds a quick demo for your business first.</p>
       <form class="office-lead"><label>Your name *<input name="name" required maxlength="100" autocomplete="name"></label><label>Email *<input name="email" type="email" required maxlength="200" autocomplete="email"></label>
       <label>Business name *<input name="business" required maxlength="150"></label><label>What do you need?<select name="type"><option>Website</option><option>AI tool</option><option>Custom software</option><option selected>Not sure</option></select></label>
       <label>Tell us about it *<textarea name="description" required maxlength="2000" rows="4"></textarea></label><div class="hp" aria-hidden="true"><input name="website_url" tabindex="-1" autocomplete="off"></div>

@@ -21,14 +21,14 @@ export default {
       const side = i % 2 ? 1 : -1, x = x0 - 2 - Math.floor(i / 2) * bay, z = z0 + side * 2.6, ry = side > 0 ? Math.PI : 0, col = NEON[i % NEON.length];
       const G = new THREE.Group(); G.position.set(x, 0, z); G.rotation.y = ry; ctx.scene.add(G);   // local +z faces the aisle
       box(0.95, 1.05, 0.75, body, 0, 0.525, 0, G);                                   // base
-      box(0.95, 0.9, 0.5, body, 0, 1.5, -0.12, G);                                   // screen housing
+      box(0.97, 0.92, 0.5, body, 0, 1.5, -0.12, G);                                   // screen housing
       box(0.95, 0.34, 0.6, body, 0, 2.12, -0.06, G);                                 // marquee box
       for (const sx of [-0.49, 0.49]) box(0.025, 2.28, 0.04, glow(col), sx, 1.14, 0.36, G);   // neon edges
       box(1.0, 0.03, 0.8, glow(col), 0, 0.015, 0, G);
       const mq = panel(sharp(textCanvas([g.title], { w: 1024, h: 300, size: 110, bg: '#0b0612' })), 0.9, 0.28, 0, 2.12, 0.245, 0, G);
       // screen: art if we have it, else a live attract-mode loop
       let tex; if (g.img) tex = sharp(ctx.image(g.img)); else { const a = attract(g.title, col); tex = sharp(new THREE.CanvasTexture(a.canvas)); loops.push({ a, tex, G }); }
-      const scr = new THREE.Mesh(new THREE.PlaneGeometry(0.8, 0.62), new THREE.MeshBasicMaterial({ map: tex, toneMapped: false }));
+      const scr = new THREE.Mesh(new THREE.PlaneGeometry(0.88, 0.68), new THREE.MeshBasicMaterial({ map: tex, toneMapped: false }));
       scr.position.set(0, 1.52, 0.135); scr.rotation.x = -0.12; G.add(scr);
       // control deck: buttons + stick
       const deck = box(0.95, 0.06, 0.34, body, 0, 1.07, 0.22, G); deck.rotation.x = 0.25;
@@ -41,7 +41,6 @@ export default {
       if (link) { const qr = panel(qrTex(link), 0.24, 0.24, 0.32, 0.68, 0.38, 0, G); ctx.onClick(qr, () => show(g)); }
       [mq, scr, plate].forEach(o => ctx.onClick(o, () => show(g)));
       // poster on the wall behind
-      if (g.img) panel(sharp(ctx.image(g.img)), 0.9, 0.9, 0, 2.2, -0.9, 0, G);
     });
     const len = Math.ceil(site.games.length / 2) * bay + 2;
     ctx.kit.corridor(ctx, { x1: x0 + 4, z1: z0, x2: x0 - len, z2: z0, width: 3 });
@@ -49,7 +48,21 @@ export default {
     for (const sz of [-1, 1]) { box(len, 3.2, 0.12, M(0x1a1426), x0 + 2 - len / 2, 1.6, z0 + sz * 3.6); box(len, 0.04, 0.04, glow(sz > 0 ? 0x9b5cff : 0x3ee8ff), x0 + 2 - len / 2, 3.1, z0 + sz * 3.53); }
     for (const sz of [-1, 1]) box(len, 0.03, 0.03, glow(sz > 0 ? 0x3ee8ff : 0xff3ea5), x0 + 2 - len / 2, 0.06, z0 + sz * 0.82);
     // lighting: a few warm/neon point lights (no shadow maps)
-    for (let k = 0; k < 3; k++) { const L = new THREE.PointLight(k % 2 ? 0xbfa6ff : 0xffd7a8, 6, 9, 1.6); L.position.set(x0 - 2 - k * len / 3, 3, z0); ctx.scene.add(L); }
+    // key-art posters on the walls between cabinets (cycling the games that have art), lit frames
+    const arts = site.games.filter(g => g.img); let ai = 0;
+    if (arts.length) for (let k = 0; k <= Math.ceil(site.games.length / 2); k++) for (const sz of [-1, 1]) {
+      const g = arts[ai++ % arts.length], px = x0 - 2 + bay / 2 - k * bay; if (px < x0 + 2 - len + 0.6) continue;
+      box(1.22, 1.22, 0.04, glow(NEON[(k + (sz > 0)) % NEON.length]), px, 2.0, z0 + sz * 3.52);
+      const pp = panel(sharp(ctx.image(g.img)), 1.15, 1.15, px, 2.0, z0 + sz * 3.49, sz > 0 ? Math.PI : 0); pp.material.toneMapped = false; pp.userData.label = g.title + ' poster'; ctx.onClick(pp, () => show(g)); }
+    // far-end feature wall: studio logo + neon sign, closes the hall
+    const fx = x0 + 2 - len; box(0.12, 3.4, 7.2, M(0x120c1c), fx, 1.7, z0);
+    box(0.04, 0.04, 6.6, glow(0xff3ea5), fx + 0.07, 3.15, z0); box(0.04, 0.04, 6.6, glow(0x3ee8ff), fx + 0.07, 0.3, z0);
+    const lg = panel(sharp(ctx.image(site.brand.logo)), 1.6, 1.6, fx + 0.08, 2.15, z0, Math.PI / 2); lg.userData.label = 'arcade logo';
+    const ns = panel(sharp(textCanvas(['Elder World Arcade', 'Made by our studio'], { w: 1200, h: 260, size: 100, bg: '#120c1c' })), 3.6, 0.78, fx + 0.08, 0.95, z0, Math.PI / 2); ns.material.toneMapped = false;
+    // ceiling with light strips so the hall isn't a black void
+    box(len, 0.06, 7.2, M(0x1c1530), x0 + 2 - len / 2, 3.4, z0);
+    for (const sz of [-1.6, 0, 1.6]) box(len - 0.4, 0.02, 0.12, glow(0xfff1d6), x0 + 2 - len / 2, 3.36, z0 + sz);
+    // no extra realtime lights (each one costs every lit pixel on iGPUs); screens/neon are unlit emissive
     ctx.sign('Arcade', `${site.games.length} games · ${ctx.verb} a cabinet`, x0 + 1.5, 2.9, z0, -Math.PI / 2, null, 2.4);
     ctx.extend(x0 - len - 1, z0 - 6, x0 + 4, z0 + 6);
     ctx.spot('games', [x0 - 1, 1.6, z0], [x0 - 10, 1.4, z0], 'Games');

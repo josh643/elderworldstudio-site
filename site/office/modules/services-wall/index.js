@@ -1,12 +1,27 @@
 // Services wall (from the services page panels) + demo kiosk. Kiosk opens the receptionist's lead form if present.
 export default {
   setup(ctx, cfg, [x0, z0]) {
-    const { site, box, mat, panel, textCanvas, esc } = ctx, lead = () => (ctx.use('leadForm') || (() => location.href = '/services/#request'))();
-    site.services.forEach((s, i) => { const p = panel(textCanvas([s.title, s.text], { w: 768, h: 512, size: 52 }), 2.6, 1.75, x0 + i * 2.9, 2.2, z0, Math.PI);
-      ctx.onClick(p, () => ctx.card(`<h3>${esc(s.title)}</h3><p>${esc(s.text)}</p><div class="row"><button class="ob gold" type="button" data-lead>Request a free demo</button>${s.links.map(l => ctx.btn({ ...l, primary: false })).join('')}</div>`).querySelector('[data-lead]').onclick = lead); });
-    const k = box(1, 1.4, 0.6, mat.trim, x0 + 4, 0.7, z0 - 3); ctx.onClick(k, lead);
-    ctx.onClick(panel(textCanvas(['Request a free demo', `${ctx.verb}: we build a quick demo for your business first.`], { w: 512, h: 256, size: 44 }), 1.6, 0.8, x0 + 4, 2, z0 - 3), lead);
+    const { site, box, mat, panel, textCanvas, esc, M } = ctx, lead = () => (ctx.use('leadForm') || (() => location.href = '/services/#request'))();
+    const n = site.services.length, W = 2.75, gap = 0.2, span = n * (W + gap);
+    // feature wall + neon trims behind the service panels, carpet in front
+    box(span + 0.6, 3.6, 0.1, M(0x16111f), x0 - 1.3 + span / 2 - W / 2 + 0.05, 1.8, z0 + 0.12);
+    for (const y of [0.25, 3.45]) box(span + 0.6, 0.03, 0.03, ctx.glow ? ctx.glow(0xd9b45a) : mat.trim, x0 - 1.3 + span / 2 - W / 2 + 0.05, y, z0 + 0.05);
+    if (ctx.rug) box(span, 0.03, 4.5, ctx.rug(0x24324a), x0 - 1.3 + span / 2 - W / 2 + 0.05, 0.035, z0 - 2.6);
+    site.services.forEach((s, i) => { const p = panel(textCanvas([s.title, s.text], { w: 1024, h: 690, size: 76 }), W, W * 0.674, x0 - 1.3 + i * (W + gap), 2.0, z0, Math.PI);
+      p.userData.label = s.title;
+      ctx.onClick(p, () => ctx.card(`<h3>${esc(s.title)}</h3><p>${esc(s.text)}</p><div class="row"><button class="ob gold" type="button" data-lead>Request a demo</button>${s.links.map(l => ctx.btn({ ...l, primary: false })).join('')}</div>`).querySelector('[data-lead]').onclick = lead); });
+    // demo kiosk: plinth, column, angled touchscreen with a lit bezel, gold base ring
+    const T = ctx.THREE, kx = x0 - 1.3 + span - W / 2 + 0.9, kz = z0 - 1.6, K = new T.Group(); K.position.set(kx, 0, kz); K.rotation.y = Math.atan2((x0 + 4) - kx, (z0 - 7) - kz);   // at the end of the wall, turned to the visitor ctx.scene.add(K);
+    const dark = new T.MeshStandardMaterial({ color: 0x15121c, roughness: 0.35, metalness: 0.5 });
+    const add = (geo, m, x, y, z, rx = 0) => { const o = new T.Mesh(geo, m); o.position.set(x, y, z); o.rotation.x = rx; K.add(o); return o; };
+    add(new T.CylinderGeometry(0.42, 0.46, 0.08, 32), mat.trim, 0, 0.04, 0);
+    add(new T.CylinderGeometry(0.11, 0.14, 1.0, 20), dark, 0, 0.58, 0);
+    const head = add(new T.BoxGeometry(0.78, 0.52, 0.06), dark, 0, 1.25, 0.02, -0.5);
+    const scr = panel(textCanvas(['Book a demo', `${ctx.verb} to request one. We build a quick demo for your business so you can see it working first.`], { w: 900, h: 580, size: 84, bg: '#0b1626' }), 0.7, 0.45, 0, 1.25, 0.06, 0, K);
+    scr.rotation.x = -0.5; scr.position.set(0, 1.263, 0.055); scr.material.toneMapped = false; scr.userData.label = 'Book a demo';
+    [head, scr].forEach(o => ctx.onClick(o, lead));
+    ctx.sign('Services', `${n} ways we help · ${ctx.verb} a panel`, x0 + span / 2 - 1.3, 3.0, z0 - 0.02, Math.PI, null, 2.2);
     ctx.extend(x0 - 2, z0 - 5, x0 + site.services.length * 2.9, z0 + 0.4);
-    ctx.spot('services', [x0 + 4, 1.6, z0 - 6], [x0 + 4, 1.8, z0], 'Services');
+    ctx.spot('services', [x0 + 4, 1.6, z0 - 7], [x0 + 4, 1.8, z0], 'Services');
   },
 };

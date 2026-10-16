@@ -20,7 +20,7 @@ FACTS:
 ${facts()}`;
 function faq(q) {
   q = q.toLowerCase();
-  if (/demo|website|hire|quote|price|cost|business|chat ?bot|assistant|kiosk|pos/.test(q)) return { reply: 'We build websites, AI chat assistants and custom tools for small businesses, and we always start with a free demo. I\u2019ll open the request form for you.', action: { lead: true, tour: 'services' } };
+  if (/demo|website|hire|quote|price|cost|business|chat ?bot|assistant|kiosk|pos/.test(q)) return { reply: 'We build websites, AI chat assistants and custom tools for small businesses, and we always start with a demo. I\u2019ll open the request form for you.', action: { lead: true, tour: 'services' } };
   if (/game|steam|play|download|omnivael|wayfarer|chronicles|astro/.test(q)) return { reply: 'Our games are in the showrooms to the west: Star Wayfarer and Astro Dodge are on Google Play, and Omnivael and Chronicles of the Realm are coming to Steam. Tap a showroom to get the store link!', action: { tour: 'games' } };
   if (/merch|shirt|tee|hoodie|mug|sticker/.test(q)) return { reply: 'The merch display is just east of the lobby. Tap any item for details.', action: { tour: 'merch' } };
   if (/agent|team|odin|who works|ai/.test(q)) return { reply: 'Our studio is run day to day by AI agents with Norse names, led by Odin, our Sub-CEO. Head north to the Team Halls to watch them work.', action: { tour: 'teams' } };

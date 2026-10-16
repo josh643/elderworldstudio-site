@@ -10,7 +10,8 @@ export default {
     const { THREE, renderer: R, scene, mat } = ctx, q = ctx.tier >= 2 ? 'hi' : 'lo', L = new THREE.TextureLoader();
     const pm = new THREE.PMREMGenerator(R); scene.environment = pm.fromScene(new RoomEnvironment(), 0.04).texture; pm.dispose();
     R.toneMapping = THREE.ACESFilmicToneMapping; R.toneMappingExposure = 0.9;
-    const tex = (n, k, rep, srgb) => { const t = L.load(`/office/modules/materials/tex/${n}-${k}-${q}.jpg`); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(rep, rep); t.anisotropy = 8; if (srgb) t.colorSpace = THREE.SRGBColorSpace; return t; };
+    const XH = new Set(['floor', 'wood', 'carpet']), big = ctx.tier >= 2 && matchMedia('(pointer: fine)').matches;   // desktop: 2K maps on the big near surfaces
+    const tex = (n, k, rep, srgb) => { const t = L.load(`/office/modules/materials/tex/${n}-${k}-${big && XH.has(n) ? 'xh' : q}.jpg`); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(rep, rep); t.anisotropy = R.capabilities.getMaxAnisotropy(); if (srgb) t.colorSpace = THREE.SRGBColorSpace; return t; };
     const pbr = (n, rep, o = {}) => new THREE.MeshStandardMaterial({ map: tex(n, 'c', rep, true), normalMap: tex(n, 'n', rep), roughnessMap: tex(n, 'r', rep), envMapIntensity: 0.8, ...o });
     Object.assign(mat, {
       floor: pbr('floor', 30), wall: pbr('plaster', 6), wood: pbr('wood', 1), stone: pbr('concrete', 1),

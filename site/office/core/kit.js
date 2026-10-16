@@ -29,7 +29,7 @@ function shared(ctx) { if (G) return G; const T = ctx.THREE;
 export function desk(ctx, x, z, parent) { const T = ctx.THREE, g0 = shared(ctx), m = ctx.mat, par = parent || ctx.scene;
   const mesh = (geo, mt, px, py, pz, ry = 0) => { const o = new T.Mesh(geo, mt); o.position.set(px, py, pz); o.rotation.y = ry; par.add(o); return o; };
   const ao = mesh(g0.aoGeo, g0.ao, x, 0.045, z - 0.3); ao.scale.set(2.0, 1, 2.0);
-  const d = ctx.box(1.4, 0.04, 0.7, m.wood, x, 0.74, z - 0.6, parent);
+  const d = ctx.box(1.4, 0.04, 0.7, m.wood, x, 0.74, z - 0.6, parent); (ctx.desks ||= []).push([x, z]);
   for (const sx of [-0.65, 0.65]) for (const sz of [-0.28, 0.28]) mesh(g0.tleg, m.rack, x + sx, 0.36, z - 0.6 + sz);
   ctx.box(1.26, 0.35, 0.02, m.wood, x, 0.52, z - 0.9, parent);
   // chair
@@ -38,7 +38,7 @@ export function desk(ctx, x, z, parent) { const T = ctx.THREE, g0 = shared(ctx),
   mesh(g0.seat, fab, x, 0.46, z + 0.1); mesh(g0.back, fab, x, 0.8, z + 0.36).rotation.x = -0.12;
   // monitor + keyboard
   mesh(g0.foot, m.rack, x, 0.766, z - 0.82); mesh(g0.neck, m.rack, x, 0.87, z - 0.84);
-  mesh(g0.bezel, m.dark, x, 1.08, z - 0.83); const mon = mesh(g0.screen, m.dark, x, 1.08, z - 0.813);
+  mesh(g0.bezel, m.dark, x, 1.08, z - 0.83); const mon = mesh(g0.screen, m.dark, x, 1.08, z - 0.813); mon.userData.keep = 1;
   mesh(g0.kb, m.dark, x, 0.77, z - 0.5);
   return { desk: d, monitor: mon }; }
 export function pedestal(ctx, x, z, gold, parent) { return ctx.box(0.7, 1, 0.7, gold ? ctx.mat.trim : ctx.mat.stone, x, 0.5, z, parent); }

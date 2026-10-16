@@ -8,7 +8,13 @@ export default {
     teams.forEach((t, i) => {
       const cx = x0 - totalW / 2 + (i % cols) * W + W / 2, cz = z0 - Math.floor(i / cols) * D - D / 2, col = COLS[i % COLS.length];
       ctx.kit.room(ctx, { x: cx, z: cz, w: W, d: D, floor: new THREE.Color(col).multiplyScalar(0.25).getHex(), title: t.name + ' hall', sub: `${t.members.length} agents` });
-      const qa = box(1.4, 0.9, 0.7, M(0x2e5a46), cx + W / 2 - 1.3, 0.45, cz + D / 2 - 1.4), tray = box(0.8, 0.8, 0.5, ctx.mat.trim, cx - W / 2 + 1.1, 0.4, cz + D / 2 - 1.3);
+      // QA bench: a real work table with a test tablet; review tray: a low filing cabinet with an in-tray on top
+      const qx = cx + W / 2 - 1.3, qz = cz + D / 2 - 1.4, tx = cx - W / 2 + 1.1, tz = cz + D / 2 - 1.3, mt = ctx.mat;
+      const qa = box(1.4, 0.04, 0.7, mt.wood, qx, 0.74, qz); for (const sx of [-0.65, 0.65]) for (const sz of [-0.3, 0.3]) box(0.04, 0.72, 0.04, mt.rack, qx + sx, 0.36, qz + sz);
+      box(0.32, 0.015, 0.22, mt.glow || mt.dark, qx - 0.2, 0.77, qz); box(0.36, 0.01, 0.26, mt.dark, qx - 0.2, 0.765, qz);
+      ctx.sign('QA bench', '', qx, 1.25, qz - 0.36, 0, null, 0.9);
+      const tray = box(0.8, 0.72, 0.5, mt.rack, tx, 0.36, tz); box(0.5, 0.06, 0.34, mt.trim, tx, 0.75, tz); for (const y of [0.2, 0.5]) box(0.7, 0.012, 0.01, mt.trim, tx, y, tz + 0.255);
+      ctx.sign('Review', 'waiting on Joshua', tx, 1.2, tz - 0.26, 0, null, 0.9);
       rooms[t.key] = { qa: qa.position.clone().setY(0).add(new THREE.Vector3(0, 0, 0.8)), tray: tray.position.clone().setY(0).add(new THREE.Vector3(0.6, 0, 0.6)) };
       const per = Math.ceil(t.members.length / 2);
       t.members.forEach((a, j) => {

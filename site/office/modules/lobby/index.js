@@ -9,7 +9,8 @@ export default {
     panel(ctx.image(site.brand.logo), 2.0, 2.0, x, 4.25, z + 9.70, Math.PI);
     panel(textCanvas([site.brand.name, site.brand.tagline], { w: 1280, h: 250, size: 92 }), 4.9, 0.96, x, 2.75, z + 9.74, Math.PI);
     ctx.directoryAt = { x, y: 1.85, z: z + 9.72, ry: Math.PI };
-    for (const sx of [-1, 1]) for (const pz of [1.5, 5.5, 9.3]) box(0.5, 4.2, 0.5, mat.stone, x + sx * 7.6, 2.1, z + pz);
+    // pillars only in room corners, flush to the walls (the east side opens onto the services hall, so none there)
+    for (const pz of [-3.6, 9.4]) box(0.5, 4.2, 0.5, mat.stone, x - 7.7, 2.1, z + pz);
     const about = panel(textCanvas(['Welcome to Fólkvangr', site.brand.about, 'Freyja at the desk can show you around.'], { w: 1024, h: 512, size: 58 }), 4, 2, x - 6, 2, z + 4, Math.PI / 2);
     ctx.onClick(about, () => ctx.card(`<h3>${ctx.esc(site.brand.name)}</h3><p>${ctx.esc(site.brand.about)}</p><p>Our studio is run day to day by a team of AI agents with Norse names, overseen by our founder. Walk through the halls to see what they're working on right now.</p>`));
     ctx.extend(x - 8, z - 4, x + 8, z + 10);

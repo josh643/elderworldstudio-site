@@ -8,16 +8,20 @@ import { MeshoptDecoder } from '../../vendor/jsm/libs/meshopt_decoder.module.js?
 import * as SkeletonUtils from '../../vendor/jsm/utils/SkeletonUtils.js?v=169';
 import { DRACOLoader } from '../../vendor/jsm/loaders/DRACOLoader.js?v=169';
 import { KTX2Loader } from '../../vendor/jsm/loaders/KTX2Loader.js?v=169';
+import { pose, bonesOf } from './poses.js?v=1';
 import capsule from './capsule.js?v=6';
-const CLIP = { idle: 'Sitting_Idle_Loop', type: 'Sitting_Talking_Loop', stand: 'Idle_Loop', walk: 'Walk_Loop', run: 'Jog_Fwd_Loop', carry: 'Walk_Formal_Loop',
-  inspect: 'Interact', talk: 'Idle_Talking_Loop', pickup: 'PickUp_Table', blocked: 'Idle_Loop', cheer: 'Dance_Loop', greet: 'Spell_Simple_Enter' };
+const CLIP = { idle: 'Sitting_Idle_Loop', type: 'Sitting_Idle_Loop', stand: 'Idle_Loop', walk: 'Walk_Loop', run: 'Jog_Fwd_Loop', carry: 'Walk_Carry_Loop',
+  inspect: 'Interact', talk: 'Idle_Talking_Loop', pickup: 'PickUp_Table', blocked: 'Idle_FoldArms_Loop', cheer: 'Dance_Loop', greet: 'Idle_Loop', phone: 'Idle_TalkingPhone_Loop', nod: 'Yes' };
+// authored ground speed of the locomotion clips (m/s, from the root-motion versions) so feet don't slide
+const SPEED = { walk: 0.975, carry: 0.65, run: 5.36 };
+const LAYER = { type: 'type', greet: 'wave' };   // procedural arm layers (poses.js) on top of the base clip
 const SEATED = new Set(['idle', 'type']);
 export default {
   async setup(ctx, cfg) {
     const { THREE, M, mat } = ctx;
     let gltf, humans;
     const L = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).setDRACOLoader(new DRACOLoader().setDecoderPath('/office/vendor/draco/')).setKTX2Loader(new KTX2Loader().setTranscoderPath('/office/vendor/basis/').detectSupport(ctx.renderer));
-    try { [gltf, ...humans] = await Promise.all(['agent.glb?v=1', 'human_Male.glb?v=1', 'human_Female.glb?v=1'].map(f => L.loadAsync('/office/modules/base-avatar/assets/' + f))); }
+    try { [gltf, ...humans] = await Promise.all(['anims.glb?v=1', 'human_Male.glb?v=1', 'human_Female.glb?v=1'].map(f => L.loadAsync('/office/modules/base-avatar/assets/' + f))); }
     catch (e) { console.warn('rig load failed, capsule fallback', e); this.fb = capsule; return capsule.setup(ctx, cfg); }
     // clips come from the UAL file; bodies are the clothed Universal Base Characters on the same 65-bone rig (CC0)
     const clips = Object.fromEntries(gltf.animations.map(c => [c.name, c]));
@@ -34,7 +38,7 @@ export default {
     const agents = new Map(), all = new Set();
     function make(a, col, onPick) {
       const h = hash(a.id || a.name), base = bases[a.female ?? (h & 1)] || bases[0], scale = base.userData.k;
-      const g = new THREE.Group(), body = SkeletonUtils.clone(base); body.scale.setScalar(scale); body.rotation.y = Math.PI; g.add(body);
+      const g = new THREE.Group(), body = SkeletonUtils.clone(base); body.scale.setScalar(scale); body.rotation.y = 0; g.add(body);   // UBC humans face +z = the group's forward
       const hit = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 1.8, 6), new THREE.MeshBasicMaterial({ visible: false })); hit.position.y = 0.9; g.add(hit);
       body.traverse(o => { if (!o.isMesh) return; const n = o.material?.name || '';
         if (n === 'Shirt') o.material = shirt(o.material, col); else if (/hair/i.test(n)) o.material = hair(o.material, (h >> 3) % HAIR.length); });
@@ -50,21 +54,21 @@ export default {
       const flag = new THREE.Mesh(geo.flag, red); flag.position.y = 2.62; flag.visible = false; g.add(flag);
       const mixer = new THREE.AnimationMixer(body), actions = {};
       const act = k => actions[k] ||= mixer.clipAction(clips[CLIP[k]] || clips.Idle_Loop);
-      g.userData = { a, body, tag, bar, bg, flag, folder, mixer, act, cur: null, state: {}, target: null, home: null, phase: Math.random() * 6, pose: null, acc: 0, frame: 0 };
+      g.userData = { a, body, tag, bones: bonesOf(body), lw: 0, layer: null, bar, bg, flag, folder, mixer, act, cur: null, state: {}, target: null, home: null, phase: Math.random() * 6, pose: null, acc: 0, frame: 0 };
       play(g, 'idle', 0); ctx.onClick(hit, () => { ctx.revealTag(g); onPick && onPick(); });
       all.add(g); if (a.id) agents.set(a.id, g); return g;
     }
     function play(g, k, fade = 0.3) {
       const u = g.userData; if (u.cur === k) return; const next = u.act(k); next.reset().play();
-      next.timeScale = k === 'blocked' ? 0.45 : 1; if (k === 'pickup' || k === 'greet') { next.setLoop(THREE.LoopRepeat, Infinity); }
+      next.timeScale = 1; if (k === 'pickup') next.setLoop(THREE.LoopRepeat, Infinity);
       if (u.cur) u.act(u.cur).crossFadeTo(next, fade, false); else next.time = u.phase; u.cur = k;
-      u.body.position.y = SEATED.has(k) ? 0.0 : 0; u.folder.visible = k === 'carry' || k === 'pickup';
+      u.body.position.y = 0; u.body.position.z = SEATED.has(k) ? -0.1 : 0; /* seat the pelvis on the chair, 0.1 m behind the agent's spot */ u.folder.visible = k === 'carry' || k === 'pickup';
     }
     const tmp = new THREE.Vector3(), frustum = new THREE.Frustum(), pm = new THREE.Matrix4(), sph = new THREE.Sphere(new THREE.Vector3(), 1.2);
     function animate(av, dt) {
       const u = av.userData, s = u.state || {}; let moving = false, dist = 0;
       if (u.target) { tmp.set(u.target.x - av.position.x, 0, u.target.z - av.position.z); dist = tmp.length();
-        if (dist > 0.08) { moving = true; tmp.normalize(); const sp = dist > 4 ? 2.6 : 1.3; av.position.addScaledVector(tmp, Math.min(dist, dt * sp)); av.rotation.y = Math.atan2(tmp.x, tmp.z); }
+        if (dist > 0.08) { moving = true; tmp.normalize(); const carryNow = ['QA', 'ready', 'review'].includes(s.stage), sp = carryNow ? 0.9 : dist > 4 ? 3.2 : 1.3; u.speed = sp; av.position.addScaledVector(tmp, Math.min(dist, dt * sp)); av.rotation.y = Math.atan2(tmp.x, tmp.z); }
         else if (u.home && u.target.equals(u.home)) av.rotation.y = u.homeRot ?? Math.PI; }
       const carrying = ['QA', 'ready', 'review'].includes(s.stage);
       let k;
@@ -80,11 +84,13 @@ export default {
       else if (['plan', 'build', 'self-check'].includes(s.stage)) k = 'type';
       else k = u.home ? (u.team ? 'idle' : 'stand') : 'stand';
       if (!u.team && k === 'idle') k = 'stand';
-      play(av, k);
+      play(av, k); if (SPEED[k] && u.speed) u.act(k).timeScale = u.speed / SPEED[k];
+      const lay = LAYER[k] || null; if (lay) u.layer = lay; u.lw += ((lay ? 1 : 0) - u.lw) * Math.min(1, dt * 5);
       // culling + distance LOD for the skeleton update
       sph.center.copy(av.position).setY(0.9); const d = sph.center.distanceTo(ctx.cam.position); u.acc += dt; u.frame++;
-      const visible = frustum.intersectsSphere(sph) && d < 40, every = d < 12 ? 1 : d < 22 ? 2 : 4;
-      if (visible && u.frame % every === 0) { u.mixer.update(u.acc); u.acc = 0; }
+      const L = ctx.lod || 1, visible = d < 30 * L && frustum.intersectsSphere(sph), every = d < 8 * L ? 1 : d < 14 * L ? 2 : 6;   // far agents: hidden; mid: thinned updates
+      av.visible = d < 30 * L;
+      if (visible && u.frame % every === 0) { u.mixer.update(u.acc); u.acc = 0; if (u.layer && u.lw > 0.01 && d < 14) { u.lt = (u.lt || 0) + dt * every; av.updateMatrixWorld(true); pose(u.bones, u.layer, u.lt + u.phase, u.lw, av); } }
       const p = s.progress; u.bar.visible = u.bg.visible = visible && p != null && !!s.stage;
       if (u.bar.visible) { u.bar.scale.x = Math.max(0.02, p); u.bar.position.x = -0.45 * (1 - p); u.bar.quaternion.copy(ctx.cam.quaternion); u.bg.quaternion.copy(ctx.cam.quaternion); }
       u.tagD = visible ? d : Infinity;
