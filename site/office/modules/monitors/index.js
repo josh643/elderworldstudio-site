@@ -14,7 +14,7 @@ export default {
     const geos = screens.map((m, i) => { const geo = m.geometry.clone(), uv = geo.attributes.uv, c = i % cols, r = Math.floor(i / cols);
       for (let k = 0; k < uv.count; k++) uv.setXY(k, (c + uv.getX(k)) / cols, 1 - (r + 1 - uv.getY(k)) / rows);
       geo.applyMatrix4(m.matrixWorld); m.parent?.remove(m); return geo; });
-    const mesh = new THREE.Mesh(mergeGeometries(geos), new THREE.MeshBasicMaterial({ map: tex, toneMapped: false })); mesh.userData.keep = 1; ctx.scene.add(mesh);
+    const mesh = new THREE.Mesh(mergeGeometries(geos), new THREE.MeshBasicMaterial({ map: tex, toneMapped: false })); mesh.userData.keep = 1; mesh.userData.noCollide = 1; ctx.scene.add(mesh);
     const owner = new Map(); for (const av of ctx.use('avatar')?.all || []) if (av.userData.monitor) owner.set(screens.indexOf(av.userData.monitor), av);
     const draw = (i, t) => { const av = owner.get(i), u = av?.userData || {}, a = u.a || {}, s = u.state || {}, x0 = (i % cols) * cw, y0 = Math.floor(i / cols) * ch, f = cw / 256;
       g.save(); g.beginPath(); g.rect(x0, y0, cw, ch); g.clip(); g.translate(x0, y0); g.scale(f, f);
