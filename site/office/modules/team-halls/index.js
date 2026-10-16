@@ -29,7 +29,7 @@ export default {
         add(G2.cyl, G2.white, cx + W / 2 - 0.6, 0.48, bz); add(G2.jug, G2.water, cx + W / 2 - 0.6, 1.14, bz);
         const pr = add(new T3.BoxGeometry(0.55, 0.35, 0.45), G2.grey, cx - W / 2 + 0.7, 0.92, bz); add(new T3.BoxGeometry(0.6, 0.74, 0.5), mt.wood, cx - W / 2 + 0.7, 0.37, bz);
         add(new T3.BoxGeometry(0.45, 1.1, 0.55), mt.rack, cx - W / 2 + 1.4, 0.55, bz);
-        add(G2.pot, G2.clay, cx + W / 2 - 1.3, 0.17, bz); add(G2.leaf, G2.green, cx + W / 2 - 1.3, 0.62, bz); }
+        ctx.kit.plant(ctx, cx + W / 2 - 1.3, bz, 1); }
       rooms[t.key] = { qa: new THREE.Vector3(qx, 0, qz + 0.3), tray: tray.position.clone().setY(0).add(new THREE.Vector3(0.6, 0, 0.6)) };
       const per = Math.ceil(t.members.length / 2);
       t.members.forEach((a, j) => {

@@ -6,7 +6,7 @@ import { DRACOLoader } from '../../vendor/jsm/loaders/DRACOLoader.js?v=169';
 import { KTX2Loader } from '../../vendor/jsm/loaders/KTX2Loader.js?v=169';
 const PLACE = [
   ['Sofa_01', -5.5, 6.5, Math.PI / 2], ['modern_arm_chair_01', -5.2, 3.6, Math.PI / 2 + 0.3], ['modern_arm_chair_01', 5.2, 3.6, -Math.PI / 2 - 0.3],
-  ['potted_plant_02', -7, 8.8, 0], ['potted_plant_02', 7, 8.8, 0], ['potted_plant_02', -2.6, -1.4, 0], ['potted_plant_02', 2.6, -1.4, 0],
+  
   ['drawer_cabinet', 2.4, -2.6, Math.PI], ['desk_lamp_arm_01', 1.4, -0.95, Math.PI],
 ];
 export default {

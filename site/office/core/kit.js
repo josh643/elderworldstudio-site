@@ -1,3 +1,4 @@
+import * as PL from './plants.js?v=1';
 // Snap-together kit pieces. Every piece is a pure function of (ctx, options) and returns its THREE.Group.
 // Grid unit = 1 m. Rooms snap on their centre; walls/doors are optional per side.
 export function room(ctx, { x = 0, z = 0, w = 10, d = 8, floor = 0x2a2236, walls = '', title, sub, enclose = false, doorX = 0 }) {
@@ -66,12 +67,7 @@ export function pedestal(ctx, x, z, gold, parent) { return ctx.box(0.7, 1, 0.7, 
 let VIEW = null;
 export function viewTex(ctx) {
   if (VIEW) return VIEW; const c = document.createElement('canvas'); c.width = 512; c.height = 320; const g = c.getContext('2d');
-  const sky = g.createLinearGradient(0, 0, 0, 190); sky.addColorStop(0, '#8fbbe3'); sky.addColorStop(1, '#e9e2cf'); g.fillStyle = sky; g.fillRect(0, 0, 512, 190);
-  g.fillStyle = 'rgba(255,255,255,.75)'; for (const [x, y, r] of [[90, 60, 26], [120, 52, 32], [150, 62, 22], [360, 40, 20], [385, 34, 28], [410, 44, 18]]) { g.beginPath(); g.arc(x, y, r, 0, 7); g.fill(); }
-  g.fillStyle = '#6f8a6a'; g.beginPath(); g.moveTo(0, 190); for (let x = 0; x <= 512; x += 16) g.lineTo(x, 172 - Math.abs(Math.sin(x * 0.021)) * 26 - (x % 48 === 0 ? 8 : 0)); g.lineTo(512, 190); g.fill();   // far treeline
-  g.fillStyle = '#b8a688'; for (const [x, w, h] of [[300, 40, 34], [350, 26, 48], [384, 34, 28]]) g.fillRect(x, 190 - h, w, h);                                            // campus buildings
-  const lake = g.createLinearGradient(0, 190, 0, 320); lake.addColorStop(0, '#7fa6c4'); lake.addColorStop(1, '#3f6684'); g.fillStyle = lake; g.fillRect(0, 190, 512, 130);
-  g.fillStyle = 'rgba(255,255,255,.25)'; for (let i = 0; i < 40; i++) g.fillRect((i * 97) % 512, 196 + (i * 37) % 120, 18 + (i % 5) * 6, 2);
+  g.fillStyle = '#9cc7ea'; g.fillRect(0, 0, 512, 320);   /* painted by core/daynight.js drawView() for the current time of day */
   VIEW = new ctx.THREE.CanvasTexture(c); VIEW.colorSpace = ctx.THREE.SRGBColorSpace; return VIEW;
 }
 export function windowPane(ctx, x, y, z, ry, w = 2.2, h = 1.5, parent) {
@@ -81,7 +77,4 @@ export function windowPane(ctx, x, y, z, ry, w = 2.2, h = 1.5, parent) {
   for (const sx of [-1, 1]) ctx.box(0.06, h, 0.06, fr, sx * (w / 2 + 0.03), 0, 0.02, G); ctx.box(0.04, h, 0.03, fr, 0, 0, 0.02, G); ctx.box(w, 0.04, 0.03, fr, 0, h * 0.18, 0.02, G);
   return G;
 }
-export function plant(ctx, x, z, s = 1, parent) {
-  const T = ctx.THREE; ctx.box(0.36 * s, 0.4 * s, 0.36 * s, ctx.mat.wood, x, 0.2 * s, z, parent);
-  const lv = new T.Mesh(new T.IcosahedronGeometry(0.42 * s, 0), ctx.M(0x3f6b3a)); lv.position.set(x, 0.75 * s, z); lv.scale.y = 1.3; (parent || ctx.scene).add(lv); return lv;
-}
+export function plant(ctx, x, z, s = 1, parent) { return PL.place(ctx, x, z, s, parent); }   /* unique species per plant (core/plants.js) */

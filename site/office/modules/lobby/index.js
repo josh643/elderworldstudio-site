@@ -6,14 +6,12 @@ export default {
     box(2.6, 0.04, 9.8, ctx.rug ? ctx.rug(0x8a3040) : M(0x5a1f2c), x, 0.02, z + 4.5); box(2.8, 0.02, 10, mat.trim || M(0xb08d3c), x, 0.01, z + 4.5);
     ctx.lobbyAt = { x, z };
     // back wall feature: framed logo mounted on the wall, brand banner, then the directory (wayfinding adds tiles via ctx.directory)
-    /* main entrance (floor_g reference): glass double doors on the front wall, straight down the red carpet to Freyja */
-    { const T = ctx.THREE, ez = z + 9.74, glass = new T.MeshBasicMaterial({ color: 0x9fc4d8, transparent: true, opacity: 0.35, depthWrite: false });
-      box(3.6, 0.14, 0.16, mat.trim, x, 2.75, ez); for (const sx of [-1.8, -0.02, 0.02, 1.8]) box(0.08, 2.75, 0.16, mat.trim, x + sx, 1.375, ez);
-      for (const sx of [-0.9, 0.9]) { const gp = new T.Mesh(new T.PlaneGeometry(1.7, 2.6), glass); gp.position.set(x + sx, 1.35, ez - 0.01); gp.rotation.y = Math.PI; ctx.scene.add(gp); gp.userData.noCollide = 1; box(0.04, 0.5, 0.06, mat.trim, x + sx * 0.12, 1.1, ez - 0.06); }
-      const vw = ctx.kit.windowPane(ctx, x, 1.4, ez + 0.02, Math.PI, 3.4, 2.6); vw.position.z = ez + 0.03; vw.children.slice(1).forEach(c => c.visible = false);   /* outside view through the glass */
-      for (const sx of [-2.6, 2.6]) ctx.kit.plant(ctx, x + sx, ez - 0.5, 1.1);
-      const pl = panel(textCanvas(['Entrance', 'Elder World Studio'], { w: 640, h: 160, size: 60 }), 1.6, 0.4, x, 3.15, ez - 0.03, Math.PI); pl.userData.plate = 'Entrance'; }
-    ctx.directoryAt = { x, y: 1.7, z: z + 9.72, ry: Math.PI };
+    /* main entrance (floor_g + approved glass exterior): the engine opens the front shell wall over ctx.entrance and builds a
+       full-height glass wall with two-panel sliding doors centred on the red carpet (core/engine.js). Nothing stands on the
+       glass line: no column, plants or bench within 1 m of it. */
+    ctx.entrance = { x, w: 11 };
+    for (const sx of [-4.2, 4.2]) ctx.kit.plant(ctx, x + sx, z + 7.6, 1.1);
+    ctx.directoryAt = { x: x - 4.6, y: 1.2, z: z + 6.2, ry: Math.PI / 2 };   /* Classic plaque on a stand by the left wall, off the glass line */
     // pillars only in room corners, flush to the walls (the east side opens onto the services hall, so none there)
     for (const pz of [-3.6, 9.4]) box(0.5, 4.2, 0.5, mat.stone, x - 7.7, 2.1, z + pz);
     /* the offering wall display moved onto the carpet kiosks (one section each) */

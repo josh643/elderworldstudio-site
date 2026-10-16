@@ -4,8 +4,9 @@
 //   onState?(snapshot), onFrame?(dt, t) }. Modules share things with ctx.provide(name, v) / ctx.use(name).
 import * as THREE from '../vendor/three.module.min.js?v=169';
 import { mergeGeometries } from '../vendor/jsm/utils/BufferGeometryUtils.js?v=169';
-import * as kit from './kit.js?v=28';
-const V = 28, GOLD = 0xd9b45a;
+import * as kit from './kit.js?v=29';
+import * as DN from './daynight.js?v=1';
+const V = 29, GOLD = 0xd9b45a;
 const $ = (t, a = {}, h = '') => { const e = document.createElement(t); for (const k in a) e.setAttribute(k, a[k]); e.innerHTML = h; return e; };
 export const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -44,7 +45,7 @@ export async function start(opts = {}) {
     sv.innerHTML = '<filter id="ews-sharp"><feConvolveMatrix order="3" preserveAlpha="true" kernelMatrix="0 -0.35 0 -0.35 2.4 -0.35 0 -0.35 0"/></filter>'; document.body.append(sv); R.domElement.style.filter = 'url(#ews-sharp)'; }
   const scene = new THREE.Scene(); scene.background = new THREE.Color(0x0b0716); scene.fog = new THREE.Fog(0x0b0716, 25, 70);
   const cam = new THREE.PerspectiveCamera(62, 1, 0.1, 120); const rig = new THREE.Group(); rig.add(cam); scene.add(rig);   // rig = player body (XR moves the camera inside it)
-  scene.add(new THREE.HemisphereLight(0xfff1d6, 0x1a1030, 1.3)); const sun = new THREE.DirectionalLight(0xffe2b0, 1.1); sun.position.set(8, 20, 6); scene.add(sun);
+  const hemi = new THREE.HemisphereLight(0xfff1d6, 0x1a1030, 1.3); scene.add(hemi); const sun = new THREE.DirectionalLight(0xffe2b0, 1.1); sun.position.set(8, 20, 6); scene.add(sun);
   const mcache = new Map(); const M = c => { if (!mcache.has(c)) mcache.set(c, M.standard ? new THREE.MeshStandardMaterial({ color: c, roughness: 0.7 }) : new THREE.MeshLambertMaterial({ color: c })); return mcache.get(c); };
   const mat = { floor: M(0x2a2236), wall: M(0x3a2f4a), trim: M(GOLD), dark: M(0x15101f), wood: M(0x6b4a2e), stone: M(0x4b4458), rack: M(0x1d1d24), glow: new THREE.MeshBasicMaterial({ color: GOLD }) };
   const box = (w, h, d, m, x, y, z, parent = scene) => { const o = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); o.position.set(x, y, z); parent.add(o); return o; };
@@ -141,7 +142,25 @@ const PUBLIC = /(^|\.)elderworldstudio\.com$/.test(location.hostname) || /[?&]pu
   const { minX, maxX, minZ, maxZ } = bounds; const fx = minX - 2, fX = maxX + 2, fz = minZ - 2, fZ = maxZ;
   box(fX - fx, 0.2, fZ - fz, mat.floor, (fx + fX) / 2, -0.1, (fz + fZ) / 2);
   const wall = (x1, z1, x2, z2) => { const l = Math.hypot(x2 - x1, z2 - z1); const w = box(l, 4, 0.3, mat.wall, (x1 + x2) / 2, 2, (z1 + z2) / 2); w.rotation.y = -Math.atan2(z2 - z1, x2 - x1); };
-  wall(fx, fZ, fX, fZ); wall(fx, fz, fX, fz); wall(fx, fz, fx, fZ); wall(fX, fz, fX, fZ);
+  const EN = ctx.entrance; if (EN) { wall(fx, fZ, EN.x - EN.w / 2, fZ); wall(EN.x + EN.w / 2, fZ, fX, fZ); } else wall(fx, fZ, fX, fZ);
+  wall(fx, fz, fX, fz);
+  /* entrance glass front (floor_g): floor-to-ceiling glass over the shell opening, brass mullions every ~1.85 m, a baked lake view
+     behind it (day/night drives that view + the glass tint), and real two-panel sliding doors centred on the red carpet. */
+  if (EN) { const gz = fZ, gm = new THREE.MeshBasicMaterial({ color: 0x9fc4d8, transparent: true, opacity: 0.32, depthWrite: false, side: THREE.DoubleSide });
+    const vv = new THREE.Mesh(new THREE.PlaneGeometry(EN.w + 2, 4.2), new THREE.MeshBasicMaterial({ map: kit.viewTex(ctx), toneMapped: false })); vv.position.set(EN.x, 2.0, gz + 0.9); vv.rotation.y = Math.PI; vv.userData.noCollide = 1; scene.add(vv);
+    const pane = (cx, w, y, h) => { const g = new THREE.Mesh(new THREE.PlaneGeometry(w, h), gm); g.position.set(cx, y, gz); g.userData.dn = 'glass'; g.userData.noCollide = 1; scene.add(g); };
+    const DW = 2.9, side = (EN.w - DW) / 2, n = 3;
+    for (const sg of [-1, 1]) for (let i = 0; i < n; i++) { const w = side / n, cx = EN.x + sg * (DW / 2 + w * (i + 0.5)); pane(cx, w, 2.0, 4.0); box(0.06, 4.0, 0.1, mat.trim, EN.x + sg * (DW / 2 + w * (i + 1)), 2.0, gz); }
+    box(EN.w, 0.08, 0.12, mat.trim, EN.x, 0.04, gz); box(EN.w, 0.1, 0.14, mat.trim, EN.x, 3.95, gz);   // sill + head rail
+    pane(EN.x, DW, 3.35, 1.3); box(DW + 0.1, 0.12, 0.14, mat.trim, EN.x, 2.7, gz);                      // transom over the doors + door header/track
+    for (const sx of [-1, 1]) box(0.08, 2.7, 0.12, mat.trim, EN.x + sx * DW / 2, 1.35, gz);              // door jambs
+    for (const sx of [-1, 1]) { const dx = EN.x + sx * DW / 4, dz = gz - 0.05 - (sx > 0 ? 0.04 : 0);       // two sliding leaves on offset tracks
+      const lf = new THREE.Mesh(new THREE.PlaneGeometry(DW / 2 - 0.02, 2.6), gm); lf.position.set(dx, 1.32, dz); lf.userData.dn = 'glass'; lf.userData.noCollide = 1; scene.add(lf);
+      for (const ex of [-1, 1]) box(0.05, 2.62, 0.05, mat.trim, dx + ex * (DW / 4 - 0.03), 1.32, dz); box(DW / 2, 0.05, 0.05, mat.trim, dx, 0.03, dz); box(DW / 2, 0.05, 0.05, mat.trim, dx, 2.62, dz);
+      box(0.03, 0.9, 0.05, mat.trim, EN.x + sx * 0.12, 1.1, dz - 0.04); }                                // pull bars at the meeting edge
+    const ep = ctx.panel(ctx.textCanvas(['Entrance', 'Elder World Studio'], { w: 640, h: 160, size: 60 }), 1.6, 0.4, EN.x, 3.3, gz - 0.12, Math.PI); ep.userData.plate = 'Entrance';
+    { const c = box(EN.w, 4, 0.05, new THREE.MeshBasicMaterial({ visible: false }), EN.x, 2, gz + 0.05); c.userData.keep = 1; }   /* the glass still blocks walking out */
+  } wall(fx, fz, fx, fZ); wall(fX, fz, fX, fZ);
   /* hallway dressing along the outer walls: wainscot band, big framed prints at eye height with sconces, pillars between bays,
      benches, plants and runner rugs. Same material = one batched draw call. Prints are game key art (no logo stretch). */
   { const imgs = (ctx.site?.games || []).filter(g => g.img).map(g => g.img), artM = new Map(), wood = mat.wood, warm = new THREE.MeshBasicMaterial({ color: 0xffe2b0 }), fab = mat.fabric || mat.dark; let ai = 0;
@@ -150,14 +169,16 @@ const PUBLIC = /(^|\.)elderworldstudio\.com$/.test(location.hostname) || /[?&]pu
     const put = (geo, m, x, y, z, ry) => { const o = new THREE.Mesh(geo, m); o.position.set(x, y, z); o.rotation.y = ry; scene.add(o); return o; };
     const G = { frame: new THREE.BoxGeometry(2.1, 1.5, 0.06), art: new THREE.PlaneGeometry(1.95, 1.35), sconce: new THREE.BoxGeometry(0.12, 0.22, 0.1), pillar: new THREE.BoxGeometry(0.45, 4, 0.45), seat: new THREE.BoxGeometry(1.4, 0.08, 0.42), leg: new THREE.BoxGeometry(0.08, 0.4, 0.38), pot: new THREE.CylinderGeometry(0.22, 0.17, 0.42, 12), bush: new THREE.IcosahedronGeometry(0.38, 1), rug: new THREE.BoxGeometry(2.6, 0.02, 1.1) };
     const run = (x1, z1, x2, z2, nx, nz) => { const l = Math.hypot(x2 - x1, z2 - z1), ry = Math.atan2(nx, nz), ux = (x2 - x1) / l, uz = (z2 - z1) / l;
-      const wc = box(l, 1.0, 0.04, wood, (x1 + x2) / 2 + nx * 0.17, 0.5, (z1 + z2) / 2 + nz * 0.17); wc.rotation.y = ry; wc.userData.noCollide = 1;
+      if (EN && nz === -1) { for (const [a, b] of [[x1, EN.x - EN.w / 2], [EN.x + EN.w / 2, x2]]) { const wc = box(b - a, 1.0, 0.04, wood, (a + b) / 2, 0.5, z1 - 0.17); wc.userData.noCollide = 1; } }
+      else { const wc = box(l, 1.0, 0.04, wood, (x1 + x2) / 2 + nx * 0.17, 0.5, (z1 + z2) / 2 + nz * 0.17); wc.rotation.y = ry; wc.userData.noCollide = 1; }
       const n = Math.floor((l - 2) / 4.6); if (n < 1) return;
       for (let i = 0; i < n; i++) { const t = (i + 0.5) / n, cx = x1 + (x2 - x1) * t, cz = z1 + (z2 - z1) * t, at = (d, s = 0) => [cx + nx * d + ux * s, cz + nz * d + uz * s];
+        if (EN && nz === -1 && Math.abs(cx - EN.x) < EN.w / 2 + 2.6) continue;   /* keep the glass entrance wall clear */
         let x, z;   /* no repeated poster run: sconces, pillars, benches, plants and rugs only */
         [x, z] = at(0.22); put(G.sconce, warm, x, 2.35, z, ry).userData.noCollide = 1;
         [x, z] = at(0.4, 2.3); put(G.pillar, mat.wall, x, 2, z, ry);
         if (i % 2 === 0) { [x, z] = at(0.55); put(G.seat, wood, x, 0.44, z, ry); for (const s of [-0.6, 0.6]) { [x, z] = at(0.55, s); put(G.leg, mat.rack, x, 0.2, z, ry); } [x, z] = at(1.6); put(G.rug, ctx.rug ? ctx.rug(0x8a5a44) : fab, x, 0.03, z, ry).userData.noCollide = 1; }
-        else { [x, z] = at(0.5, -1.4); put(G.pot, clay, x, 0.21, z, 0); put(G.bush, leaf, x, 0.75, z, 0); [x, z] = at(0.12); kit.windowPane(ctx, x, 1.95, z, ry, 2.2, 1.5); } } };   /* exterior walls: windows onto the lake (baked view) */
+        else { [x, z] = at(0.5, -1.4); kit.plant(ctx, x, z, 1); [x, z] = at(0.12); kit.windowPane(ctx, x, 1.95, z, ry, 2.2, 1.5); } } };   /* exterior walls: windows onto the lake (baked view) */
     run(fx, fZ, fX, fZ, 0, -1); run(fx, fz, fX, fz, 0, 1); run(fx, fz, fx, fZ, 1, 0); run(fX, fz, fX, fZ, -1, 0); }
   // ceiling + recessed light panels (one instanced draw call), so there is no black void overhead
   /* ceiling (material-only v1, baked, unlit so it never reads black): off-white plaster with warm wood slats every
@@ -177,7 +198,7 @@ const PUBLIC = /(^|\.)elderworldstudio\.com$/.test(location.hostname) || /[?&]pu
     const ring = new THREE.InstancedMesh(new THREE.TorusGeometry(1.6, 0.05, 6, 48).rotateX(Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0xffe2b0, toneMapped: false }), pts.length);
     const glow = new THREE.InstancedMesh(new THREE.PlaneGeometry(4.6, 4.6).rotateX(Math.PI / 2), new THREE.MeshBasicMaterial({ map: halo, transparent: true, depthWrite: false, toneMapped: false, side: THREE.DoubleSide }), pts.length);
     const m4 = new THREE.Matrix4(); pts.forEach(([x, z], i) => { ring.setMatrixAt(i, m4.makeTranslation(x, 3.86, z)); glow.setMatrixAt(i, m4.makeTranslation(x, 3.99, z)); });
-    for (const o of [ring, glow]) { o.userData.noCollide = 1; o.userData.keep = 1; o.frustumCulled = false; scene.add(o); } }
+    ring.userData.dn = 'ring'; glow.userData.dn = 'halo'; for (const o of [ring, glow]) { o.userData.noCollide = 1; o.userData.keep = 1; o.frustumCulled = false; scene.add(o); } }
   { const cols = Math.floor((fX - fx) / 4), rows = Math.floor((fZ - fz) / 4), lp = new THREE.InstancedMesh(new THREE.PlaneGeometry(1.4, 0.5).rotateX(Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0xfff1dc, toneMapped: false }), cols * rows), m4 = new THREE.Matrix4(); let k = 0;
     for (let i = 0; i < cols; i++) for (let j = 0; j < rows; j++) { m4.makeTranslation(fx + 2 + i * 4, 3.99, fz + 2 + j * 4); lp.setMatrixAt(k++, m4); } scene.add(lp); }
 
@@ -318,6 +339,7 @@ const PUBLIC = /(^|\.)elderworldstudio\.com$/.test(location.hostname) || /[?&]pu
   const lam = new Map(); function lowMats() { if (!igpu) return; scene.traverse(o => { if (!o.isMesh) return; const conv = M => { if (!M?.isMeshStandardMaterial) return M; let L = lam.get(M.uuid);
       if (!L) { L = new THREE.MeshLambertMaterial({ color: M.color, map: M.map, emissive: M.emissive, emissiveMap: M.emissiveMap, emissiveIntensity: M.emissiveIntensity, transparent: M.transparent, opacity: M.opacity, side: M.side, vertexColors: M.vertexColors, alphaTest: M.alphaTest, depthWrite: M.depthWrite }); L.name = M.name; lam.set(M.uuid, L); } return L; };
     o.material = Array.isArray(o.material) ? o.material.map(conv) : conv(o.material); }); }
+  ctx.dn = DN.start(ctx, { hemi, sun, scene, THREE }); window.__ewsOffice.dayNight = () => ({ ...ctx.dayNight, apply: undefined });
   buildColliders(); baseCols = cols.slice(); batchStatic(); collectFar(); lowMats();
   setTimeout(() => { buildColliders(); const b0 = ctx.batched; batchStatic(); ctx.batched = { before: b0.before + ctx.batched.before, after: b0.after + ctx.batched.after }; collectFar(); lowMats(); }, 10500);   /* second pass: lazy GLB props */
   { let n = 0; const iv = setInterval(() => { buildColliders(); if (n % 4 === 3) lowMats(); if (++n >= 24) clearInterval(iv); }, 500); }  /* lazy desks/props get colliders within 0.5 s of landing */   // again once the lazy props have landed
@@ -326,7 +348,7 @@ const PUBLIC = /(^|\.)elderworldstudio\.com$/.test(location.hostname) || /[?&]pu
       const p = g.position; let best = null, bd = 1e9; for (const [x, z] of desks) { const d = Math.hypot(x - p.x, z - p.z); if (d < bd) { bd = d; best = [x, z]; } } if (!best || bd > 1.5) continue;
       const kb = new THREE.Box3(new THREE.Vector3(best[0] + 0.095 - 0.23, 0.76, best[1] - 0.48 - 0.08), new THREE.Vector3(best[0] + 0.095 + 0.23, 0.79, best[1] - 0.48 + 0.08));
       out.push({ name: g.userData.a?.name, d: tips.map(b => +kb.distanceToPoint(b.getWorldPosition(new THREE.Vector3())).toFixed(3)), tips: tips.map(b => b.name) }); } return out; };
-  window.__ewsOffice.colliders = () => cols.length; window.__ewsOffice.spots = () => spots; window.__ewsOffice.lobbyAt = () => ctx.lobbyAt; window.__ewsOffice.kiosks = () => ctx.kiosks || [];
+  window.__ewsOffice.colliders = () => cols.length; window.__ewsOffice.plants = () => ({ placed: ctx.plantSpecies || [], dupes: (ctx.plantSpecies || []).filter((u, i, a) => a.findIndex(v => v.species === u.species) !== i) }); window.__ewsOffice.near = (x0, x1, z0, z1) => { const out = [], b = new THREE.Box3(); scene.traverse(m => { if (!m.isMesh || m.isSkinnedMesh || m.isInstancedMesh || m.userData.batched) return; b.setFromObject(m); const cx = (b.min.x + b.max.x) / 2, cz = (b.min.z + b.max.z) / 2; if (cx > x0 && cx < x1 && cz > z0 && cz < z1) { let p = m, path = []; while (p && p !== scene) { path.push(p.name || p.userData.plate || p.userData.prop || p.type); p = p.parent; } out.push([path.join('<'), m.geometry.type, +cx.toFixed(2), +cz.toFixed(2), +(b.max.x - b.min.x).toFixed(2), +(b.max.y - b.min.y).toFixed(2), +(b.max.z - b.min.z).toFixed(2), +b.min.y.toFixed(2)]); } }); return out; }; window.__ewsOffice.spots = () => spots; window.__ewsOffice.lobbyAt = () => ctx.lobbyAt; window.__ewsOffice.kiosks = () => ctx.kiosks || [];
   window.__ewsOffice.colAudit = () => { const out = [], b = new THREE.Box3(); const hit = (x, z) => cols.some(([a, c, d, e]) => x > a - 0.01 && x < d + 0.01 && z > c - 0.01 && z < e + 0.01);
     scene.traverse(m => { if (!m.isMesh || m.isSkinnedMesh || m.userData.noCollide) return; let p = m; while (p) { if (p.userData?.a) return; p = p.parent; }
       const one = (bb, nm) => { if (bb.max.y < 0.3 || bb.min.y > 1.2) return; const w = bb.max.x - bb.min.x, d = bb.max.z - bb.min.z; if (w < 0.15 || d < 0.15 || w > 8 || d > 8) return; const cx = (bb.min.x + bb.max.x) / 2, cz = (bb.min.z + bb.max.z) / 2; if (!hit(cx, cz)) out.push([nm, +cx.toFixed(1), +cz.toFixed(1), +w.toFixed(2), +d.toFixed(2)]); };

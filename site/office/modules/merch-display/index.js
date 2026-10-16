@@ -19,7 +19,7 @@ export default {
         ' float lum = dot(c.rgb, vec3(.3,.59,.11)); vec3 col = c.rgb * 1.08 + vec3(.004,.006,.009);' +
         ' col *= .96 + .04 * sin(vUv.y * 240.0 - t * 3.0); col = mix(col, vec3(.45,.9,1.0), rim);' +
         ' gl_FragColor = vec4(pow(col, vec3(1.0/2.2)), max(al, rim)); }' });
-    this.onFrame = (dt, t) => { for (const p of spin) { p.rotation.y = Math.sin(t * 0.35 + p.userData.ph) * 0.6;
+    const WP = new T.Vector3(); this.onFrame = (dt, t) => { for (const p of spin) { { const c = ctx.cam.getWorldPosition(WP); p.rotation.y = Math.atan2(c.x - p.position.x, c.z - p.position.z) + Math.sin(t * 0.35 + p.userData.ph) * 0.3; }   /* always faces the viewer (never an empty-looking or mirrored back), slow +-17 deg sway */
         const im = p.material.uniforms.map.value.image; if (!p.userData.ar && im?.width) { const r = im.width / im.height; p.userData.ar = r; if (r < 1) p.scale.x = r; else p.scale.y = 1 / r; p.position.y = 0.985 + 0.6 * p.scale.y; }   /* product sits on the glowing base */ p.material.uniforms.t.value = t; } };
     site.merch.forEach((m, i) => {
       const x = x0 + (i % 3) * 3, z = z0 - Math.floor(i / 3) * 3.2; box(0.9, 0.9, 0.9, mat.wood, x, 0.45, z);

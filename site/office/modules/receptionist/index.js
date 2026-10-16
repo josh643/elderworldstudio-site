@@ -46,7 +46,11 @@ export default {
         const mb = document.createElement('button'); mb.type = 'button'; mb.className = 'ob'; mb.textContent = ctx.t('🎤 Hold to talk'); if (listen) { mb.onpointerdown = () => listen(); } else mb.hidden = true;
         const sb = document.createElement('button'); sb.type = 'button'; sb.className = 'ob'; sb.textContent = ctx.t('My request status'); sb.onclick = () => statusCard();
         const kb = document.createElement('button'); kb.type = 'button'; kb.className = 'ob gold'; kb.textContent = ctx.t('Start a request'); kb.onclick = () => { V.playLine('form_open'); openKiosk(ctx, cfg.lead, sent); };
-        row.append(mb, kb, sb); fm.after(row); }
+        row.append(mb, kb, sb); fm.after(row);
+        /* quick options (replace the old red-carpet kiosks): Services, Games, Merch, Teams open in place at the desk */
+        const LI = ctx.use('lobbyInfo'); if (LI) { const qr = document.createElement('div'); qr.className = 'row quick';
+          for (const [k, t] of [['services', 'Services'], ['games', 'Games'], ['merch', 'Merch'], ['teams', 'Teams']]) if (LI.keys.includes(k)) { const q = document.createElement('button'); q.type = 'button'; q.className = 'ob'; q.textContent = ctx.t(t); q.onclick = () => LI(k); qr.append(q); }
+          row.after(qr); } }
       const add = (t, mine) => { const m = document.createElement('div'); m.className = 'm' + (mine ? ' me' : ''); m.textContent = t; log.append(m); log.scrollTop = 1e6; return m; };
       if (!history.length) { V.playLine('welcome'); speak(9500); } if (!history.length) history.push({ role: 'assistant', content: `Welcome to ${cfg.hall || 'Fólkvangr'}! I'm ${me.name}. I can tell you about Elder World Studio, show you our games, or book a demo for your business. What brings you in?` });
       history.forEach(h => add(h.content, h.role === 'user'));
@@ -67,12 +71,12 @@ export default {
     /* lobby logo wall straight down the red carpet behind Freyja: wood panel, backlit brass tree crest, ELDER WORLD STUDIO. Walk around either side. */
     { const T = ctx.THREE, wz = z - 3.2; box(6.4, 3.7, 0.25, mat.wood, x, 1.85, wz); box(6.6, 0.1, 0.3, mat.trim, x, 3.75, wz); box(6.6, 0.1, 0.3, mat.trim, x, 0.05, wz);
       const hc = document.createElement('canvas'); hc.width = hc.height = 256; { const g = hc.getContext('2d'), r = g.createRadialGradient(128, 128, 10, 128, 128, 128); r.addColorStop(0, 'rgba(255,214,140,.85)'); r.addColorStop(1, 'rgba(255,214,140,0)'); g.fillStyle = r; g.fillRect(0, 0, 256, 256); }
-      const ht = new T.CanvasTexture(hc); ht.colorSpace = T.SRGBColorSpace; const halo = new T.Mesh(new T.PlaneGeometry(3.4, 3.4), new T.MeshBasicMaterial({ map: ht, transparent: true, depthWrite: false, toneMapped: false })); halo.position.set(x, 3.2, wz + 0.135); ctx.scene.add(halo);
+      const ht = new T.CanvasTexture(hc); ht.colorSpace = T.SRGBColorSpace; const halo = new T.Mesh(new T.PlaneGeometry(3.4, 3.4), new T.MeshBasicMaterial({ map: ht, transparent: true, depthWrite: false, toneMapped: false })); halo.position.set(x, 3.2, wz + 0.135); halo.userData.dn = 'halo'; ctx.scene.add(halo);
       const lg = ctx.panel(ctx.image(ctx.site.brand.logo || '/assets/img/logo.png'), 1.2, 1.2, x, 3.2, wz + 0.15, 0); lg.material.toneMapped = false; lg.userData.label = 'Elder World Studio logo';
       const nm = ctx.panel(ctx.textCanvas(['ELDER WORLD STUDIO'], { w: 1600, h: 200, size: 104, bg: null, border: false, fg: '#e9c46a' }), 4.2, 0.6, x, 2.3, wz + 0.15, 0); nm.material.toneMapped = false; nm.userData.plate = 'ELDER WORLD STUDIO'; nm.visible = ctx.site.brand.wallText !== false; }
     /* central elevator + stairs core (the building spine) right behind the logo wall; reached by stepping around the wall
        through the RIGHT-side doorway. Same position on floors 2-5. Kept out of the entrance sightline (fully hidden by the wall). */
-    { const T = ctx.THREE, cz = z - 3.2 - 2.1, W = 4.6, D = 3.0, stone = mat.stone || mat.wall, metal = mat.trim;
+    { const T = ctx.THREE, cz = z - 3.2 - 2.5, W = 4.6, D = 3.0, stone = mat.stone || mat.wall, metal = mat.trim;
       const fz = cz, bz = cz - D;                                                   // front face (doors) and back face
       box(1.0, 4.0, 0.25, stone, x - W / 2 + 0.5, 2.0, fz); box(1.0, 4.0, 0.25, stone, x + W / 2 - 0.5, 2.0, fz); box(0.4, 4.0, 0.25, stone, x, 2.0, fz);   // pillars between doors
       box(W, 1.6, 0.25, stone, x, 3.2, fz);                                         // lintel above the doors (door height 2.4 m)
