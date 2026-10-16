@@ -1,0 +1,157 @@
+{
+ "Sit_Mouse_Loop": {
+  "contact_cm": 0.29,
+  "bind_frames": 0,
+  "pass": true
+ },
+ "Sit_Type_Loop": {
+  "contact_cm": 1.08,
+  "bind_frames": 0,
+  "pass": true
+ },
+ "ClimbUp_1m": {
+  "contact_cm": 0,
+  "bind_frames": 0,
+  "pass": true
+ },
+ "Crouch_Idle_Loop": {
+  "contact_cm": 0,
+  "bind_frames": 0,
+  "pass": true
+ },
+ "Idle_Loop": {
+  "contact_cm": 0,
+  "bind_frames": 0,
+  "pass": true
+ },
+ "Interact": {
+  "contact_cm": 0,
+  "bind_frames": 0,
+  "pass": true
+ },
+ "Jog_Fwd_Loop": {
+  "contact_cm": 0,
+  "bind_frames": 0,
+  "pass": true
+ },
+ "Push_Loop": {
+  "contact_cm": 0,
+  "bind_frames": 0,
+  "pass": true
+ },
+ "Sprint_Loop": {
+  "contact_cm": 0,
+  "bind_frames": 0,
+  "pass": true
+ },
+ "Walk_Carry_Loop": {
+  "contact_cm": 0,
+  "bind_frames": 0,
+  "pass": true
+ },
+ "Walk_Formal_Loop": {
+  "contact_cm": 0,
+  "bind_frames": 0,
+  "pass": true
+ },
+ "Walk_Loop": {
+  "contact_cm": 0,
+  "bind_frames": 0,
+  "pass": true
+ },
+ "Dance_Loop": {
+  "contact_cm": 0,
+  "bind_frames": 0,
+  "pass": true
+ },
+ "Idle_FoldArms_Loop": {
+  "contact_cm": 0,
+  "bind_frames": 0,
+  "pass": true
+ },
+ "Idle_No_Loop": {
+  "contact_cm": 0,
+  "bind_frames": 0,
+  "pass": true
+ },
+ "Idle_Talking_Loop": {
+  "contact_cm": 0,
+  "bind_frames": 0,
+  "pass": true
+ },
+ "Idle_TalkingPhone_Loop": {
+  "contact_cm": 0,
+  "bind_frames": 0,
+  "pass": true
+ },
+ "PickUp_Table": {
+  "contact_cm": 0,
+  "bind_frames": 0,
+  "pass": true
+ },
+ "Sitting_Enter": {
+  "contact_cm": 0,
+  "bind_frames": 0,
+  "pass": true
+ },
+ "Sitting_Exit": {
+  "contact_cm": 0,
+  "bind_frames": 0,
+  "pass": true
+ },
+ "Sitting_Idle_Loop": {
+  "contact_cm": 0,
+  "bind_frames": 0,
+  "pass": true
+ },
+ "Sitting_Talking_Loop": {
+  "contact_cm": 0,
+  "bind_frames": 0,
+  "pass": true
+ },
+ "Yes": {
+  "contact_cm": 0,
+  "bind_frames": 0,
+  "pass": true
+ },
+ "Chest_Open": {
+  "contact_cm": 0,
+  "bind_frames": 0,
+  "pass": true
+ },
+ "Consume": {
+  "contact_cm": 0,
+  "bind_frames": 0,
+  "pass": true
+ },
+ "Farm_Watering": {
+  "contact_cm": 0,
+  "bind_frames": 0,
+  "pass": true
+ },
+ "Idle_Lantern_Loop": {
+  "contact_cm": 0,
+  "bind_frames": 0,
+  "pass": true
+ },
+ "Idle_Rail_Call": {
+  "contact_cm": 0,
+  "bind_frames": 0,
+  "pass": true
+ },
+ "Idle_Rail_Loop": {
+  "contact_cm": 0,
+  "bind_frames": 0,
+  "pass": true
+ },
+ "LayToIdle": {
+  "contact_cm": 0,
+  "bind_frames": 0,
+  "pass": true
+ },
+ "Swim_Idle_Loop": {
+  "contact_cm": 0,
+  "bind_frames": 0,
+  "pass": true
+ }
+}
