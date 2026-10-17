@@ -196,6 +196,7 @@ export default {
       openTablet: k => { const r = find(k); if (r) self.open(r); return !!r; }, closeTablet: () => self.close(), heldList: () => recs.filter(r => r.mode === 'held').map(r => r.av?.userData.a?.id || r.F?.id) }); };
   },
 
+  layoutStatus() { const n = Date.now(); if (!this._lsT || n - this._lsT > 15000) { this._lsT = n; fetch('/api/office/layout-status', { cache: 'no-store' }).then(r => r.json()).then(j => { this._ls = j; this.lastH = null; }).catch(() => {}); } return this._ls; },
   mkPanel() {
     const ctx = this.ctx, css = document.createElement('style');
     css.textContent = `.ews-tab-bd{position:fixed;inset:0;z-index:70;background:rgba(4,6,12,.55);display:flex;align-items:center;justify-content:center;touch-action:none}
@@ -258,6 +259,8 @@ export default {
       h += `<h2>Campus Town · holo table</h2><div class="role">Physical model = the current approved layout (${esc(I.approved)}) · hologram = the architects' proposal</div>`;
       h += `<div class="seg">${['current', 'proposed', 'overlay'].map(m => `<button type="button" data-mode="${m}" class="${I.mode === m ? 'on' : ''}">${m[0].toUpperCase() + m.slice(1)}</button>`).join('')}</div>`;
       h += I.hasProposed ? `<div class="warn">${I.solid ? 'APPROVED: now the current layout' : 'PROPOSED · awaiting Joshua approval'} · ${esc(I.proposed)} · Vé ${esc(I.qa || '?')} · ${I.lots} lots</div>` : '<div class="live">No proposed draft right now: the table shows the current layout.</div>';
+      { const LS = this.layoutStatus(), L = LS && LS.layout, fmt = t => t ? new Date(t).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '?';   // 2026-10-17 approval status panel
+        h += '<h3>Layout approval</h3>' + (!L ? '<div class="live">loading…</div>' : L.approved ? `<div class="live"><b>APPROVED</b> ${esc(L.version || '')} · by ${esc(L.by || '?')} · ${fmt(L.at)}<br>Why: ${esc(L.why || 'n/a')}<br>Revocable by Joshua/Anna until ${fmt(L.revokeBy)}</div>` : `<div class="warn">Construction on hold · ${L.revoked ? 'approval of ' + esc(L.revoked) + ' revoked by ' + esc(L.by || '?') + ' ' + fmt(L.at) : 'no approved layout yet'}</div>`); }
       h += `<label class="ph">Phase <input type="range" min="1" max="3" step="1" value="${I.phase}"> <b>${I.phase}</b> · ${esc(PH.slice(0, I.phase).join(' '))}</label>`;
       h += `<h3>Lot info</h3>${sel ? `<div class="task">${esc(sel.id)} · ${esc(String(sel.tier))} · ${Math.round(sel.w)} × ${Math.round(sel.d)} m</div><div class="live">${esc(sel.layer)} layer${sel.block ? ' · block ' + esc(sel.block) : ''} · use: ${esc(sel.use || 'n/a')}</div>${(sel.src || []).length ? `<div class="live">Size source: ${sel.src.map(x => esc(x)).join('; ')}</div>` : ''}` : '<div class="live">Tap a lot on the table to see its tier, size, use and size source.</div>'}`;
       const HL = I.hist || []; h += `<h3>Revision history</h3>${HL.length ? '<ul>' + HL.map((x, i) => `<li><b>v${i + 1}</b> ${esc(x.id)} · ${x.qa ? 'Vé ' + esc(x.qa) : 'no QA'} · ${x.lots} lots${x.id === I.proposed ? ' · <b>on the table</b>' : ''}</li>`).reverse().join('') + '</ul>' : '<div class="live">No revisions yet</div>'}`; }

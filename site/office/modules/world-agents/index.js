@@ -7,7 +7,9 @@ const HOLD = 90;
 export default {
   setup(ctx) {
     const T = ctx.THREE, agents = ctx.use('agents'); if (!agents) return; const ctl = new Map(); this.ctl = ctl; this.ctx = ctx;
-    const find = id => agents.get(String(id).replace(/^agent:/, ''));
+    /* 2026-10-17: B1 staff (restricted floor) and off-duty/unstaffed agents are never driven by server poses: they stay at their B1 posts / coffee bar */
+    const pinned = () => { if (this._pin) return this._pin; const s = new Set(); for (const t of ctx.roster?.teams || []) for (const m of t.members || []) if (t.floor === 'B1' || m.offDuty || m.unstaffed) s.add(m.id); if (s.size) this._pin = s; return s; };
+    const find = id => { const k = String(id).replace(/^agent:/, ''); if (pinned().has(k)) return null; const av = agents.get(k); return av && av.userData?.b1 ? null : av; };
     /* zone-local -> world. team:<key> = that team's room centre; lobby = lobby centre; town = the exterior frame (entrance centre,
        +z away from the building, same as spec.json master.frame); floor zones f3 etc. = that floor's studio/elevator origin */
     const origin = zone => { const z = String(zone || '');

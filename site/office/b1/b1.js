@@ -54,7 +54,7 @@ export function buildB1(ctx, core, ox) {
       const fps = window.__ewsOffice?.fps?.() ?? null; draw(mons[2], [`this device: ${fps ? Math.round(fps) + ' fps' : 'n/a'}`, 'target: 45+ fps on every tier', 'real-GPU runs: Alvíss (pve-mini-3070)']);
       draw(mons[3], [`world seq ${d.seq}`, 'hot updates: release broadcast on deploy', 'DEPLOY RULE: rebase + curl /api/office/world']);
       draw(mons[4], d.agents.filter(a => /^sec-/.test(a.id)).map(a => `${a.id}: ${a.act} (${Math.round(a.x)}, ${Math.round(a.z)})`));
-      draw(mons[5], [`layout approved: ${d.layout.approved ? 'YES' : 'no (construction held)'}`, ...d.sites.map(s => `lot ${s.lot}: stage ${s.si}${s.hold ? ' HOLD' : ''}${s.leased ? ' LEASED' : ''}`)], d.layout.approved ? '#9fe0a0' : '#ffb080');
+      draw(mons[5], [`layout approved: ${d.layout.approved ? 'YES' : 'no (construction held)'}`, ...(d.layout.approved ? [`by ${d.layout.by} ${new Date(d.layout.at).toLocaleString()}`, `why: ${String(d.layout.why || '').slice(0, 60)}`, `revoke by ${new Date(d.layout.revokeBy || 0).toLocaleString()}`] : d.layout.revoked ? [`revoked ${d.layout.revoked} by ${d.layout.by}`] : []), ...d.sites.map(s => `lot ${s.lot}: stage ${s.si}${s.hold ? ' HOLD' : ''}${s.leased ? ' LEASED' : ''}`)], d.layout.approved ? '#9fe0a0' : '#ffb080');
       draw(mons[6], d.budget ? Object.entries(d.budget).slice(0, 8).map(([k, v]) => `${k}: ${typeof v === 'number' ? v.toFixed(2) : v}`) : ['budget feed: n/a']);
     } catch (e) { mons.forEach(m => draw(m, ['feed unavailable'], '#ff9a80')); }
     busy = false;

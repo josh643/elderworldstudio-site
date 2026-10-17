@@ -25,12 +25,29 @@ function stamp(e, stages, ev, now) {
 // (w.layout = {approved:true, version, by, at} via a 'layout.approve' event with the office ingest key), every site, road and zone is held at
 // stage 0 (survey: stakes, tape, tripod, planning) no matter what the pipeline or demo posts. Agents keep walking, surveying and patrolling.
 const gated = w => !(w.layout && w.layout.approved);
-function hold(w, e) { if (gated(w) && e.kind !== 'agent') { if (e.si > 0) { e.si = 0; e.p = 0.99; } e.p = Math.min(e.p, 0.99); e.next = null; e.hold = true; } else delete e.hold; }   // 0.99: fully staked, never rolls into ground prep
+function freeze(e) { e.next = null; e.hold = true; if (!e.frozen) { e.frozen = true; e.fsi = e.si; e.fp = e.p; } }
+// Odin layout approval (Joshua 2026-10-17 00:27). layout.approve is accepted ONLY when: the referenced spec was registered by Ve's pipeline
+// (ARCH_SPEC_KEY) with verdict PASS and genuine_agent_design true (read from the stored record here, never from the request), it is the
+// registered LATEST-REDESIGN, and it moves, resizes or reassigns no currently leased lot. Every approval/revoke is appended to 'approvals'.
+export function approveCheck(w, rec, latest, geo) {
+  if (!rec) return 'spec not registered by the architecture pipeline';
+  if (rec.verdict !== 'PASS') return 'Ve verdict is ' + (rec.verdict || 'missing') + ', not PASS';
+  if (rec.genuine !== true) return 'spec is not a genuine agent design';
+  if (rec.id !== latest) return 'spec is not the current LATEST-REDESIGN (' + (latest || 'none') + ')';
+  const lots = rec.lots || [], same = (a, b) => a && b && a.length === 4 && a.every((v, i) => Math.abs(v - b[i]) < 0.01);
+  for (const e of Object.values(w.ents)) { if (!e.leased) continue;
+    const l = lots.find(x => x.n === e.lot); if (!l) return 'leased lot ' + e.lot + ' is missing from the spec';
+    if (l.tenant && e.tenantId && l.tenant !== e.tenantId) return 'spec reassigns leased lot ' + e.lot;
+    const g = (geo || {})[e.lot]; if (g && !same(l.rect, g)) return 'spec moves or resizes leased lot ' + e.lot; }
+  return null;
+}
+function hold(w, e) { if (gated(w) && e.kind !== 'agent' && e.frozen) { e.si = e.fsi; e.p = e.fp; e.next = null; e.hold = true; return; }   // revoked: frozen at its stage, never rolled back
+  if (gated(w) && e.kind !== 'agent') { if (e.si > 0) { e.si = 0; e.p = 0.99; } e.p = Math.min(e.p, 0.99); e.next = null; e.hold = true; } else delete e.hold; }   // 0.99: fully staked, never rolls into ground prep
 function applyEvent(w, ev, now) {
   const up = [], rm = [];
-  if (ev.type === 'layout.approve') { w.layout = { approved: true, version: ev.version, by: ev.by || 'anna', at: now }; for (const e of Object.values(w.ents)) if (e.hold) { delete e.hold; up.push(e); } return { up, rm, layout: true }; }
-  if (ev.type === 'layout.revoke') { w.layout = { approved: false, version: null, by: ev.by || 'anna', at: now };
-    for (const e of Object.values(w.ents)) { if (e.kind === 'agent') continue; if (e.demo) { delete w.ents[e.id]; rm.push(e.id); continue; } hold(w, e); e.at = now; up.push(e); } return { up, rm, layout: true }; }
+  if (ev.type === 'layout.approve') { w.layout = { approved: true, version: ev.version, by: ev.by || 'odin', at: now, why: String(ev.why || '').slice(0, 600), revokeBy: now + 864e5, guard: 'odin-v1' }; for (const e of Object.values(w.ents)) if (e.hold || e.frozen) { delete e.hold; delete e.frozen; delete e.fsi; delete e.fp; up.push(e); } return { up, rm, layout: true }; }
+  if (ev.type === 'layout.revoke') { w.layout = { approved: false, version: null, by: ev.by || 'anna', at: now, revoked: (w.layout && w.layout.version) || null, why: String(ev.why || '').slice(0, 300) };
+    for (const e of Object.values(w.ents)) { if (e.kind === 'agent') continue; freeze(e); /* revoke: freeze at current stage, nothing demolished */ e.at = now; up.push(e); } return { up, rm, layout: true }; }
   const r = applyEvent0(w, ev, now); for (const e of r.up) hold(w, e); return r;
 }
 // Leased-lot protection (Joshua HARD RULE 2026-10-17 00:00): agents run, fix and build the world but NEVER change a lot leased to a client
@@ -87,6 +104,14 @@ export async function world(state, req) {
   if (op === 'state') { const w = await load(st); return Response.json({ t: 'snap', seq: w.seq, now, layout: w.layout || { approved: false }, ents: Object.values(w.ents), build: BUILD, road: ROAD, viewers: state.getWebSockets('world').length }); }
   if (op === 'event' && req.method === 'POST') {
     const evs = [].concat(await req.json()).slice(0, 50); const w = await load(st); const up = new Map(), rm = new Set();
+    for (const ev of evs) if (ev && ev.type === 'layout.approve') {
+      const rec = await st.get('spec:' + ev.version), latest = await st.get('spec:latest'), geo = (await st.get('lotgeo')) || {};
+      const why = approveCheck(w, rec, latest, geo);
+      const logA = async (x) => { const a = (await st.get('approvals')) || []; a.unshift(x); await st.put('approvals', a.slice(0, 50)); };
+      if (why) { await logA({ t: 'refused', spec: ev.version, by: ev.by, at: now, reason: why }); return Response.json({ ok: false, error: 'layout approval refused: ' + why, guard: 'odin-v1' }, { status: 403 }); }
+      for (const l of rec.lots || []) if (l.n) geo[l.n] = l.rect; await st.put('lotgeo', geo);
+      await logA({ t: 'approved', spec: ev.version, by: ev.by, at: now, why: String(ev.why || '').slice(0, 600), revokeBy: now + 864e5 }); }
+    for (const ev of evs) if (ev && ev.type === 'layout.revoke') { const a = (await st.get('approvals')) || []; a.unshift({ t: 'revoked', spec: (w.layout && w.layout.version) || null, by: ev.by, at: now, why: String(ev.why || '').slice(0, 300) }); await st.put('approvals', a.slice(0, 50)); }
     const refused = evs.map((ev, i) => [i, leaseGuard(w, ev)]).filter(x => x[1]); if (refused.length) return Response.json({ ok: false, error: 'leased lot protected', refused }, { status: 403 });
     let lay = false; for (const ev of evs) { const r = applyEvent(w, ev, now); if (r.layout) lay = true; r.up.forEach(e => up.set(e.id, e)); r.rm.forEach(id => { rm.add(id); up.delete(id); }); }
     if (lay) { if (!w.layout.approved) { await st.put('snap:' + now, { ...w, ents: { ...w.ents } }); await st.delete('demo'); await st.deleteAlarm(); }   // restorable snapshot + demo driver stopped
@@ -95,6 +120,15 @@ export async function world(state, req) {
     w.seq++; await st.put('world', w); broadcast(state, { t: 'delta', seq: w.seq, now, up: [...up.values()], rm: [...rm] });
     return Response.json({ ok: true, changed: up.size + rm.size, seq: w.seq, guard: 'lease-v1' });
   }
+  // spec registry (Pages checks ARCH_SPEC_KEY): {id, verdict, genuine, latest, lots:[{id, n?, rect, tenant?}], hash}
+  if (op === 'spec' && req.method === 'POST') { const j = await req.json().catch(() => ({}));
+    if (!/^[\w.:-]{1,64}$/.test(j.id || '')) return Response.json({ ok: false, error: 'bad id' }, { status: 400 });
+    const rec = { id: j.id, verdict: j.verdict === 'PASS' ? 'PASS' : 'FAIL', genuine: j.genuine === true, hash: String(j.hash || '').slice(0, 64), at: now,
+      lots: (j.lots || []).slice(0, 400).map(l => ({ id: String(l.id || '').slice(0, 40), n: Number.isInteger(l.n) ? l.n : null, rect: (l.rect || []).slice(0, 4).map(Number), tenant: l.tenant ? String(l.tenant).slice(0, 40) : null })) };
+    await st.put('spec:' + rec.id, rec); if (j.latest === true) await st.put('spec:latest', rec.id);
+    return Response.json({ ok: true, id: rec.id, verdict: rec.verdict, genuine: rec.genuine, latest: await st.get('spec:latest') }); }
+  if (op === 'spec-latest' && req.method === 'POST') { const j = await req.json().catch(() => ({})); if (!(await st.get('spec:' + j.id))) return Response.json({ ok: false, error: 'unknown spec' }, { status: 404 }); await st.put('spec:latest', j.id); return Response.json({ ok: true, latest: j.id }); }
+  if (op === 'approvals') { const w = await load(st); return Response.json({ ok: true, layout: w.layout || { approved: false }, latest: (await st.get('spec:latest')) || null, log: ((await st.get('approvals')) || []).slice(0, 20) }); }
   // release notice (staging deploys): every connected visitor re-checks /office/manifest.json now and hot-swaps what changed
   if (op === 'release' && req.method === 'POST') { const j = await req.json().catch(() => ({})); const msg = { t: 'release', now, code: String(j.code || '').slice(0, 16), modules: Object.keys(j.modules || {}).slice(0, 64), assets: (j.assets | 0) };
     await st.put('release', msg); broadcast(state, msg); return Response.json({ ok: true, viewers: state.getWebSockets('world').length }); }

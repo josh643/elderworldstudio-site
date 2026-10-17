@@ -49,18 +49,32 @@ export function clean(e) {
   return null;
 }
 const keyOk = (request, env) => { const a = request.headers.get('authorization') || ''; return authed(request, env) || (!!env.WORLD_SERVER_KEY && a === `Bearer ${env.WORLD_SERVER_KEY}`); };
+const bearer = (request, k) => !!k && (request.headers.get('authorization') || '') === `Bearer ${k}`;
+// 2026-10-17 Odin layout approval (Joshua 00:27). Three separate scoped secrets, none in the client:
+//   LAYOUT_APPROVE_KEY (Odin, CT111 only): layout.approve {version: spec id, why}. The DO re-checks the stored Ve verdict, genuine flag,
+//     LATEST-REDESIGN and leased lots; nothing in the request can assert them.
+//   LAYOUT_REVOKE_KEY (Joshua/Anna, box only): layout.revoke {by: joshua|anna, why} -> construction back on hold, sites frozen, nothing demolished.
+//   ARCH_SPEC_KEY (architecture pipeline, CT111): spec.register {id, verdict, genuine, latest, lots, hash} -> DO spec registry.
+// The office ingest key and the CT119 world-server key can no longer approve.
 export async function onRequestPost({ request, env }) {
-  if (!keyOk(request, env)) return json({ ok: false }, 401);
   if (!env.OFFICE_RL) return json({ ok: false, error: 'no world binding' }, 503);
-  let body; try { body = await request.json(); } catch { return json({ ok: false, error: 'bad json' }, 400); }
+  let body; try { body = await request.clone().json(); } catch { return json({ ok: false, error: 'bad json' }, 400); }
   const raw = [].concat(body).slice(0, 50);
-  // layout gate: only Anna (the office ingest key, never the CT119 world-server key) may approve or revoke the town layout
-  if (raw.some(e => e && /^layout\./.test(e.type))) {
-    if (!authed(request, env)) return json({ ok: false, error: 'layout approval needs the office key' }, 403);
-    const L = raw.map(e => e && (e.type === 'layout.approve' && typeof e.version === 'string' && /^[\w.:-]{1,64}$/.test(e.version) ? { type: e.type, version: e.version, by: 'anna' } : e.type === 'layout.revoke' ? { type: e.type, by: 'anna' } : null));
-    if (L.some(e => !e)) return json({ ok: false, error: 'invalid layout event (layout.approve needs a version string; do not mix with other events)' }, 400);
-    const r = await worldDO(env).fetch('https://rl/world/event', { method: 'POST', body: JSON.stringify(L) }); return json(await r.json(), r.status);
+  if (raw.some(e => e && (/^layout\./.test(e.type) || e.type === 'spec.register'))) {
+    if (raw.length !== 1) return json({ ok: false, error: 'send layout/spec events alone' }, 400);
+    const e = raw[0], why = String(e.why || '').replace(/[^\w .,:;'()\/%+-]/g, ' ').slice(0, 600);
+    if (e.type === 'spec.register') { if (!bearer(request, env.ARCH_SPEC_KEY)) return json({ ok: false, error: 'spec registration needs the architecture pipeline key' }, 403);
+      const r = await worldDO(env).fetch('https://rl/world/spec', { method: 'POST', body: JSON.stringify(e) }); return json(await r.json(), r.status); }
+    if (e.type === 'layout.approve') { if (!bearer(request, env.LAYOUT_APPROVE_KEY)) return json({ ok: false, error: 'layout approval needs the sub-CEO layout key' }, 403);
+      if (typeof e.version !== 'string' || !/^[\w.:-]{1,64}$/.test(e.version)) return json({ ok: false, error: 'version = spec id' }, 400);
+      if (why.length < 20) return json({ ok: false, error: 'a written rationale (why) is required' }, 400);
+      const r = await worldDO(env).fetch('https://rl/world/event', { method: 'POST', body: JSON.stringify([{ type: 'layout.approve', version: e.version, by: 'odin', why }]) }); return json(await r.json(), r.status); }
+    if (e.type === 'layout.revoke') { if (!bearer(request, env.LAYOUT_REVOKE_KEY)) return json({ ok: false, error: 'revoke needs the Joshua/Anna revoke key' }, 403);
+      const by = e.by === 'joshua' ? 'joshua' : 'anna';
+      const r = await worldDO(env).fetch('https://rl/world/event', { method: 'POST', body: JSON.stringify([{ type: 'layout.revoke', by, why }]) }); return json(await r.json(), r.status); }
+    return json({ ok: false, error: 'unknown layout event' }, 400);
   }
+  if (!keyOk(request, env)) return json({ ok: false }, 401);
   const evs = raw.map(clean); if (evs.some(e => !e)) return json({ ok: false, error: 'invalid event', index: evs.findIndex(e => !e) }, 400);
   // leased lots: only a client/owner-authorized edit (separate secret LEASE_EDIT_KEY, never given to agents) may touch them; the DO enforces (403)
   const la = request.headers.get('x-ews-lease-auth') || ''; const leaseOk = !!env.LEASE_EDIT_KEY && la === `Bearer ${env.LEASE_EDIT_KEY}`;
