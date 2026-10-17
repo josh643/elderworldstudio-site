@@ -35,6 +35,16 @@ function assetInfo(agent, a) {
   const n = (v, hi) => Math.max(0, Math.min(hi, Math.floor(Number(v) || 0)));
   return { asset: { name, kind: AKINDS.includes(a.kind) ? a.kind : 'Asset', step: a.step, try: Math.max(1, n(a.try, 5)), left: n(a.left, 999), more: n(a.more, 20) } };
 }
+// Live bar anchors (2026-10-16): numbers + enums only. Client eases p0 -> p1 over eta seconds from since; never past p1.
+const SUBS = ['plan', 'build', 'fix', 'check', 'self-check', 'release', 'waiting', 'QA', 'review', 'ready'];
+function liveBar(w) {
+  const c = v => Math.max(0, Math.min(1, Number(v) || 0)), since = String(w.since || '').slice(0, 40), out = {};
+  if (since && !Number.isNaN(Date.parse(since))) out.since = since;
+  const eta = Math.floor(Number(w.eta) || 0); if (eta > 0 && eta <= 86400) out.eta = eta;
+  if (w.p0 != null) out.p0 = c(w.p0); if (w.p1 != null) out.p1 = Math.max(out.p0 || 0, c(w.p1));
+  if (w.sub && SUBS.includes(w.sub.k)) out.sub = { k: w.sub.k, n: Math.max(1, Math.min(20, Math.floor(Number(w.sub.n) || 1))) };
+  return out;
+}
 const STAGES = ['waiting', 'plan', 'build', 'self-check', 'QA', 'review', 'ready', 'released'];
 export function sanitize(raw, names) {
   const out = { updated: String(raw.updated || new Date().toISOString()).slice(0, 40), work: [] };
@@ -44,7 +54,7 @@ export function sanitize(raw, names) {
     if (!agent || !names[agent] || seen.has(agent)) continue; seen.add(agent);
     const stage = STAGES.includes(w.stage) ? w.stage : null; if (!stage) continue;
     out.work.push({ agent, name: names[agent].name, role: names[agent].role, team: String(w.team || '').replace(/[^a-z0-9-]/gi, '').slice(0, 30),
-      stage, progress: Math.max(0, Math.min(1, Number(w.progress) || 0)), blocked: !!w.blocked, task: redactTask(w.task), ...assetInfo(agent, w.asset) });
+      stage, progress: Math.max(0, Math.min(1, Number(w.progress) || 0)), blocked: !!w.blocked, task: redactTask(w.task), ...assetInfo(agent, w.asset), ...liveBar(w) });
   }
   out.last = {}; for (const [a, t] of Object.entries(raw.last || {}).slice(0, 200)) { if (names[a] && !seen.has(a)) { const r = redactTask(t); if (r) out.last[a] = r; } }
   if (raw.thumbs) out.thumbs = raw.thumbs;

@@ -17,6 +17,21 @@ const CLIP = { idle: 'Sitting_Idle_Loop', type: 'Sitting_Idle_Loop', stand: 'Idl
 const SPEED = { walk: 0.975, carry: 0.65, run: 5.36 };
 const LAYER = { type: 'type', greet: 'wave' };   // NOTE: with the v3 packs the clips themselves type/wave; layers are skipped when packs load   // procedural arm layers (poses.js) on top of the base clip
 const SEATED = new Set(['idle', 'type']);
+/* Role-appropriate desk work (Joshua 2026-10-16: non-coders shouldn't type code). Coders/writers type; artists, store and QA work the mouse
+   and read the screen; money/compliance/research read and write notes; client care and call-centre agents take calls. Each agent cycles
+   its role's clips slowly (phase-offset), so a room never moves in lockstep. Without the v3 desk pack every role falls back to 'type'. */
+const ROLE_WORK = [
+  [/^(coder|game-coder|devlog|docs|social|jacob-seo|kiosk-polish|client-sites|client-fast|heal|prevent|bugs)/, ['type', 'type', 'read']],
+  [/^(assets|animation|anim-polish|design)/, ['mouse', 'mouse', 'read']],
+  [/^(store|store-pages|qa|reviews|pipeline-audit)/, ['mouse', 'read', 'mouse']],
+  [/^(cfo|bookkeeper|finance|compliance|lead-money|stats|research|prospects|casestudy)/, ['read', 'write', 'mouse']],
+  [/^(client-care|follow-?up|callcenter|lead-callcenter|community|games-community|inbox|support|elderai-onboarding)/, ['phone', 'mouse', 'read']],
+  [/^(guard|watchdog|lead-|subceo)/, ['read', 'mouse', 'read']],
+];
+function workClip(u) {
+  const id = u.a?.id || '', set = (ROLE_WORK.find(([re]) => re.test(id)) || [0, ['type', 'read']])[1];
+  return set[Math.floor(performance.now() / 1000 / 24 + u.phase) % set.length];
+}
 export default {
   async setup(ctx, cfg) {
     const { THREE, M, mat } = ctx;
@@ -31,8 +46,8 @@ export default {
     // clips come from the UAL file; bodies are the clothed Universal Base Characters on the same 65-bone rig (CC0)
     const clips = Object.fromEntries(gltf.animations.map(c => [c.name, c]));
     const clipsF = { ...clips }; if (packs) { packs.slice(0, PK.length).forEach(g => g.animations.forEach(c => { clips[c.name] = c; })); packs.slice(PK.length).forEach(g => g.animations.forEach(c => { clipsF[c.name] = c; })); }
-    if (packs) { SEATED.add('blocked'); SEATED.add('phone'); }
-    if (packs) Object.assign(CLIP, { idle: 'Sit_ReadMonitor_Loop', type: 'Sit_Type_Loop', stand: 'Idle', walk: 'Walk', run: 'Jog', carry: 'Walk_Carry', inspect: 'Interact', talk: 'Talk', pickup: 'PickUp_Table', blocked: 'Sit_LeanBack_Loop', cheer: 'Dance', greet: 'Wave', phone: 'Sit_Phone_Loop', nod: 'Yes', host: 'Freyja_Desk_Idle' });
+    if (packs) { SEATED.add('blocked'); SEATED.add('phone'); SEATED.add('mouse'); SEATED.add('read'); SEATED.add('write'); }
+    if (packs) Object.assign(CLIP, { idle: 'Sit_ReadMonitor_Loop', type: 'Sit_Type_Loop', stand: 'Idle', walk: 'Walk', run: 'Jog', carry: 'Walk_Carry', inspect: 'Interact', talk: 'Talk', pickup: 'PickUp_Table', blocked: 'Sit_LeanBack_Loop', cheer: 'Dance', greet: 'Wave', phone: 'Sit_Phone_Loop', nod: 'Yes', host: 'Freyja_Desk_Idle', mouse: 'Sit_Mouse_Loop', read: 'Sit_ReadMonitor_Loop', write: 'Sit_Write_Loop' });
     const bases = humans.map(h => { const b = h.scene; const bb = new THREE.Box3(); b.updateMatrixWorld(true); b.traverse(o => { if (o.isSkinnedMesh) bb.expandByObject(o); }); const hh = bb.isEmpty() ? 0 : bb.max.y - bb.min.y; b.userData.k = 1; b.userData.h = hh;   /* GLBs are authored at real scale; the old bbox included a hidden 2 m sphere and shrank everyone to ~89% (hands missed props) */
       b.traverse(o => { if (o.isMesh) { o.frustumCulled = false; o.castShadow = false; } }); return b; });
     let _skin = null; const skinMat = () => _skin ||= new THREE.MeshLambertMaterial({ vertexColors: true });
@@ -105,7 +120,7 @@ export default {
       else if (u.pose === 'wave') k = u.talking ? 'talk' : (Math.sin(performance.now() / 4000 + u.phase) > 0.75 ? 'greet' : 'stand');
       else if (u.pose === 'host') k = u.greeting ? 'greet' : (u.talking || u.speaking) ? 'talk' : (packs ? 'host' : 'stand');
       else if (u.pose === 'talk') k = 'talk';
-      else if (u.team && u.home && s.stage && s.stage !== 'released' && Math.hypot(av.position.x - u.home.x, av.position.z - u.home.z) < 0.2) k = 'type';   /* active work = seated at the own desk, typing */
+      else if (u.team && u.home && s.stage && s.stage !== 'released' && Math.hypot(av.position.x - u.home.x, av.position.z - u.home.z) < 0.2) k = packs ? workClip(u) : 'type';   /* active work = seated at the own desk, typing */
       else if (s.blocked && !(u.team && u.home)) k = 'blocked';   /* team agents stay seated at their desk when blocked */
       else if (s.stage === 'QA') { k = 'type'; if (u.target) av.rotation.y = Math.PI; }   /* seated at the QA station, facing its monitor */
       else if (s.stage === 'review') k = 'talk';
