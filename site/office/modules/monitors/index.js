@@ -44,6 +44,7 @@ export default {
         for (const m of mk) pairs.set(m.agent, { role: 'maker', other: chk.map(c => c.name || c.agent).join(' & ') });
         for (const c of chk) pairs.set(c.agent, { role: 'checker', other: mk.map(m => m.name || m.agent).join(' & ') }); }
       for (const av of ctx.use('avatar')?.all || []) { const id = av.userData.a?.id; av.userData.waitOn = pairs.get(id)?.role === 'maker' ? pairs.get(id).other : null; } };
+    ctx.provide('liveBar', { live, activity, fmt });   /* tablets share the same eased bar + activity line (one source of truth) */
     this.onState = st => { last = st.last || {}; findPairs(st.work || []);
       const nowW = new Map((st.work || []).map(w => [w.agent, w]));
       for (const [id, w] of prevWork) if (!nowW.has(id)) flash.set(id, { task: w.task, until: Date.now() + 8000, from: shown.get(id)?.v || w.progress || 0, t0: Date.now() });

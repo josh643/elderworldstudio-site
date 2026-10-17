@@ -46,6 +46,30 @@ function liveBar(w) {
   return out;
 }
 const STAGES = ['waiting', 'plan', 'build', 'self-check', 'QA', 'review', 'ready', 'released'];
+// Security team tablets (2026-10-16, incoming/security/HANDOFF.md section 4): five patrol agents, plain words only. Hostnames,
+// server ids, IPs, domains, paths and repo names never leave: they become "a server" / "a site" / "an address".
+const SEC = { 'sec-lead': ['Hœnir', 'security lead'], 'sec-vuln': ['Geri', 'vulnerability scans'], 'sec-harden': ['Sigyn', 'hardening'], 'sec-pentest': ['Skírnir', 'staging pentest'], 'sec-watch': ['Freki', 'log watch'] };
+const SECST = ['patrol', 'checking', 'alert'], SEV = ['low', 'medium', 'high', 'critical'], TK = { server: 'a server', site: 'a site', repo: 'a repo' };
+export function secWords(t) {
+  let s = String(t || '').replace(/`[^`]*`/g, ' ').replace(/https?:\/\/\S+/g, 'a site').replace(/\S+@\S+/g, ' ')
+    .replace(/\b[\w-]+(?:\.[\w-]+)*\.(?:dev|com|net|io|app|org|co|ai|local|lan)\b\S*/gi, 'a site').replace(/\b\d{1,3}(?:\.\d{1,3}){3}\b\S*/g, 'an address')
+    .replace(/\bCT\s?\d+\b/gi, 'a server').replace(/\S*[\/\\]\S*/g, ' ').replace(/\b[0-9a-f]{7,}\b/gi, ' ')
+    .replace(/[^A-Za-z0-9 ,.'&:%+-]/g, ' ').replace(/\s+/g, ' ').trim().replace(/^[,.:;\s]+|[,.:;\s]+$/g, '');
+  if (s.length > 72) s = s.slice(0, 72).replace(/\s+\S*$/, '') + '…';
+  return s;
+}
+export function sanitizeSec(list) {
+  const out = [], seen = new Set();
+  for (const e of (Array.isArray(list) ? list : []).slice(0, 10)) {
+    const agent = String(e?.agent || ''); if (!SEC[agent] || seen.has(agent)) continue; seen.add(agent);
+    const t = e.target && typeof e.target === 'object' ? e.target : {}, kind = String(t.kind || '');
+    const target = kind === 'lot' ? (/^\d{1,3}$/.test(String(t.id)) ? 'lot ' + Number(t.id) : 'a lot') : (TK[kind] || '');
+    const at = String(e.at || '').slice(0, 40);
+    out.push({ agent, name: SEC[agent][0], role: SEC[agent][1], state: SECST.includes(e.state) ? e.state : 'patrol', check: secWords(e.check), finding: secWords(e.finding),
+      sev: SEV.includes(e.severity) ? e.severity : '', target, ...(at && !Number.isNaN(Date.parse(at)) ? { at } : {}) });
+  }
+  return out;
+}
 export function sanitize(raw, names) {
   const out = { updated: String(raw.updated || new Date().toISOString()).slice(0, 40), work: [] };
   const seen = new Set();
@@ -58,6 +82,7 @@ export function sanitize(raw, names) {
   }
   out.last = {}; for (const [a, t] of Object.entries(raw.last || {}).slice(0, 200)) { if (names[a] && !seen.has(a)) { const r = redactTask(t); if (r) out.last[a] = r; } }
   if (raw.thumbs) out.thumbs = raw.thumbs;
+  if (Array.isArray(raw.sec)) out.sec = sanitizeSec(raw.sec);
   return out;
 }
 

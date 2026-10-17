@@ -154,6 +154,14 @@
    }
   },
   {
+   "id": "tablets",
+   "src": "modules/tablets/index.js"
+  },
+  {
+   "id": "town-model",
+   "src": "modules/town-model/index.js"
+  },
+  {
    "id": "webxr",
    "src": "modules/webxr/index.js",
    "config": {
