@@ -1,4 +1,6 @@
 import * as PL from './plants.js?v=1';
+import { chairs } from './chairs.js?v=1';
+export { chairs };
 // Snap-together kit pieces. Every piece is a pure function of (ctx, options) and returns its THREE.Group.
 // Grid unit = 1 m. Rooms snap on their centre; walls/doors are optional per side.
 export function room(ctx, { x = 0, z = 0, w = 10, d = 8, floor = 0x2a2236, walls = '', title, sub, enclose = false, doorX = 0 }) {
@@ -45,12 +47,15 @@ export function desk(ctx, x, z, parent) { const T = ctx.THREE, g0 = shared(ctx),
   const mesh = (geo, mt, px, py, pz, ry = 0) => { const o = new T.Mesh(geo, mt); o.position.set(px, py, pz); o.rotation.y = ry; par.add(o); return o; };
   const ao = mesh(g0.aoGeo, g0.ao, x, 0.045, z - 0.3); ao.scale.set(2.0, 1, 2.0); ao.userData.batch = 1;
   const d = ctx.box(1.4, 0.04, 0.7, m.wood, x, 0.74, z - 0.6, parent); (ctx.desks ||= []).push([x, z]);
-  for (const sx of [-0.65, 0.65]) for (const sz of [-0.28, 0.28]) mesh(g0.tleg, m.rack, x + sx, 0.36, z - 0.6 + sz);
+  /* desk frame (v31): sled legs (post + foot + top rail) instead of four sticks, darker edge band on the top, and a
+     three-drawer pedestal on the left that clears the seated agent's knees (inner face 0.29 m from the seat centre) */
+  for (const sx of [-0.66, 0.66]) { ctx.box(0.05, 0.7, 0.05, m.rack, x + sx, 0.37, z - 0.6, parent); ctx.box(0.05, 0.03, 0.64, m.rack, x + sx, 0.015, z - 0.6, parent); ctx.box(0.05, 0.03, 0.6, m.rack, x + sx, 0.705, z - 0.6, parent); }
+  ctx.box(1.4, 0.012, 0.012, m.dark, x, 0.735, z - 0.25, parent);
+  { const px = x - 0.45, pz = z - 0.62; ctx.box(0.32, 0.62, 0.5, m.rack, px, 0.34, pz, parent);
+    for (const [y, h] of [[0.57, 0.12], [0.43, 0.13], [0.2, 0.3]]) { ctx.box(0.3, h, 0.012, m.wood, px, y, pz + 0.255, parent); ctx.box(0.12, 0.012, 0.02, m.trim || m.rack, px, y + h / 2 - 0.03, pz + 0.27, parent); } }
   ctx.box(1.26, 0.35, 0.02, m.wood, x, 0.52, z - 0.9, parent);
-  // chair
-  const fab = m.fabric || m.dark; mesh(g0.lift, m.rack, x, 0.24, z + 0.1);
-  for (let i = 0; i < 5; i++) { const a = i * Math.PI * 2 / 5, l = mesh(g0.leg, m.rack, x + Math.sin(a) * 0.15, 0.07, z + 0.1 + Math.cos(a) * 0.15, a + Math.PI / 2); mesh(g0.caster, m.dark, x + Math.sin(a) * 0.29, 0.03, z + 0.1 + Math.cos(a) * 0.29, a); }
-  mesh(g0.seat, fab, x, 0.46, z + 0.1); mesh(g0.back, fab, x, 0.8, z + 0.36).rotation.x = -0.12;
+  /* chair: one instance of the shared InstancedMesh chair (core/chairs.js); it rolls out, swivels and tucks in for its sitter */
+  const seat = chairs(ctx).add(new T.Vector3(x, 0, z), Math.PI, { aisle: 1.0 });
   // monitor + keyboard
   mesh(g0.foot, m.rack, x, 0.766, z - 0.82); mesh(g0.neck, m.rack, x, 0.87, z - 0.84);
   mesh(g0.bezel, m.dark, x, 1.08, z - 0.83); const mon = mesh(g0.screen, m.dark, x, 1.08, z - 0.813); mon.userData.keep = 1; (ctx.screens ||= []).push(mon);
@@ -61,7 +66,7 @@ export function desk(ctx, x, z, parent) { const T = ctx.THREE, g0 = shared(ctx),
   mesh(g0.mug, M2.mug[v % 4], x + 0.26, 0.81, z - 0.30);
   if (v % 3) mesh(g0.paper, M2.paper, x + (v % 2 ? -0.5 : 0.48), 0.775 + (v % 5) * 0.004, z - 0.55, (v % 7) * 0.1 - 0.3);
   if (v % 4 !== 1) { const b = mesh(g0.book, M2.book[v % 3], x - 0.28, 0.77, z - 0.38, 0.2 - (v % 5) * 0.08); mesh(g0.pen, M2.pen, x - 0.26, 0.785, z - 0.38, 0.4); }
-  return { desk: d, monitor: mon }; }
+  return { desk: d, monitor: mon, seat }; }
 export function pedestal(ctx, x, z, gold, parent) { return ctx.box(0.7, 1, 0.7, gold ? ctx.mat.trim : ctx.mat.stone, x, 0.5, z, parent); }
 /* window with a baked view (sky, lake, far campus treeline): one shared texture, unlit, wood frame + mullions. Low-tier safe. */
 let VIEW = null;
