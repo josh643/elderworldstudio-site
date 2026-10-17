@@ -1,8 +1,9 @@
 // Agent characters v1 (Joshua 2026-10-16: "all agents need better models"). One shared 65-bone rig (the office's own
 // UBC rig, so every retargeted clip, the seat system and world-agents keep working), parts merged into ONE skinned mesh
 // with ONE material per agent. Outfits are palette swaps on a single wardrobe shader (zone attribute -> colour slot),
-// on top of one shared 1024 KTX2 atlas (skin / hair / eye detail). LOD0 < 4k tris, LOD1 ~1.5k, LOD2 = one instanced
-// pawn draw call for the whole crowd at distance. Assets: tools/characters (Blender build), LICENSES in assets/characters.
+// on top of one shared 512 atlas (skin / hair / eye detail). Each assembled character is capped at 15k tris;
+// LOD0 < 4k tris, LOD1 ~2.1k, LOD2 is one instanced pawn draw call for the whole crowd at distance.
+// Assets: tools/characters (Blender build), LICENSES in assets/characters.
 import * as SkeletonUtils from '../../vendor/jsm/utils/SkeletonUtils.js?v=169';
 import { mergeGeometries } from '../../vendor/jsm/utils/BufferGeometryUtils.js?v=169';
 export const ZONES = ['skin', 'hair', 'eyes', 'top', 'bottom', 'shoes', 'forearm', 'shin', 'accent', 'hat', 'trim', 'brow', 'belt', 'sole'];
@@ -24,10 +25,10 @@ export function kindOf(a, team) {
   return 'office';
 }
 export async function loadWardrobe(ctx, L) {
-  const { THREE } = ctx, base = '/office/assets/characters/', V = '?v=1';
+  const { THREE } = ctx, base = '/office/assets/characters/', V = '?v=2';
   const [gm, gf] = await Promise.all(['chars_m.glb', 'chars_f.glb'].map(f => L.loadAsync(base + f + V)));
-  let atlas;
-  try { atlas = await L.ktx2Loader.loadAsync(base + 'atlas.ktx2' + V); } catch (e) { console.warn('wardrobe: ktx2 atlas failed, jpg fallback', e); atlas = await new THREE.TextureLoader().loadAsync(base + 'atlas.jpg' + V); atlas.flipY = false; }
+  const atlas = await new THREE.TextureLoader().loadAsync(base + 'atlas.jpg' + V); atlas.flipY = false;
+  if (atlas.image?.width >= 1024 || atlas.image?.height >= 1024) throw new Error('wardrobe atlas must be below 1k resolution');
   atlas.colorSpace = THREE.SRGBColorSpace; atlas.anisotropy = 4;
   const sexes = [gm, gf].map(g => {
     const parts = {}; let proto = null;
@@ -39,7 +40,7 @@ export async function loadWardrobe(ctx, L) {
   const geoCache = new Map();
   function merged(s, lod, list) {
     const k = s + '|' + lod + '|' + list.join(','); if (geoCache.has(k)) return geoCache.get(k);
-    const S = sexes[s], gs0 = list.map(n => S.parts[n + '_L' + lod]?.geometry).filter(Boolean);
+    const S = sexes[s], gs0 = list.map(n => (S.parts[n + '_L' + lod] || S.parts[n + '_L' + (lod === 0 ? 1 : 0)])?.geometry).filter(Boolean);
     /* meshopt/quantise may pick different storage per part (e.g. a constant _zone); unify mismatched attributes as float */
     const sig = at => at.array.constructor.name + (at.normalized ? 'n' : '') + (at.isInterleavedBufferAttribute ? 'i' : '');
     const toF = at => { const n = at.count, k = at.itemSize, a = new Float32Array(n * k), get = ['getX', 'getY', 'getZ', 'getW'];
@@ -106,6 +107,7 @@ export async function loadWardrobe(ctx, L) {
     return { kind, pal, tex, parts, morph, hair: hs };
   }
   const counters = [0, 0];
+  const MAX_CHARACTER_TRIANGLES = 15000;
   function build(a, fem, col, team) {
     const s = fem ? 1 : 0, S = sexes[s], k = counters[s]++, L = look(a, fem, col, k, team);
     const root = SkeletonUtils.clone(S.tpl); const byName = {}; root.traverse(o => { if (o.isBone) byName[o.name] = o; });
@@ -116,6 +118,10 @@ export async function loadWardrobe(ctx, L) {
       host.add(m); m.bind(skel, S.bind); m.updateMorphTargets(); if (m.morphTargetInfluences) L.morph.forEach((v, i) => { m.morphTargetInfluences[i] = v; }); return m; });
     meshes[1].visible = false;
     const tris = meshes.map(m => (m.geometry.index ? m.geometry.index.count : m.geometry.attributes.position.count) / 3);
+    if (tris.some(n => !Number.isFinite(n) || n > MAX_CHARACTER_TRIANGLES)) {
+      throw new RangeError(`wardrobe triangle budget exceeded (${tris.map(Math.ceil).join('/')} > ${MAX_CHARACTER_TRIANGLES}) for ${L.kind}`);
+    }
+    root.userData.wardrobeBudget = { maxTriangles: MAX_CHARACTER_TRIANGLES, lodTriangles: tris.map(Math.ceil), atlas: `${atlas.image.width}x${atlas.image.height}` };
     return { body: root, meshes, look: L, tris, mat };
   }
   /* LOD2: every far agent is one instance of one pawn mesh (capsule body + head) in its outfit colour: one draw call */

@@ -5,7 +5,7 @@ import * as THREE from '/office/vendor/three.module.min.js?v=169';
 import { GLTFLoader } from '/office/vendor/jsm/loaders/GLTFLoader.js?v=169';
 import { KTX2Loader } from '/office/vendor/jsm/loaders/KTX2Loader.js?v=169';
 import { MeshoptDecoder } from '/office/vendor/jsm/libs/meshopt_decoder.module.js?v=169';
-import { loadWardrobe } from '/office/modules/base-avatar/wardrobe.js?v=1';
+import { loadWardrobe } from '/office/modules/base-avatar/wardrobe.js?v=2';
 const q = new URLSearchParams(location.search);
 const R = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true }); R.setSize(+q.get('w') || 1600, +q.get('h') || 700); R.outputColorSpace = THREE.SRGBColorSpace; document.body.append(R.domElement);
 const S = new THREE.Scene(); S.background = new THREE.Color(0x3a3d42); S.add(new THREE.HemisphereLight(0xfff4e6, 0x404040, 1.6)); const dl = new THREE.DirectionalLight(0xffffff, 1.8); dl.position.set(2, 4, 5); S.add(dl);

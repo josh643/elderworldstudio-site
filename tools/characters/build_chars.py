@@ -6,7 +6,7 @@
 #   body (zones: skin / top / bottom / shoes / forearm / shin), eyes+brows, hairstyles, beard, collar, vest, jacket,
 #   hard hat, police cap, duty belt, badge.
 # Every part carries the same attributes so the runtime merges an agent's parts into ONE skinned mesh:
-#   _zone (palette slot, read by the wardrobe shader), _ao (baked vertex AO), UV into the shared 1024 atlas, and the
+#   _zone (palette slot, read by the wardrobe shader), _ao (baked vertex AO), UV into the shared 512 atlas, and the
 #   same 4 morph targets (Heavy, Jaw, Nose, Cheeks) for body shape / face variety.
 import bpy, bmesh, sys, math, os, json
 from mathutils import Vector

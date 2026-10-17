@@ -10,7 +10,7 @@ import { DRACOLoader } from '../../vendor/jsm/loaders/DRACOLoader.js?v=169';
 import { KTX2Loader } from '../../vendor/jsm/loaders/KTX2Loader.js?v=169';
 import { pose, bonesOf } from './poses.js?v=1';
 import capsule from './capsule.js?v=6';
-import { loadWardrobe } from './wardrobe.js?v=1';
+import { loadWardrobe } from './wardrobe.js?v=2';
 import { mergeGeometries } from '../../vendor/jsm/utils/BufferGeometryUtils.js?v=169';
 const CLIP = { idle: 'Sitting_Idle_Loop', type: 'Sitting_Idle_Loop', stand: 'Idle_Loop', walk: 'Walk_Loop', run: 'Jog_Fwd_Loop', carry: 'Walk_Carry_Loop',
   inspect: 'Interact', talk: 'Idle_Talking_Loop', pickup: 'PickUp_Table', blocked: 'Idle_FoldArms_Loop', cheer: 'Dance_Loop', greet: 'Idle_Loop', phone: 'Idle_TalkingPhone_Loop', nod: 'Yes' };
@@ -247,7 +247,11 @@ export default {
       sph.center.copy(av.position).setY(0.9); const d = sph.center.distanceTo(ctx.cam.position); u.acc += dt; u.frame++;
       const L = ctx.lod || 1, visible = d < 16 * L && frustum.intersectsSphere(sph), every = d < 8 * L ? 1 : d < 14 * L ? 2 : 6;   // far agents: hidden; mid: thinned updates
       av.visible = d < 15 * Math.max(0.8, L) && frustum.intersectsSphere(sph);
-      if (u.wb) { const near = d < 7 * L; if (u.wb.meshes[0].visible !== near) { u.wb.meshes[0].visible = near; u.wb.meshes[1].visible = !near; } u.far = !av.visible && d < 34 * L && frustum.intersectsSphere(sph) && !!av.parent; }   /* LOD0 < 7 m, LOD1 to the cull distance, LOD2 pawn beyond */
+      if (u.wb) {
+        const detail = u.wb.meshes[0].visible ? d < 7.5 * L : d < 6.5 * L; // 1 m hysteresis prevents LOD chatter at the detail boundary
+        if (u.wb.meshes[0].visible !== detail) { u.wb.meshes[0].visible = detail; u.wb.meshes[1].visible = !detail; }
+        u.far = !av.visible && d < 45 * L && frustum.intersectsSphere(sph) && !!av.parent;
+      }   /* LOD0 < 7 m, LOD1 to 15 m, LOD2 pawn to 45 m */
       if (!visible && u.frame % 90 === 0) { u.mixer.update(u.acc); u.acc = 0; }   // off-screen rigs still get a rare update so a state change never reveals a bind pose
       if (visible && u.frame % every === 0) { u.mixer.update(u.acc); u.acc = 0; if (u.layer && u.lw > 0.01 && d < 14) { u.lt = (u.lt || 0) + dt * every; av.updateMatrixWorld(true); pose(u.bones, u.layer, u.lt + u.phase, u.lw, av); } }
       const p = s.progress; u.bar.visible = u.bg.visible = visible && p != null && !!s.stage && !u.waitOn;   /* a maker waiting on its checker shows no copied bar */
