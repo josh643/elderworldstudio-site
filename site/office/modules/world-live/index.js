@@ -27,31 +27,45 @@ export default {
     const T = ctx.THREE, me = this; this.ctx = ctx; this.T = T;
     const ents = new Map(); let skew = 0, seq = 0, ws = null, live = false, pollT = 0, retry = 1000, connected = false;
     this.ents = ents; this.vis = new Map(); this.stats = { msgs: 0, mode: 'connecting', last: null };
-    const onSnap = m => { skew = (m.now || Date.now()) - Date.now(); seq = m.seq; const seen = new Set();
-      for (const e of m.ents || []) { seen.add(e.id); upsert(e, !live); } for (const id of [...ents.keys()]) if (!seen.has(id)) remove(id); live = true; };
-    const onDelta = m => { skew = (m.now || Date.now()) - Date.now(); if (m.seq <= seq) return; seq = m.seq; for (const e of m.up || []) upsert(e, false); for (const id of m.rm || []) remove(id); };
+    const onSnap = m => { skew = me.skew = (m.now || Date.now()) - Date.now(); seq = m.seq; const seen = new Set();
+      for (const e of m.ents || []) { seen.add(e.id); upsert(e, !live); } for (const id of [...ents.keys()]) if (!seen.has(id)) remove(id); live = true; me.layout = m.layout || me.layout; me.control?.(m.ents || [], []); };
+    const onDelta = m => { skew = me.skew = (m.now || Date.now()) - Date.now(); if (m.seq <= seq) return; seq = m.seq; if (m.layout) me.layout = m.layout; for (const e of m.up || []) upsert(e, false); for (const id of m.rm || []) remove(id); me.control(m.up || [], m.rm || []); };
+    // office agents: hand every server pose to the seating worker's walk/seat system (world-agents, 779552e); never tween office avatars here
+    me.control = (up, rm) => { const C = ctx.use('agentControl'); if (!C) return; const poses = up.filter(e => e.kind === 'agent').map(e => ({ ...e, id: e.id.replace(/^agent:/, '') }));
+      if (poses.length) try { C.apply(poses); } catch (err) { console.warn('agentControl.apply', err); } for (const id of rm) if (/^agent:/.test(id)) try { C.gone(id.replace(/^agent:/, '')); } catch {} };
     this.agents = new Map();   // kind 'agent' (CT119 poses): kept for the avatar layer, never built as a site; 'rt-' round-trip probes ignored
     const skip = e => e.kind === 'agent' ? (me.agents.set(e.id, e), true) : (e.kind === 'road' && /^road:rt-/.test(e.id));
     const upsert = (e, initial) => { if (skip(e)) return; const old = ents.get(e.id); ents.set(e.id, e); if (!me.vis.has(e.id)) me.vis.set(e.id, { D: initial ? null : 0, stage: -1, fresh: !initial }); if (old && old.kind !== e.kind) me.drop(e.id); };
     const remove = id => { me.agents?.delete(id); ents.delete(id); me.drop(id); me.vis.delete(id); };
     this.target = e => { const N = (e.kind === 'road' ? ROAD : BUILD).length - 1; let o = (e.si + e.p) / N;
-      if (e.next && e.next.o > o) { const k = clamp((Date.now() + skew - e.at) / 1000 / e.next.eta); o += (e.next.o - o) * k; } return clamp(o); };
-    const handle = txt => { let m; try { m = JSON.parse(txt); } catch { return; } me.stats.msgs++; me.stats.last = Date.now(); if (m.t === 'snap') onSnap(m); else if (m.t === 'delta') onDelta(m); };
+      if (e.next && e.next.o > o) { const k = clamp((Date.now() + skew - e.at) / 1000 / e.next.eta); o += (e.next.o - o) * k; } return e.hold ? Math.min(o, 0.99 / N) : clamp(o); };
+    const handle = txt => { let m; try { m = JSON.parse(txt); } catch { return; } me.stats.msgs++; me.stats.last = Date.now(); if (m.t === 'snap') { onSnap(m); me._ready?.(); } else if (m.t === 'delta') onDelta(m); else if (m.t === 'release') { me.stats.release = m; ctx.use('assets')?.check?.('release'); } };
     const poll = async () => { try { const r = await fetch(cfg.url || '/api/office/world', { cache: 'no-store' }); if (r.ok) handle(await r.text()); } catch {} };
     const connect = () => {
       if (!('WebSocket' in window)) { me.stats.mode = 'poll'; return; }
       try { ws = new WebSocket((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + (cfg.url || '/api/office/world')); } catch { me.stats.mode = 'poll'; return; }
       ws.onopen = () => { connected = true; retry = 1000; me.stats.mode = 'live'; };
       ws.onmessage = ev => handle(ev.data);
-      ws.onclose = () => { connected = false; me.stats.mode = 'reconnecting'; setTimeout(connect, retry); retry = Math.min(30000, retry * 2); };
+      ws.onclose = () => { if (me.dead) return; connected = false; me.stats.mode = 'reconnecting'; setTimeout(connect, retry); retry = Math.min(30000, retry * 2); };
       ws.onerror = () => { try { ws.close(); } catch {} };
     };
-    setTimeout(() => { poll(); connect(); }, 600);
-    setInterval(() => { if (connected && ws.readyState === 1) ws.send('ping'); else if (Date.now() - pollT > 10000) { pollT = Date.now(); poll(); } }, 25000);
-    setInterval(() => { if (!connected) poll(); }, 10000);
+    me.timers = [setTimeout(() => { poll(); connect(); }, 600),
+      setInterval(() => { if (connected && ws.readyState === 1) ws.send('ping'); else if (Date.now() - pollT > 10000) { pollT = Date.now(); poll(); } }, 25000),
+      setInterval(() => { if (!connected) poll(); }, 10000)];
+    me.closeWs = () => { try { ws && ws.close(); } catch {} };
     this.sites = new Map(); this.workers = null; this.acc = 0; this.toastQ = [];
     this.staging = /\.pages\.dev$|^localhost$|^127\./.test(location.hostname) && !ctx.publicMode;
     this.setupDemoStand();
+    // hot swap: resolve setup only once the first world snapshot is in, so the new version is fully built before it replaces the old
+    return new Promise(res => { me._ready = () => { me._ready = null; res(); }; setTimeout(() => me._ready?.(), 5000); });
+  },
+  dispose() {
+    this.dead = true; for (const t of this.timers || []) { clearTimeout(t); clearInterval(t); } this.closeWs?.();
+    for (const id of [...(this.sites?.keys() || [])]) this.drop(id);
+    for (const P of [this.workers, this.archPool, this.secPool]) if (P) for (const m of [P.body, P.legs, P.arms]) { m.parent?.remove(m); m.dispose?.(); }
+    this.toastEl?.remove?.();
+    if (this.post) this.post.parent?.remove(this.post); if (this.stand) this.stand.parent?.remove(this.stand);
+    for (const F of [...(this.figs?.values() || []), ...(this.cops?.values() || [])]) { F.tag?.parent?.remove(F.tag); if (F.av) { F.av.visible = false; F.av.parent?.remove(F.av); } }
   },
 
   /* ---------------- shared resources ---------------- */
@@ -89,6 +103,10 @@ export default {
       body: merge([part(B(0.36, 0.16, 0.22), '#2d3340', 0, 0.9, 0), part(B(0.42, 0.52, 0.25), '#ff7a1a', 0, 1.22, 0), part(B(0.43, 0.05, 0.26), '#e8e8e8', 0, 1.12, 0), part(B(0.43, 0.05, 0.26), '#e8e8e8', 0, 1.3, 0), part(B(0.12, 0.08, 0.12), '#c99a78', 0, 1.51, 0), part(B(0.2, 0.22, 0.21), '#c99a78', 0, 1.65, 0), part(C(0.13, 0.14, 0.09, 10), '#f2c230', 0, 1.8, 0), part(C(0.17, 0.17, 0.02, 10), '#f2c230', 0, 1.755, 0.02)]),
       abody: merge([part(B(0.36, 0.16, 0.22), '#3a3f4a', 0, 0.9, 0), part(B(0.42, 0.52, 0.25), '#24324a', 0, 1.22, 0), part(B(0.2, 0.3, 0.02), '#e8e3d6', 0, 1.28, 0.13), part(B(0.12, 0.08, 0.12), '#b98b6c', 0, 1.51, 0), part(B(0.2, 0.22, 0.21), '#b98b6c', 0, 1.65, 0), part(C(0.13, 0.14, 0.09, 10), '#f4f4f0', 0, 1.8, 0), part(C(0.17, 0.17, 0.02, 10), '#f4f4f0', 0, 1.755, 0.02)]),
       aarm: merge([part(B(0.12, 0.5, 0.13), '#24324a', 0, -0.25, 0), part(B(0.1, 0.12, 0.1), '#b98b6c', 0, -0.56, 0), part(B(0.02, 0.22, 0.3), '#1b1d22', 0.06, -0.6, 0.1)]),
+      sbody: merge([part(B(0.36, 0.16, 0.22), '#1c2230', 0, 0.9, 0), part(B(0.42, 0.52, 0.25), '#1f2a3d', 0, 1.22, 0), part(B(0.43, 0.06, 0.26), '#d8e04a', 0, 1.16, 0), part(B(0.1, 0.07, 0.02), '#c9a24e', 0.11, 1.38, 0.13), part(B(0.12, 0.08, 0.12), '#a97e5f', 0, 1.51, 0), part(B(0.2, 0.22, 0.21), '#a97e5f', 0, 1.65, 0), part(C(0.12, 0.12, 0.08, 10), '#151b26', 0, 1.79, 0), part(B(0.2, 0.02, 0.12), '#151b26', 0, 1.755, 0.12), part(B(0.24, 0.32, 0.02), '#0e1014', -0.2, 1.08, 0.48, -0.9), part(B(0.21, 0.28, 0.005), '#5fb7d6', -0.2, 1.085, 0.493, -0.9)]),
+      sleg: merge([part(B(0.15, 0.78, 0.16), '#1c2230', 0, -0.39, 0), part(B(0.16, 0.1, 0.26), '#0f0f10', 0, -0.83, 0.04)]),
+      sarm: merge([part(B(0.12, 0.5, 0.13), '#1f2a3d', 0, -0.25, 0), part(B(0.1, 0.12, 0.1), '#a97e5f', 0, -0.56, 0)]),
+      post: merge([part(B(1.8, 0.12, 1.8), '#6b655b', 0, 0.06, 0), part(B(1.6, 1.0, 1.6), '#2a2f38', 0, 0.62, 0), part(B(1.62, 1.1, 1.62), '#9fc3d8', 0, 1.67, 0), part(B(0.08, 1.1, 0.08), '#2a2f38', 0.78, 1.67, 0.78), part(B(0.08, 1.1, 0.08), '#2a2f38', -0.78, 1.67, 0.78), part(B(0.08, 1.1, 0.08), '#2a2f38', 0.78, 1.67, -0.78), part(B(0.08, 1.1, 0.08), '#2a2f38', -0.78, 1.67, -0.78), part(B(2.1, 0.16, 2.1), '#1f2a3d', 0, 2.3, 0), part(B(1.2, 0.26, 0.04), '#d8e04a', 0, 2.05, 0.83), part(B(0.06, 0.06, 0.06), '#ffd58a', 0, 2.42, 0)]),
       leg: merge([part(B(0.15, 0.78, 0.16), '#2d3340', 0, -0.39, 0), part(B(0.16, 0.1, 0.26), '#3b2a1d', 0, -0.83, 0.04)]),
       arm: merge([part(B(0.12, 0.5, 0.13), '#ff7a1a', 0, -0.25, 0), part(B(0.1, 0.12, 0.1), '#c99a78', 0, -0.56, 0)]),
       cone: merge([part(C(0.04, 0.17, 0.55, 8), '#ff6a1a', 0, 0.3, 0), part(C(0.1, 0.13, 0.08, 8), '#f4f4f4', 0, 0.3, 0), part(B(0.36, 0.04, 0.36), '#1a1a1a', 0, 0.02, 0)]),
@@ -99,24 +117,27 @@ export default {
 
   /* ---------------- crews: every worker in the world = 5 instanced meshes ---------------- */
   crew(kind) {
-    if (kind === 'arch') { if (this.archPool) return this.archPool; } else if (this.workers) return this.workers;
-    const T = this.T, { geo, mat } = this.res(), MAX = kind === 'arch' ? 12 : 48, G = kind === 'arch' ? { body: geo.abody, leg: geo.leg, arm: geo.aarm } : { body: geo.body, leg: geo.leg, arm: geo.arm };
+    if (kind === 'arch') { if (this.archPool) return this.archPool; } else if (kind === 'sec') { if (this.secPool) return this.secPool; } else if (this.workers) return this.workers;
+    const T = this.T, { geo, mat } = this.res(), MAX = kind ? 12 : 48, G = kind === 'arch' ? { body: geo.abody, leg: geo.leg, arm: geo.aarm } : kind === 'sec' ? { body: geo.sbody, leg: geo.sleg, arm: geo.sarm } : { body: geo.body, leg: geo.leg, arm: geo.arm };
     const mk = (g, n) => { const m = new T.InstancedMesh(g, mat.vc, n); m.count = 0; m.frustumCulled = false; m.userData.noCollide = 1; m.userData.keep = 1; this.ctx.scene.add(m); return m; };
     const W = { body: mk(G.body, MAX), legs: mk(G.leg, MAX * 2), arms: mk(G.arm, MAX * 2), list: [], MAX };
     const M = new T.Matrix4(), Q = new T.Quaternion(), V = new T.Vector3(), S = new T.Vector3(1, 1, 1), E = new T.Euler(), P = new T.Matrix4(), base = new T.Matrix4();
     W.draw = (t) => { let n = 0;
-      for (const w of W.list) { if (!w.on || n >= MAX) continue;
-        const walk = w.mode === 'walk', ph = t * 7 + w.phase, sw = walk ? Math.sin(ph) * 0.55 : 0, bob = walk ? Math.abs(Math.cos(ph)) * 0.04 : 0;
+      for (const w of W.list) { if (!w.on || w.rigged || n >= MAX) continue;
+        const walk = w.mode === 'walk', ph = w.ph != null ? w.ph : t * 7 + w.phase, sw = walk ? Math.sin(ph) * 0.55 : 0, bob = walk ? Math.abs(Math.cos(ph)) * 0.04 : 0;
         base.compose(V.set(w.x, w.y + bob, w.z), Q.setFromEuler(E.set(0, w.yaw, 0)), S.set(1, 1, 1)); W.body.setMatrixAt(n, base);
         for (const [i, sx] of [[0, -0.1], [1, 0.1]]) { P.compose(V.set(sx, 0.86, 0), Q.setFromEuler(E.set(i ? -sw : sw, 0, 0)), S); M.multiplyMatrices(base, P); W.legs.setMatrixAt(n * 2 + i, M); }
         let ar = -sw * 0.8, al = sw * 0.8, rz = 0;
         if (w.mode === 'work') { ar = -1.2 - Math.max(0, Math.sin(t * 5 + w.phase)) * 1.3; al = -0.5; }       // hammering / bolting
         else if (w.mode === 'survey') { ar = -1.45; al = -0.2; }                                              // sighting through the instrument
         else if (w.mode === 'wave') { ar = Math.PI - 0.3 + Math.sin(t * 6) * 0.3; rz = 0.2; }
+        if (w.tablet) al = w.mode === 'walk' ? -1.05 : -1.2;                                                   // tablet held in the left hand, in front
+        if (w.tablet && w.mode !== 'walk') ar = -1.0 + Math.sin(t * 2 + w.phase) * 0.12;                 // tapping it
         for (const [i, sx, a] of [[0, -0.27, al], [1, 0.27, ar]]) { P.compose(V.set(sx, 1.44, 0), Q.setFromEuler(E.set(a, 0, i ? -rz : rz)), S); M.multiplyMatrices(base, P); W.arms.setMatrixAt(n * 2 + i, M); }
         n++; }
-      W.body.count = n; W.legs.count = W.arms.count = n * 2; W.body.instanceMatrix.needsUpdate = W.legs.instanceMatrix.needsUpdate = W.arms.instanceMatrix.needsUpdate = true; };
+      W.body.count = n; W.legs.count = W.arms.count = n * 2; W.body.visible = W.legs.visible = W.arms.visible = n > 0; /* no empty draw calls */ W.body.instanceMatrix.needsUpdate = W.legs.instanceMatrix.needsUpdate = W.arms.instanceMatrix.needsUpdate = true; };
     if (kind === 'arch') return (this.archPool = W);
+    if (kind === 'sec') return (this.secPool = W);
     return (this.workers = W);
   },
   // crew AI: walk between the stage's work points, work a few seconds at each
@@ -125,9 +146,10 @@ export default {
     for (const w of list) {
       if (!pts.length) { w.on = false; continue; } w.on = true;
       if (!w.tgt || w.gen !== pts.gen) { const p = pts[(w.i++) % pts.length]; w.tgt = p; w.gen = pts.gen; w.wait = 0; w.mode = 'walk'; }
+      w.top = pts.top ?? 0.01;
       const lx = w.tgt[0], lz = w.tgt[2], tx = origin.x + lx * c + lz * s, tz = origin.z - lx * s + lz * c;
       const dx = tx - w.x, dz = tz - w.z, d = Math.hypot(dx, dz);
-      if (Math.abs(w.y - w.tgt[1]) > 0.05 && d < 1.2) w.y = w.tgt[1];                               // step up onto the deck/scaffold at the ladder
+      if (w.mode === 'walk' && Math.abs(w.y - w.tgt[1]) > 0.05) w.y = d < 1.2 ? w.tgt[1] : 0;                 // off a level: down the ladder to the ground, up again at the target's ladder
       if (d > 0.15 && w.mode === 'walk') { const st = Math.min(d, dt * 1.35); w.x += dx / d * st; w.z += dz / d * st; w.yaw = Math.atan2(dx, dz); }
       else { if (w.mode === 'walk') { w.mode = w.tgt[3] || 'work'; w.wait = 3 + Math.random() * 4; if (w.tgt[4] != null) w.yaw = rot + w.tgt[4]; } w.wait -= dt; if (w.wait <= 0) { w.tgt = pts[(w.i++ + (Math.random() * 3 | 0)) % pts.length]; w.mode = 'walk'; } }
     }
@@ -224,21 +246,73 @@ export default {
     g.fillText(lines[0], w / 2, h * (lines[1] ? 0.4 : 0.5)); if (lines[1]) { g.fillStyle = accent; g.font = `600 ${h * 0.15}px Inter, system-ui, sans-serif`; g.fillText(lines[1], w / 2, h * 0.76); }
     const t = new T.CanvasTexture(c); t.colorSpace = T.SRGBColorSpace; t.anisotropy = 4; return t;
   },
-  // live progress board: post + canvas panel, redrawn only when its text/percent changes
+  // construction site sign (Joshua 11:22 PM photo): framed panel with a bevelled timber/bronze frame, header cap with the EWS crest, two
+  // posts on concrete footings, a gooseneck lamp that lights the face at night. All geometry = one merged vertex-coloured mesh per sign.
+  // Text: safe margins + measure-and-fit on every line (never clipped); the canvas is high-DPI only when the sign is near the camera (LOD).
+  signGeo() {
+    if (this._signGeo) return this._signGeo; const T = this.T, cols = [];
+    const part = (g, hex, x, y, z, rx = 0, ry = 0, rz = 0) => { g = g.toNonIndexed(); g.rotateX(rx); g.rotateY(ry); g.rotateZ(rz); g.translate(x, y, z); const c = new T.Color(hex), n = g.attributes.position.count, a = new Float32Array(n * 3); for (let k = 0; k < n; k++) c.toArray(a, k * 3); g.setAttribute('color', new T.BufferAttribute(a, 3)); g.deleteAttribute('uv'); return g; };
+    const B = (w, h, d) => new T.BoxGeometry(w, h, d), C = (a, b, h, n) => new T.CylinderGeometry(a, b, h, n);
+    const CON = '#9c968b', WD = '#6b4e33', WDk = '#4f3925', BR = '#8a6d3b', PAN = '#1a1820', GOLD = '#d9b45a', IRON = '#2a2a2e', PW = 2.7, PH = 1.62, CY = 1.95;
+    const L = [];
+    for (const sx of [-1, 1]) { L.push(part(B(0.5, 0.22, 0.5), CON, sx * 1.22, 0.11, 0), part(B(0.42, 0.06, 0.42), '#aaa49a', sx * 1.22, 0.25, 0),   // footing + chamfer cap
+      part(B(0.14, CY + PH / 2 + 0.12 - 0.22, 0.14), WD, sx * 1.22, 0.22 + (CY + PH / 2 + 0.12 - 0.22) / 2, -0.09), part(B(0.16, 0.06, 0.16), WDk, sx * 1.22, CY + PH / 2 + 0.15, -0.09)); }
+    L.push(part(B(PW + 0.02, PH + 0.02, 0.05), PAN, 0, CY, -0.03));                                                   // backing board
+    for (const [w, h, x, y] of [[PW + 0.2, 0.1, 0, CY + PH / 2 + 0.05], [PW + 0.2, 0.1, 0, CY - PH / 2 - 0.05], [0.1, PH, -PW / 2 - 0.05, CY], [0.1, PH, PW / 2 + 0.05, CY]]) {
+      L.push(part(B(w, h, 0.12), WD, x, y, -0.01));                                                                     // frame rails
+      L.push(part(B(w > h ? w - 0.08 : 0.04, w > h ? 0.04 : h - 0.06, 0.03), BR, x + (w > h ? 0 : (x < 0 ? 0.04 : -0.04)), y + (w > h ? (y > CY ? -0.04 : 0.04) : 0), 0.055)); }   // bronze bevel lip on the inside edge
+    L.push(part(B(PW + 0.42, 0.07, 0.42), WDk, 0, CY + PH / 2 + 0.14, 0.02), part(B(PW + 0.3, 0.05, 0.34), '#3b3b40', 0, CY + PH / 2 + 0.2, 0.02));   // header cap (drip edge)
+    L.push(part(C(0.17, 0.17, 0.04, 20), GOLD, 0, CY + PH / 2 + 0.42, 0.04, Math.PI / 2), part(C(0.13, 0.13, 0.045, 20), '#16141b', 0, CY + PH / 2 + 0.42, 0.045, Math.PI / 2), part(B(0.06, 0.18, 0.05), WDk, 0, CY + PH / 2 + 0.26, 0.04));   // EWS crest on the cap
+    L.push(part(B(0.04, 0.04, 0.5), IRON, PW / 2 - 0.25, CY + PH / 2 + 0.3, 0.2), part(B(0.04, 0.2, 0.04), IRON, PW / 2 - 0.25, CY + PH / 2 + 0.2, -0.04), part(C(0.05, 0.11, 0.09, 10), IRON, PW / 2 - 0.25, CY + PH / 2 + 0.27, 0.45));   // lamp arm + shade
+    const merged = mergeGeometries(L); merged.computeVertexNormals();
+    const bulb = new T.CylinderGeometry(0.06, 0.06, 0.02, 10); bulb.translate(PW / 2 - 0.25, CY + PH / 2 + 0.22, 0.45);
+    const cone = new T.ConeGeometry(0.75, 0.9, 16, 1, true); cone.translate(0, -0.45, 0); cone.rotateX(-0.5); cone.translate(PW / 2 - 0.25, CY + PH / 2 + 0.22, 0.45);
+    return (this._signGeo = { merged, bulb, cone, PW, PH, CY });
+  },
   board(parent, x, z, ry) {
-    const T = this.T, { geo, mat } = this.res(), c = document.createElement('canvas'); c.width = 512; c.height = 280;
-    const t = new T.CanvasTexture(c); t.colorSpace = T.SRGBColorSpace; t.anisotropy = 4;
-    const grp = new T.Group(); grp.position.set(x, 0, z); grp.rotation.y = ry; grp.add(new T.Mesh(geo.sign, mat.vc));
-    const face = new T.Mesh(new T.PlaneGeometry(2.5, 1.37), new T.MeshLambertMaterial({ map: t, emissive: '#ffffff', emissiveMap: t, emissiveIntensity: 0.35 })); face.position.set(0, 1.75, 0.02); grp.add(face);
-    grp.traverse(o => o.userData.noCollide = 1); parent.add(grp); let key = '';
-    const draw = (title, sub, stage, pct, step, steps, note) => { const k = [title, sub, stage, Math.round(pct * 100), step, note].join('|'); if (k === key) return; key = k; const g = c.getContext('2d');
-      g.fillStyle = '#16141b'; g.fillRect(0, 0, 512, 280); g.fillStyle = '#d9b45a'; g.fillRect(0, 0, 512, 8);
-      g.fillStyle = '#e9dcc0'; g.font = '700 34px Inter, system-ui, sans-serif'; g.textBaseline = 'top'; g.fillText(title, 22, 22);
-      g.fillStyle = '#b9ad94'; g.font = '500 22px Inter, system-ui, sans-serif'; g.fillText(sub, 22, 64);
-      g.fillStyle = '#ffd58a'; g.font = '700 30px Inter, system-ui, sans-serif'; g.fillText(stage, 22, 104); g.textAlign = 'right'; g.fillText(Math.round(pct * 100) + '%', 490, 104); g.textAlign = 'left';
-      g.fillStyle = '#2c2833'; g.fillRect(22, 150, 468, 26); g.fillStyle = '#d9b45a'; g.fillRect(22, 150, 468 * clamp(pct), 26);
-      for (let i = 0; i < steps; i++) { g.fillStyle = i < step ? '#d9b45a' : i === step ? '#ffd58a' : '#3a3542'; g.fillRect(22 + i * (468 / steps), 190, 468 / steps - 6, 10); }
-      g.fillStyle = '#8f8676'; g.font = '500 20px Inter, system-ui, sans-serif'; g.fillText(note, 22, 222); t.needsUpdate = true; };
+    const T = this.T, { mat } = this.res(), G = this.signGeo(), me = this;
+    const grp = new T.Group(); grp.position.set(x, 0, z); grp.rotation.y = ry; grp.add(new T.Mesh(G.merged, mat.vc));
+    const fm = new T.MeshLambertMaterial({ color: '#ffffff', emissive: '#ffffff', emissiveIntensity: 0.3 }), face = new T.Mesh(new T.PlaneGeometry(G.PW, G.PH), fm); face.position.set(0, G.CY, 0.004); grp.add(face);
+    const bulb = new T.Mesh(G.bulb, new T.MeshBasicMaterial({ color: '#3a3428' })); grp.add(bulb);
+    const glow = new T.Mesh(G.cone, new T.MeshBasicMaterial({ color: '#ffd9a0', transparent: true, opacity: 0.025, depthWrite: false, blending: T.AdditiveBlending, side: T.DoubleSide })); glow.visible = false; grp.add(glow);
+    grp.traverse(o => o.userData.noCollide = 1); parent.add(grp);
+    let key = '', res = 0, c = null, tex = null, lastAt = 0, args = null;
+    const FONT = (w, px) => `${w} ${px}px Inter, system-ui, -apple-system, Segoe UI, sans-serif`;
+    // fit: shrink to fit the box; below the floor size, ellipsize. Returns the font size used.
+    const fit = (g, txt, maxW, px, w, min) => { g.font = FONT(w, px); while (g.measureText(txt).width > maxW && px > min) { px -= 1; g.font = FONT(w, px); }
+      if (g.measureText(txt).width > maxW) { let t = txt; while (t.length > 1 && g.measureText(t + '…').width > maxW) t = t.slice(0, -1); txt = t + '…'; } return [txt, px]; };
+    const paint = () => { const [title, sub, stage, pct, step, steps, note, o] = args, W = c.width, H = c.height, k = W / 1024, g = c.getContext('2d'), M = 46 * k, IW = W - 2 * M;
+      g.textBaseline = 'alphabetic'; g.textAlign = 'left';
+      g.fillStyle = '#16141b'; g.fillRect(0, 0, W, H); const gr = g.createLinearGradient(0, 0, 0, H); gr.addColorStop(0, 'rgba(255,255,255,0.05)'); gr.addColorStop(1, 'rgba(0,0,0,0.12)'); g.fillStyle = gr; g.fillRect(0, 0, W, H);
+      // header band: crest + lot plaque
+      g.fillStyle = '#241f18'; g.fillRect(0, 0, W, 92 * k); g.fillStyle = '#d9b45a'; g.fillRect(0, 92 * k, W, 4 * k);
+      const cx = M + 34 * k, cy = 46 * k; g.beginPath(); g.arc(cx, cy, 32 * k, 0, 7); g.fillStyle = '#d9b45a'; g.fill(); g.beginPath(); g.arc(cx, cy, 26 * k, 0, 7); g.fillStyle = '#16141b'; g.fill();
+      g.fillStyle = '#d9b45a'; g.textAlign = 'center'; g.font = FONT(800, 20 * k); g.fillText('EWS', cx, cy + 7 * k); g.textAlign = 'left';
+      const plaque = (o && o.plaque) || ''; let pw = 0; if (plaque) { const [pt, ps] = fit(g, plaque, 260 * k, 34 * k, 800, 18 * k); g.font = FONT(800, ps); pw = g.measureText(pt).width + 36 * k;
+        g.fillStyle = '#d9b45a'; g.fillRect(W - M - pw, 18 * k, pw, 56 * k); g.fillStyle = '#16141b'; g.fillText(pt, W - M - pw + 18 * k, 58 * k); }
+      { const [hd, hs] = fit(g, (o && o.header) || 'ELDER WORLD STUDIO · CONSTRUCTION', IW - 90 * k - pw - 20 * k, 24 * k, 700, 14 * k); g.font = FONT(700, hs); g.fillStyle = '#e9dcc0'; g.fillText(hd, M + 84 * k, 56 * k); }
+      // name + line
+      let y = 168 * k; { const [t, s2] = fit(g, title, IW, 58 * k, 800, 26 * k); g.font = FONT(800, s2); g.fillStyle = '#f3ead6'; g.fillText(t, M, y); }
+      y += 46 * k; { const [t, s2] = fit(g, sub, IW, 32 * k, 500, 18 * k); g.font = FONT(500, s2); g.fillStyle = '#b9ad94'; g.fillText(t, M, y); }
+      // stage + percent (percent measured first so the stage never runs under it)
+      y += 70 * k; const pc = Math.floor(clamp(pct) * 100) + '%'; g.font = FONT(800, 46 * k); const pcw = g.measureText(pc).width; g.fillStyle = '#ffd58a'; g.textAlign = 'right'; g.fillText(pc, W - M, y); g.textAlign = 'left';
+      { const [t, s2] = fit(g, stage, IW - pcw - 30 * k, 46 * k, 800, 22 * k); g.font = FONT(800, s2); g.fillText(t, M, y); }
+      // segmented meter: one segment per stage; done = full, current = filled to its real fraction, rest empty
+      y += 26 * k; const gap = 8 * k, sw = (IW - gap * (steps - 1)) / steps, sh = 34 * k, cur = Math.min(steps, pct * steps);
+      for (let i = 0; i < steps; i++) { const x0 = M + i * (sw + gap); g.fillStyle = '#2c2833'; g.fillRect(x0, y, sw, sh); const fr = clamp(cur - i);
+        if (fr > 0) { g.fillStyle = fr >= 1 ? '#d9b45a' : '#ffd58a'; g.fillRect(x0, y, sw * fr, sh); } if (i === step && fr < 1) { g.strokeStyle = '#ffd58a'; g.lineWidth = 2 * k; g.strokeRect(x0 + k, y + k, sw - 2 * k, sh - 2 * k); } }
+      if (o && o.labels) { g.font = FONT(600, 15 * k); for (let i = 0; i < steps; i++) { const [t] = fit(g, o.labels[i] || '', sw - 4 * k, 15 * k, 600, 9 * k); g.fillStyle = i <= step ? '#cdbf9f' : '#6d6578'; g.fillText(t, M + i * (sw + gap) + 2 * k, y + sh + 22 * k); } }
+      // live line
+      y = H - 34 * k; g.beginPath(); g.arc(M + 8 * k, y - 9 * k, 7 * k, 0, 7); g.fillStyle = o && o.hold ? '#8fb3d9' : '#7bd88f'; g.fill();
+      { const [t, s2] = fit(g, note, IW - 26 * k, 26 * k, 500, 14 * k); g.font = FONT(500, s2); g.fillStyle = '#a99f8c'; g.fillText(t, M + 26 * k, y); }
+      tex.needsUpdate = true; };
+    const draw = (title, sub, stage, pct, step, steps, note, o) => {
+      const cam = me.ctx.cam.position, wp = grp.getWorldPosition(me._v3 ||= new T.Vector3()), d = Math.hypot(wp.x - cam.x, wp.z - cam.z), want = d < 16 ? 1024 : 512;
+      const night = (me.ctx.dayNight?.el ?? 30) < -2; glow.visible = night && d < 60; bulb.material.color.set(night ? '#ffe7b8' : '#3a3428'); fm.emissiveIntensity = night ? 0.55 : 0.3;
+      if (want !== res) { res = want; c = document.createElement('canvas'); c.width = want; c.height = Math.round(want * G.PH / G.PW); tex?.dispose(); tex = new T.CanvasTexture(c); tex.colorSpace = T.SRGBColorSpace; tex.anisotropy = 4; fm.map = fm.emissiveMap = tex; fm.needsUpdate = true; key = ''; }
+      const k2 = [title, sub, stage, Math.floor(pct * 400), step, note, o && o.plaque, o && o.hold].join('|'); args = [title, sub, stage, pct, step, steps, note, o];
+      const now = performance.now(); if (k2 === key || now - lastAt < 250) return; key = k2; lastAt = now; paint(); };
+    if (document.fonts?.ready) document.fonts.ready.then(() => { key = ''; });   // repaint once the web font is in (old canvas measured the fallback)
     return { grp, draw, face };
   },
   loadPart(S, stage, url) {
@@ -305,7 +379,7 @@ export default {
     const el = S.el, e = S.e, at = k => si === BUILD.indexOf(k);
     el.cones.visible = si < 8; el.stakes.count = at('survey') ? Math.ceil(f * S.stakeN) : si <= 2 ? S.stakeN : 0; el.stakes.instanceMatrix.needsUpdate = true; el.tripod.visible = si <= 1;
     el.pallet.visible = si >= 1 && si <= 5; el.tower.visible = si >= 3 && si <= 6; if (el.tower.visible && near) el.tower.position.set(Math.sin(t * 0.05) * (S.w / 2 - 3), 0, -S.d / 4);
-    S.board.grp.visible = si < 8; if (near && si < 8) S.board.draw(e.name.toUpperCase().slice(0, 26), e.arch ? 'Architecture team job · live' : 'Work zone · live', BL[si], (si + f) / 8, si, 8, 'Real progress from the team · ' + this.ago(e.since));
+    S.board.grp.visible = si < 8; if (near && si < 8) S.board.draw(e.name.toUpperCase().slice(0, 26), e.arch ? 'Architecture team job · live' : 'Work zone · live', e.hold ? 'Planned · awaiting layout approval' : BL[si], e.hold ? 0 : (si + f) / 8, e.hold ? 0 : si, 8, e.hold ? 'Architects planning on site · no building until the layout is approved' : 'Real progress from the team · ' + this.ago(e.since), { plaque: 'ZONE', hold: !!e.hold });
     const n = near && si < 8 && si >= 1 ? Math.min(2, crewN) : 0; this.ensureCrew(S, n); for (let i = n; i < S.crew.length; i++) S.crew[i].on = false;
     const pts = S.pts[0].slice(1); pts.gen = 'z' + si; this.crewStep(S.crew.slice(0, n), pts, dt, S.g.position, 0);
   },
@@ -339,14 +413,45 @@ export default {
     pool.draw(t);
   },
 
+  /* ---------------- Elderverse patrol (security team, CT119 agent.pose zone 'town', campus frame): on foot with tablets ---------------- */
+  patrols(dt, t, onG) {
+    const ctx = this.ctx, town = ctx.town; if (!town || !this.agents) return; const T = this.T;
+    if (!this.post) { const R = this.res(); this.post = new T.Mesh(R.geo.post, R.mat.vc); this.post.position.set(town.X0 + 4.6, 0, town.Z0 + 53.2 + 1.3); this.post.userData.noCollide = 1; this.post.userData.keep = 1; this.post.userData.noFarCull = 1; ctx.scene.add(this.post);
+      this.ctx.colliders?.push?.([town.X0 + 3.7, town.Z0 + 53.6, town.X0 + 5.5, town.Z0 + 55.4]); }
+    this.post.visible = onG && (ctx.exterior?.root?.visible ?? true);
+    const NAMES = { 'sec-lead': 'Hœnir', 'sec-vuln': 'Geri', 'sec-harden': 'Sigyn', 'sec-pentest': 'Skírnir', 'sec-watch': 'Freki' }, now = Date.now(), cops = (this.cops ||= new Map()), pool = this.crew('sec');
+    const av = ctx.use('avatar'), cam = ctx.cam.position, seen = new Set();
+    for (const a of this.agents.values()) {
+      const sid = a.id.replace(/^agent:/, ''); if (!NAMES[sid] || a.zone !== 'town') continue; seen.add(sid);
+      // server position, dead-reckoned along its walk target at its speed between the ~1 s pose batches (never past the target)
+      let px = a.x, pz = a.z; if (a.to && a.v) { const el = Math.max(0, (now + (this.skew || 0) - a.at) / 1000), dx = a.to[0] - a.x, dz = a.to[1] - a.z, d = Math.hypot(dx, dz), m = Math.min(d, a.v * el); if (d > 1e-3) { px += dx / d * m; pz += dz / d * m; } }
+      const wx = town.X0 + px, wz = town.Z0 + pz;
+      let F = cops.get(sid); if (!F) { F = { id: sid, x: wx, y: 0, z: wz, yaw: a.h || 0, phase: Math.random() * 6, ph: 0, mode: 'walk', on: true, tablet: true }; cops.set(sid, F); pool.list.push(F); }
+      const dx = wx - F.x, dz = wz - F.z, d = Math.hypot(dx, dz);
+      if (d > 12) { F.x = wx; F.z = wz; } else if (d > 0.03) { const sp = Math.min(d / Math.max(dt, 1e-3), d > 1.5 ? 2.2 : 1.45), st = Math.min(d, sp * dt); F.x += dx / d * st; F.z += dz / d * st; F.yaw = Math.atan2(dx, dz); F.ph += st * 4.4; F.speed = st / Math.max(dt, 1e-3); }   // stride-synced: 4.4 rad per metre
+      else F.speed = 0;
+      const moving = (F.speed || 0) > 0.15; F.mode = moving ? 'walk' : 'idle'; if (!moving && a.act !== 'walk') F.yaw = sid === 'sec-lead' ? 0 : (a.h ?? F.yaw);
+      F.on = onG && (ctx.exterior?.root?.visible ?? true);
+      // near the camera: the shared rigged avatar (real walk clip at its measured ground speed, tablet = the carry prop); far: instanced figure
+      const dc = Math.hypot(F.x - cam.x, F.z - cam.z), wantRig = !!av?.make && F.on && dc < 12 && (ctx.lod || 1) >= 0.5;
+      if (wantRig && !F.av) { try { F.av = av.make({ id: 'patrol-' + sid, name: NAMES[sid], role: 'Elderverse patrol' }, '#1f2a3d'); ctx.scene.add(F.av); const fo = F.av.userData.folder; if (fo) { fo.material = new T.MeshLambertMaterial({ color: '#101318' }); fo.scale.multiplyScalar(1.15); } } catch { F.av = null; } }
+      F.rigged = !!(wantRig && F.av);
+      if (F.av) { const u = F.av.userData; F.av.visible = F.rigged; if (F.rigged) { u.state = { stage: 'review' }; u.target = moving ? { x: F.x + Math.sin(F.yaw) * 0.4, z: F.z + Math.cos(F.yaw) * 0.4 } : null;
+          F.av.position.set(F.x, 0, F.z); F.av.rotation.y = F.yaw; if (moving && u.cur === 'carry') u.act('carry').timeScale = (F.speed || 1.3) / 0.65; } }
+    }
+    for (const [sid, F] of cops) if (!seen.has(sid)) { F.on = false; if (F.av) F.av.visible = false; }
+    pool.draw(t);
+  },
+
   drop(id) { const S = this.sites.get(id); if (!S) return; S.g.parent?.remove(S.g); S.g.traverse(o => { if (o.isInstancedMesh) o.dispose?.(); }); for (const w of S.crew) w.on = false; if (this.workers) this.workers.list = this.workers.list.filter(w => !S.crew.includes(w)); this.sites.delete(id); },
 
   /* ---------------- per frame ---------------- */
   onFrame(dt, t) {
     const ctx = this.ctx; if (!window.__ewsOffice) return;
-    if (!this.hooked) { this.hooked = true; window.__ewsOffice.world = () => ({ mode: this.stats.mode, msgs: this.stats.msgs, agents: this.agents.size, field: this.figs ? [...this.figs.values()].map(F => ({ id: F.id, x: +F.x.toFixed(1), z: +F.z.toFixed(1), mode: F.mode, leaving: !!F.leaving })) : [], glbs: this.stats.glbs || 0, ents: [...this.ents.values()].map(e => ({ id: e.id, kind: e.kind, stage: (e.kind === 'road' ? ROAD : BUILD)[e.si], p: e.p, target: +this.target(e).toFixed(3), shown: +(this.vis.get(e.id)?.D ?? 0).toFixed(3), demo: !!e.demo })), workers: this.workers ? this.workers.list.filter(w => w.on).length : 0 });
-      window.__ewsOffice.watchBuild = id => this.watch(id); window.__ewsOffice.demoBuild = o => this.demo(o); }
+    if (!this.hooked) { this.hooked = true; window.__ewsOffice.world = () => ({ layout: this.layout || null, float: Math.max(0, ...[this.workers, this.archPool, this.secPool].filter(Boolean).flatMap(P => P.list.filter(w => w.on && !w.rigged).map(w => (w.y > 0.05 && w.y > (w.top ?? 0.05) + 0.05) || (w.mode === 'walk' && w.y > 0.05 && Math.abs(w.y - (w.tgt?.[1] ?? 0)) > 0.05) ? w.y : 0))), crewOn: [this.workers, this.archPool, this.secPool].filter(Boolean).reduce((n, P) => n + P.list.filter(w => w.on).length, 0), mode: this.stats.mode, msgs: this.stats.msgs, agents: this.agents.size, patrol: this.cops ? [...this.cops.values()].map(F => ({ id: F.id, x: +F.x.toFixed(1), z: +F.z.toFixed(1), mode: F.mode, rig: !!F.rigged, on: F.on })) : [], field: this.figs ? [...this.figs.values()].map(F => ({ id: F.id, x: +F.x.toFixed(1), z: +F.z.toFixed(1), mode: F.mode, leaving: !!F.leaving })) : [], glbs: this.stats.glbs || 0, ents: [...this.ents.values()].map(e => ({ id: e.id, kind: e.kind, stage: (e.kind === 'road' ? ROAD : BUILD)[e.si], p: e.p, target: +this.target(e).toFixed(3), shown: +(this.vis.get(e.id)?.D ?? 0).toFixed(3), demo: !!e.demo })), workers: this.workers ? this.workers.list.filter(w => w.on).length : 0 });
+      window.__ewsOffice.watchBuild = id => this.watch(id); window.__ewsOffice.signAt = id => { const S = this.sites.get(id); if (!S?.board) return null; const g = S.board.grp, p = g.getWorldPosition(new this.T.Vector3()), q = new this.T.Vector3(0, 0, 1).applyQuaternion(g.getWorldQuaternion(new this.T.Quaternion())); return { x: p.x, z: p.z, nx: q.x, nz: q.z }; }; window.__ewsOffice.demoBuild = o => this.demo(o); }
     if (!ctx.town || !ctx.exterior) return;
+    if (this.stand) this.stand.visible = !!(this.layout && this.layout.approved);   // no 'watch the town build' demo while construction is on hold
     const ext = ctx.exterior.root, onG = !ctx.curFloor || ctx.curFloor === 'G', show = onG && ext.visible, cam = ctx.cam, cp = cam.position;
     const tier = ctx.tier ?? 1, crewN = [2, 3, 4][tier] ?? 3, view = [85, 110, 125][tier] ?? 110, night = (ctx.dayNight?.el ?? 30) < -2;
     for (const [id, e] of this.ents) {
@@ -361,7 +466,7 @@ export default {
       if (e.kind === 'zone') this.drawZone(S, si, f, t, dist < 40, dt, crewN); else if (e.kind === 'road') this.drawRoad(S, si, f, t, near, dt, crewN); else this.drawSite(S, si, f, t, near, dt, crewN, night);
     }
     if (this.workers) this.workers.draw(t);
-    this.architects(dt, t, onG);
+    this.architects(dt, t, onG); this.patrols(dt, t, onG);
     this.flushToast(dt);
   },
   ensureCrew(S, n) { const W = this.crew(); while (S.crew.length < n && W.list.length < W.MAX) { const w = { x: S.g.position.x + (Math.random() - 0.5) * 4, y: 0, z: S.g.position.z + (Math.random() - 0.5) * 4, yaw: 0, phase: Math.random() * 6, i: (Math.random() * 5) | 0, mode: 'walk', on: false }; S.crew.push(w); W.list.push(w); } },
@@ -399,10 +504,15 @@ export default {
     for (const [k, u] of Object.entries(e.parts || {})) if (k !== 'landscaping' && from(k)) { const p = this.loadPart(S, k, u); if (p.obj) p.obj.scale.y = at(k) ? Math.max(0.02, sm(f)) : 1; }
     // open: dirt gone, banner for the grand opening, board shows the opening
     el.banner.visible = si >= 8 && (Date.now() - (this.vis.get(e.id).openAt ||= Date.now())) < 15 * 60e3;
-    const pct = (si + f) / 8, title = 'LOT ' + String(e.lot).padStart(2, '0') + ' · ' + ((e.public && e.tenant) || 'New shop');
-    S.board.grp.visible = si < 8 || el.banner.visible; if (near) S.board.draw(title, e.demo ? 'Demo build (staging)' : 'Website → explorable building', si >= 8 ? 'Open now' : BL[si], pct, si, 8, si >= 8 ? 'Built live in the Elderverse' : 'Live from the build crew · ' + this.ago(e.since));
+    const pct = (si + f) / 8, lotN = 'LOT ' + String(e.lot).padStart(2, '0'), title = (e.public && e.tenant) || 'New shop', CS = ['Staking out the pad', 'Grading the pad', 'Pouring the slab', 'Raising steel', 'Closing in the walls', 'Setting the glass', 'Hanging the signage', 'Planting + paving', 'Open'];
+    S.board.grp.visible = si < 8 || el.banner.visible;
+    if (near) { const hold = !!e.hold; S.board.draw(title, 'Website → explorable building', hold ? 'Planned · awaiting layout approval' : si >= 8 ? 'Open now' : BL[si], hold ? 0 : Math.min(pct, 1), hold ? 0 : si, 8,
+      hold ? 'Survey crew: pad staked · build starts after Joshua approves the town layout' : si >= 8 ? 'Built live in the Elderverse' : 'Live · crew: ' + CS[si] + ' · ' + this.ago(e.since),
+      { plaque: lotN, hold, header: e.demo ? 'STAGING DEMO · NOT A REAL LEASE' : 'ELDER WORLD STUDIO · CONSTRUCTION', labels: ['Survey', 'Ground', 'Found.', 'Frame', 'Walls', 'Glass', 'Signs', 'Land'] }); }
     // crew
-    this.ensureCrew(S, near ? crewN + (si === 3 || si === 4 ? 1 : 0) : 0); const pts = near ? S.pts[si] : []; for (let i = 0; i < S.crew.length; i++) if (i >= (near ? crewN + 1 : 0)) S.crew[i].on = false;
+    this.ensureCrew(S, near ? crewN + (si === 3 || si === 4 ? 1 : 0) : 0); const top = sc ? 99 : 0.45 + floorsUp * FH + 0.01, ck = si + ':' + top;
+    if (S.ptsK !== ck) { S.ptsK = ck; S.ptsOk = S.pts[si].filter(p => p[1] <= 0.01 || p[1] <= top); if (!S.ptsOk.length) S.ptsOk = S.pts[0].slice(1); S.ptsOk.gen = ck; S.ptsOk.top = top; }   // only levels that exist right now
+    const pts = near ? S.ptsOk : []; for (let i = 0; i < S.crew.length; i++) if (i >= (near ? crewN + 1 : 0)) S.crew[i].on = false;
     this.crewStep(S.crew.slice(0, near ? crewN + (si === 3 || si === 4 ? 1 : 0) : 0), pts, dt, S.g.position, S.g.rotation.y);
   },
   reveal(m, n) { const full = m.userData.full, k = Math.min(full.length, Math.ceil(n)); m.count = k; const fr = n - Math.floor(n);
@@ -419,7 +529,7 @@ export default {
     el.roller.visible = at('paving') || (at('striping') && f < 0.2); if (el.roller.visible) el.roller.position.set(at('paving') ? Math.max(1.2, L * lp - 5 + Math.sin(t * 0.8) * 2.5) : L - 3, 0, S.w / 5);
     const ds = at('striping') ? f : si > 4 ? 1 : 0; let k = 0; while (k < S.dashN && S.dashX[k] <= L * ds) k++; el.dash.count = k; el.dash.instanceMatrix.needsUpdate = true;
     el.striper.visible = at('striping'); if (el.striper.visible) el.striper.position.set(L * ds + 0.8, 0, 0);
-    S.board.grp.visible = si < 5; if (near && si < 5) S.board.draw(e.name.toUpperCase().slice(0, 24), e.demo ? 'Demo job (staging)' : 'Architecture team road job', (e.resurface ? RLR : RL)[si], (si + f) / 5, si, 5, 'Live from the road crew · ' + this.ago(e.since));
+    S.board.grp.visible = si < 5; if (near && si < 5) S.board.draw(e.name.toUpperCase().slice(0, 24), e.demo ? 'Demo job (staging)' : 'Architecture team road job', e.hold ? 'Planned · awaiting layout approval' : (e.resurface ? RLR : RL)[si], e.hold ? 0 : (si + f) / 5, e.hold ? 0 : si, 5, e.hold ? 'Surveyed · paving starts after the layout is approved' : 'Live from the road crew · ' + this.ago(e.since), { plaque: 'ROAD', hold: !!e.hold });
     // crew: stays with the working machine
     const fx = at('paving') ? L * lp : at('striping') ? L * ds : at('grading') ? L * lg : at('base') ? L * lb : L * f, n = near && si < 5 ? Math.min(3, crewN) : 0;
     this.ensureCrew(S, n); const pts = []; if (n) { pts.push([fx - 2, 0, S.w / 2 + 0.8, 'work', -Math.PI / 2], [fx + 3.5, 0, -S.w / 2 - 0.8, 'wave', Math.PI / 2], [Math.max(0, fx - 7), 0, -S.w / 2 + 0.6, 'work']); pts.gen = si * 1000 + Math.floor(fx / 6); }
@@ -457,7 +567,7 @@ export default {
     // a small sign on the main walk by the avenue: "Town builds · watch a demo build" (staging only; production never shows it)
     const place = () => { const town = ctx.town; if (!town) return setTimeout(place, 1000); const X0 = 0, z = town.AVE - town.RW / 2 - 3.5;
       const tex = this.textTex(['WATCH THE TOWN BUILD', 'Staging demo · tap to start'], 768, 200, '#16141b', '#e9dcc0', '#d9b45a');
-      const g = new T.Group(); g.position.set(X0 + 4.2, 0, z); g.rotation.y = Math.PI; const post = new T.Mesh(this.res().geo.sign, this.res().mat.vc); g.add(post);
+      const g = new T.Group(); g.position.set(X0 + 4.2, 0, z); g.rotation.y = Math.PI; const post = new T.Mesh(this.res().geo.sign, this.res().mat.vc); g.add(post); me.stand = g;
       const face = new T.Mesh(new T.PlaneGeometry(2.5, 0.65), new T.MeshLambertMaterial({ map: tex, emissive: '#ffffff', emissiveMap: tex, emissiveIntensity: 0.35, side: T.DoubleSide })); face.position.set(0, 1.75, 0.05); g.add(face); g.userData.keep = 1; g.userData.noFarCull = 1; ctx.scene.add(g);
       const open = () => { const c = ctx.card(`<h3>Watch the town build</h3><p>Staging demo: a test shop leases Lot 09 across the avenue, and the avenue in front of the campus gets resurfaced. Every stage builds live in front of you, with no reload.</p><p><button class="ob gold" data-a="go" type="button">Start demo build (4 min)</button> <button class="ob" data-a="look" type="button">Go watch</button> <button class="ob" data-a="clear" type="button">Clear demo</button></p><p class="wd-msg" style="opacity:.8"></p>`);
         const msg = c.querySelector('.wd-msg'); c.querySelector('[data-a=go]').onclick = async () => { msg.textContent = 'Starting…'; const j = await me.demo({}); msg.textContent = j.ok ? 'Lease signed. Surveyors are heading to Lot 09.' : (j.error || 'Could not start'); if (j.ok) setTimeout(() => { ctx.closeCard(); me.watch('lot:' + j.lot); }, 1200); };

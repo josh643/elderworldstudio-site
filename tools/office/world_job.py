@@ -18,7 +18,10 @@ key = open('/home/box/secrets/ews-world/world-key').read().strip()
 o = a.overall if a.overall is not None else (1.0 if a.stage == 'open' else (BUILD.index(a.stage) + max(0.0, min(1.0, a.progress))) / 8 if a.stage else None)
 if o is None: raise SystemExit('give --stage or --overall')
 kind, ref = JOBS[a.job]; eid = f'lot:{ref}' if kind == 'site' else f'zone:{ref}'
-snap = json.load(urllib.request.urlopen(a.base + '/api/office/world', timeout=15)); cur = next((e for e in snap['ents'] if e['id'] == eid), None)
+snap = json.load(urllib.request.urlopen(a.base + '/api/office/world', timeout=15)); 
+if not (snap.get('layout') or {}).get('approved'):
+    raise SystemExit('refused: world construction is on hold until Anna approves the town layout (layout.approve). Survey/staking only.')
+cur = next((e for e in snap['ents'] if e['id'] == eid), None)
 if not cur: raise SystemExit(f'{eid} is not in the world yet (the architecture feeder creates it when the spec is planned)')
 have = (cur['si'] + cur['p']) / 8
 if o < have - 1e-3 and not a.force: raise SystemExit(f'not lowering {eid}: world has {have:.3f}, you sent {o:.3f} (use --force for real rework)')

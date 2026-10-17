@@ -53,6 +53,14 @@ export async function onRequestPost({ request, env }) {
   if (!keyOk(request, env)) return json({ ok: false }, 401);
   if (!env.OFFICE_RL) return json({ ok: false, error: 'no world binding' }, 503);
   let body; try { body = await request.json(); } catch { return json({ ok: false, error: 'bad json' }, 400); }
-  const evs = [].concat(body).slice(0, 50).map(clean); if (evs.some(e => !e)) return json({ ok: false, error: 'invalid event', index: evs.findIndex(e => !e) }, 400);
+  const raw = [].concat(body).slice(0, 50);
+  // layout gate: only Anna (the office ingest key, never the CT119 world-server key) may approve or revoke the town layout
+  if (raw.some(e => e && /^layout\./.test(e.type))) {
+    if (!authed(request, env)) return json({ ok: false, error: 'layout approval needs the office key' }, 403);
+    const L = raw.map(e => e && (e.type === 'layout.approve' && typeof e.version === 'string' && /^[\w.:-]{1,64}$/.test(e.version) ? { type: e.type, version: e.version, by: 'anna' } : e.type === 'layout.revoke' ? { type: e.type, by: 'anna' } : null));
+    if (L.some(e => !e)) return json({ ok: false, error: 'invalid layout event (layout.approve needs a version string; do not mix with other events)' }, 400);
+    const r = await worldDO(env).fetch('https://rl/world/event', { method: 'POST', body: JSON.stringify(L) }); return json(await r.json(), r.status);
+  }
+  const evs = raw.map(clean); if (evs.some(e => !e)) return json({ ok: false, error: 'invalid event', index: evs.findIndex(e => !e) }, 400);
   const r = await worldDO(env).fetch('https://rl/world/event', { method: 'POST', body: JSON.stringify(evs) }); return json(await r.json(), r.status);
 }

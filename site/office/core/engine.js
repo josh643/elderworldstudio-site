@@ -105,14 +105,14 @@ const PUBLIC = /(^|\.)elderworldstudio\.com$/.test(location.hostname) || /[?&]pu
   const live = $('div', { class: 'office-sr', 'aria-live': 'polite' }); root.append(live);
 
   // load + set up modules in registry order
-  const mods = [];
+  const mods = [], byId = {};
   for (const m of registry.modules) {
     await new Promise(r => setTimeout(r, 0));   // yield between modules: no long main-thread tasks
     try {
       let anchor = m.anchor || [0, 0];
       if (typeof anchor[1] === 'string' && anchor[1].startsWith('after:')) anchor = [anchor[0], (after[anchor[1].slice(6)] ?? bounds.minZ) - 4];
       const mod = (await import(`../${m.src}?v=${V}`)).default; const r = (await mod.setup(ctx, m.config || {}, anchor)) || {};
-      if (r.minZ != null) after[m.id] = r.minZ; mods.push(mod);
+      if (r.minZ != null) after[m.id] = r.minZ; mods.push(mod); byId[m.id] = { mod, m, anchor };
     } catch (e) { console.warn('office module failed:', m.id, e); }   // one broken module never takes the office down
   }
   // player collision: 2D boxes (XZ) auto-built from mesh bounds of anything solid between ankle and head height,
@@ -381,7 +381,21 @@ const PUBLIC = /(^|\.)elderworldstudio\.com$/.test(location.hostname) || /[?&]pu
   const saveState = () => { try { sessionStorage.setItem('ews-state', JSON.stringify({ p: pos.toArray(), yaw, pitch, t: Date.now() })); } catch {} };
   try { const st = JSON.parse(sessionStorage.getItem('ews-state') || 'null'); if (st && Date.now() - st.t < 10 * 60e3) { pos.fromArray(st.p); pos.y = EYE; yaw = st.yaw; pitch = st.pitch; } sessionStorage.removeItem('ews-state'); } catch {}
   addEventListener('pagehide', saveState);
-  setInterval(() => { if (wantUpdate && ctx.idleMs() > 2 * 60e3 && !busy())   /* 2 min idle (Joshua 2026-10-16) */ { saveState(); location.reload(); } }, 5000);
+  /* Hot module swap (Joshua 2026-10-16 11:27 PM: updates must be seamless). A changed module that implements dispose() is imported in the
+     background, set up next to the old one (its setup may resolve only once it is fully built), then swapped into the frame loop in one
+     tick and the old one disposed. Player position, camera and world state are untouched. Any failure keeps the old version. A module
+     without dispose(), or a core change, falls back to the soft reload below. */
+  ctx.hotSwap = async (id, hash) => { const ent = byId[id]; if (!ent) return 'unknown';
+    if (typeof ent.mod.dispose !== 'function') { wantUpdate = true; return 'reload'; }
+    let nm; try { nm = (await import(`../${ent.m.src}?v=${V}&h=${hash}`)).default; await nm.setup(ctx, ent.m.config || {}, ent.anchor); }
+    catch (e) { console.warn('hot swap failed, keeping the old', id, e); try { nm?.dispose?.(); } catch {} return 'kept-old'; }
+    const i = mods.indexOf(ent.mod); if (i < 0) { try { nm.dispose?.(); } catch {} return 'gone'; }
+    mods[i] = nm; const old = ent.mod; ent.mod = nm; try { old.dispose(); } catch (e) { console.warn('old module dispose', id, e); }
+    (window.__ewsOffice.hotLog ||= []).push({ id, hash, at: Date.now() }); return 'swapped'; };
+  /* Core/engine changes: soft reload only when nobody is using the page (60 s without input and no card/typing/tour), or the moment the
+     visitor leaves the tab. Position + view are restored from sessionStorage, so it comes back exactly where it was. */
+  setInterval(() => { if (wantUpdate && ctx.idleMs() > 60e3 && !busy()) { saveState(); location.reload(); } }, 5000);
+  document.addEventListener('visibilitychange', () => { if (wantUpdate && document.hidden) { saveState(); location.reload(); } });
   Object.assign(window.__ewsOffice, { health: () => ({ stallMs: Math.round(performance.now() - lastFrameT), idleMs: Math.round(ctx.idleMs()), busy: busy() }), applyUpdateWhenIdle: () => { wantUpdate = true; return 'deferred'; } });
   const frame0 = frame; R.setAnimationLoop(t => { lastFrameT = performance.now(); frame0(t); }); return { goTo, close, ctx };   // setAnimationLoop also drives WebXR frames
 }

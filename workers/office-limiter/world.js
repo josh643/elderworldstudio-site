@@ -21,7 +21,19 @@ function stamp(e, stages, ev, now) {
   if (e.si >= N) { e.si = N; e.p = 1; }
   e.at = now; e.next = ev.next && ev.next.eta > 0 ? { o: clamp(ev.next.o), eta: Math.min(3600, Math.floor(ev.next.eta)) } : null;
 }
+// Layout gate (Joshua 2026-10-16 11:20 PM: "redo the layout first, not start building first"). Until Anna sets an approved town layout
+// (w.layout = {approved:true, version, by, at} via a 'layout.approve' event with the office ingest key), every site, road and zone is held at
+// stage 0 (survey: stakes, tape, tripod, planning) no matter what the pipeline or demo posts. Agents keep walking, surveying and patrolling.
+const gated = w => !(w.layout && w.layout.approved);
+function hold(w, e) { if (gated(w) && e.kind !== 'agent') { if (e.si > 0) { e.si = 0; e.p = 0.99; } e.p = Math.min(e.p, 0.99); e.next = null; e.hold = true; } else delete e.hold; }   // 0.99: fully staked, never rolls into ground prep
 function applyEvent(w, ev, now) {
+  const up = [], rm = [];
+  if (ev.type === 'layout.approve') { w.layout = { approved: true, version: ev.version, by: ev.by || 'anna', at: now }; for (const e of Object.values(w.ents)) if (e.hold) { delete e.hold; up.push(e); } return { up, rm, layout: true }; }
+  if (ev.type === 'layout.revoke') { w.layout = { approved: false, version: null, by: ev.by || 'anna', at: now };
+    for (const e of Object.values(w.ents)) { if (e.kind === 'agent') continue; if (e.demo) { delete w.ents[e.id]; rm.push(e.id); continue; } hold(w, e); e.at = now; up.push(e); } return { up, rm, layout: true }; }
+  const r = applyEvent0(w, ev, now); for (const e of r.up) hold(w, e); return r;
+}
+function applyEvent0(w, ev, now) {
   const up = [], rm = [];
   if (ev.type === 'lot.lease' || ev.type === 'site.progress') {
     const id = 'lot:' + ev.lot; let e = w.ents[id];
@@ -57,21 +69,27 @@ export async function world(state, req) {
     if (req.headers.get('upgrade') !== 'websocket') return new Response('expected websocket', { status: 426 });
     if (state.getWebSockets('world').length >= 2000) return new Response('busy', { status: 503 });
     const pair = new WebSocketPair(); state.acceptWebSocket(pair[1], ['world']);
-    const w = await load(st); pair[1].send(JSON.stringify({ t: 'snap', seq: w.seq, now, ents: Object.values(w.ents), build: BUILD, road: ROAD }));
+    const w = await load(st); pair[1].send(JSON.stringify({ t: 'snap', seq: w.seq, now, layout: w.layout || { approved: false }, ents: Object.values(w.ents), build: BUILD, road: ROAD }));
     return new Response(null, { status: 101, webSocket: pair[0] });
   }
-  if (op === 'state') { const w = await load(st); return Response.json({ t: 'snap', seq: w.seq, now, ents: Object.values(w.ents), build: BUILD, road: ROAD, viewers: state.getWebSockets('world').length }); }
+  if (op === 'state') { const w = await load(st); return Response.json({ t: 'snap', seq: w.seq, now, layout: w.layout || { approved: false }, ents: Object.values(w.ents), build: BUILD, road: ROAD, viewers: state.getWebSockets('world').length }); }
   if (op === 'event' && req.method === 'POST') {
     const evs = [].concat(await req.json()).slice(0, 50); const w = await load(st); const up = new Map(), rm = new Set();
-    for (const ev of evs) { const r = applyEvent(w, ev, now); r.up.forEach(e => up.set(e.id, e)); r.rm.forEach(id => { rm.add(id); up.delete(id); }); }
+    let lay = false; for (const ev of evs) { const r = applyEvent(w, ev, now); if (r.layout) lay = true; r.up.forEach(e => up.set(e.id, e)); r.rm.forEach(id => { rm.add(id); up.delete(id); }); }
+    if (lay) { if (!w.layout.approved) { await st.put('snap:' + now, { ...w, ents: { ...w.ents } }); await st.delete('demo'); await st.deleteAlarm(); }   // restorable snapshot + demo driver stopped
+      w.seq++; await st.put('world', w); broadcast(state, { t: 'delta', seq: w.seq, now, layout: w.layout, up: [...up.values()], rm: [...rm] }); return Response.json({ ok: true, layout: w.layout, changed: up.size + rm.size, seq: w.seq }); }
     if (!up.size && !rm.size) return Response.json({ ok: true, changed: 0, seq: w.seq });
     w.seq++; await st.put('world', w); broadcast(state, { t: 'delta', seq: w.seq, now, up: [...up.values()], rm: [...rm] });
     return Response.json({ ok: true, changed: up.size + rm.size, seq: w.seq });
   }
+  // release notice (staging deploys): every connected visitor re-checks /office/manifest.json now and hot-swaps what changed
+  if (op === 'release' && req.method === 'POST') { const j = await req.json().catch(() => ({})); const msg = { t: 'release', now, code: String(j.code || '').slice(0, 16), modules: Object.keys(j.modules || {}).slice(0, 64), assets: (j.assets | 0) };
+    await st.put('release', msg); broadcast(state, msg); return Response.json({ ok: true, viewers: state.getWebSockets('world').length }); }
   if (op === 'demo' && req.method === 'POST') {
     const j = await req.json().catch(() => ({})), w = await load(st);
     if (j.clear) { const ids = Object.keys(w.ents).filter(k => w.ents[k].demo); ids.forEach(k => delete w.ents[k]); await st.delete('demo'); w.seq++; await st.put('world', w);
       broadcast(state, { t: 'delta', seq: w.seq, now, up: [], rm: ids }); return Response.json({ ok: true, cleared: ids.length }); }
+    if (gated(w)) return Response.json({ ok: false, error: 'construction is on hold until the town layout is approved (Anna sets layout.approve)', layout: w.layout || { approved: false } }, { status: 409 });
     const prev = await st.get('demo'); if (prev && now - prev.t0 < 60e3) return Response.json({ ok: false, error: 'a demo just started; try again in a minute', retryMs: 60e3 - (now - prev.t0) }, { status: 429 });
     const lot = j.lot || 9, secs = Math.max(60, Math.min(900, j.secs || 240)), dir = j.dir === 1 ? 1 : -1;
     if (w.ents['lot:' + lot] && !w.ents['lot:' + lot].demo) return Response.json({ ok: false, error: 'lot ' + lot + ' is leased for real; pick another' }, { status: 409 });
@@ -90,6 +108,7 @@ function broadcast(state, msg) { const s = JSON.stringify(msg); for (const ws of
 // Each tick also sends next = where the demo will be at the following tick, so clients creep smoothly exactly like real pipelines.
 export async function worldAlarm(state) {
   const st = state.storage, d = await st.get('demo'); if (!d || d.done) return; const now = Date.now(), w = await load(st);
+  if (gated(w)) { await st.delete('demo'); return; }   // layout gate: the demo driver refuses to build
   const T = (now - d.t0) / 1000, o = clamp(T / d.secs), step = 2, on = clamp((T + step) / d.secs), evs = [];
   if (w.ents['lot:' + d.lot]?.demo) evs.push({ type: 'site.progress', lot: d.lot, overall: o, next: o < 1 ? { o: on, eta: step } : null });
   if (d.road && w.ents['road:demo-ave']) { const ro = clamp(T / (d.secs * 0.6)), rn = clamp((T + step) / (d.secs * 0.6)); evs.push({ type: 'road.progress', id: 'demo-ave', overall: ro, next: ro < 1 ? { o: rn, eta: step } : null }); }
