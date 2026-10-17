@@ -18,3 +18,10 @@ Rules:
 - Until Floor 3 is built: their team is filtered out of the ground team-halls (team-halls skips teams with floor != G). The Floor 3 builder seats them. Field walks can start from the elevator door.
 - Do NOT deploy to staging. Anna ships one combined update.
 - Tree clearing (Jörð): during a road/lot "clear trees" construction stage, Jörð walks to the lot with a tablet and marks trees (spray-dot or ribbon prop) before they are removed. Close-range only.
+
+## REQUEST to the motion + seating builder (2026-10-16 22:50 CT, Joshua wants to see the team now)
+Floor 3 has no desks yet. Please add an `arch-studio` station on Floor 3, following the pattern in modules/lobby-stations:
+- 4 `ctx.kit.desk()` with `seat.owner` = lead-arch (Máni), arch-building (Vili), arch-landscape (Jörð), arch-qa (Vé); seat ids in roster `teams[architecture].seats`; layout from spec.json interiors floor "3".
+- Then remove the filter in modules/team-halls/index.js (`roster.teams.filter(t => !t.floor || t.floor === 'G')`) so their avatars exist, and move them to the Floor 3 desks the way lobby-stations does.
+- Survey stage → walk out to the lots (spec master.lots, L05/L06 first). See the table above.
+I did not build this myself because the seat system in core/engine.js has uncommitted changes in your working tree, and I don't want to collide with them.
