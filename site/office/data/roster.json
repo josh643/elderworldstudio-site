@@ -359,6 +359,12 @@
           "name": "Fjörgyn",
           "role": "Agents & Life lead",
           "post": "rounds:floors"
+        },
+        {
+          "id": "world-character",
+          "name": "Ívaldi",
+          "role": "Character Artist",
+          "post": "b1-console"
         }
       ],
       "restricted": true
