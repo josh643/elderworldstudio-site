@@ -27,6 +27,16 @@ namespace ElderverseShell
 
         public void ShowStatus(string t) { var _ = Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => { Status.Text = t; Status.Visibility = Visibility.Visible; }); }
 
+        private static async void Log(string t)
+        {
+            try
+            {
+                var f = await ApplicationData.Current.LocalFolder.CreateFileAsync("shell.log", CreationCollisionOption.OpenIfExists);
+                await FileIO.AppendTextAsync(f, DateTime.Now.ToString("o") + " " + t + "\r\n");
+            }
+            catch { }
+        }
+
         public MainPage()
         {
             InitializeComponent();
@@ -56,6 +66,7 @@ namespace ElderverseShell
             {
                 if (wv2Crashed) throw new InvalidOperationException("previous WebView2 start crashed");
                 ls["wv2_attempt"] = 1;
+                Log("start wv2Crashed=" + wv2Crashed + " env=" + Microsoft.Web.WebView2.Core.CoreWebView2Environment.GetAvailableBrowserVersionString());
                 Web = new WV2();
                 Root.Children.Insert(0, Web);
                 await Web.EnsureCoreWebView2Async();
@@ -75,14 +86,15 @@ namespace ElderverseShell
             {
                 try { if (Web != null) Root.Children.Remove(Web); } catch { }
                 Web = null;
-                ShowStatus("WebView2 unavailable (" + ex.GetType().Name + ": " + ex.Message + "), using classic WebView");
+                Log("WebView2 init failed: 0x" + ex.HResult.ToString("X8") + " " + ex);
+                ShowStatus("WebView2 unavailable (0x" + ex.HResult.ToString("X8") + " " + ex.Message + "), using classic WebView");
             }
             try
             {
                 Classic = new WebView(WebViewExecutionMode.SeparateThread);
                 Classic.NavigationStarting += (s3, a) => { if (a.Uri != null && !Allowed(a.Uri)) a.Cancel = true; };
                 Classic.NewWindowRequested += (s3, a) => { a.Handled = true; };
-                Classic.NavigationCompleted += (s3, a) => { if (a.IsSuccess) Status.Visibility = Visibility.Collapsed; else ShowStatus("Reconnecting... (" + a.WebErrorStatus + ")"); };
+                Classic.NavigationCompleted += (s3, a) => { Log("classic nav " + a.IsSuccess + " " + a.WebErrorStatus); if (a.IsSuccess) { } else ShowStatus("Reconnecting... (" + a.WebErrorStatus + ")"); };
                 Root.Children.Insert(0, Classic);
                 Classic.Navigate(new Uri(_startUrl));
             }
