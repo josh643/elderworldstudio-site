@@ -12,6 +12,7 @@ namespace ElderverseShell
         public App()
         {
             InitializeComponent();
+            RequiresPointerMode = ApplicationRequiresPointerMode.WhenRequested; // no mouse mode on Xbox
             Suspending += OnSuspending;
             Resuming += OnResuming;
         }
