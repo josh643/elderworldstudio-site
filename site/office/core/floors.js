@@ -60,11 +60,12 @@ function buildFloor(ctx, core, F, ox, go) {
   // perimeter: solid back wall; sides + front are window walls (sill, mullions, head) with the day/night lake view outside
   B(X1 - X0, 4, 0.25, wall, cx, 2, Z0, 0, true);
   const glass = new THREE.MeshBasicMaterial({ color: 0x9fc4d8, transparent: true, opacity: 0.3, depthWrite: false, side: THREE.DoubleSide });
-  const view = new THREE.MeshBasicMaterial({ map: ctx.kit.viewTex(ctx), toneMapped: false });
+  const view = ctx.extOn ? null : new THREE.MeshBasicMaterial({ map: ctx.kit.viewTex(ctx), toneMapped: false });
   const winWall = (ax, az, bx, bz, nx, nz) => { const L = Math.hypot(bx - ax, bz - az), ry = Math.atan2(-(bz - az), bx - ax), mx = (ax + bx) / 2, mz = (az + bz) / 2;
     B(L, 0.75, 0.3, wall, mx, 0.375, mz, ry, true); B(L, 0.4, 0.3, wall, mx, 3.8, mz, ry); B(L, 0.06, 0.34, trim, mx, 0.77, mz, ry);
     const n = Math.round(L / 2.2); for (let i = 0; i <= n; i++) { const t = i / n; B(0.08, 2.9, 0.12, trim, ax + (bx - ax) * t, 2.2, az + (bz - az) * t, ry); }
     const gp = new THREE.Mesh(new THREE.PlaneGeometry(L, 2.85), glass); gp.position.set(mx, 2.2, mz); gp.rotation.y = ry; gp.userData.dn = 'glass'; gp.userData.noCollide = 1; g.add(gp);
+    if (ctx.extOn) return;   /* real 3D exterior outside (core/exterior.js follows you upstairs at the right height): no painted view plane */
     const vv = new THREE.Mesh(new THREE.PlaneGeometry(L + 6, 6), view); vv.position.set(mx + nx * 3, 2.0, mz + nz * 3); vv.rotation.y = ry + (nx || nz < 0 ? 0 : Math.PI); vv.userData.noCollide = 1; vv.rotation.y = Math.atan2(-nx, -nz); g.add(vv); };
   winWall(X0, Z0, X0, Z1, -1, 0); winWall(X1, Z0, X1, Z1, 1, 0); winWall(X0, Z1, X1, Z1, 0, 1);
   // elevator core (same footprint as the lobby core), doors face +z

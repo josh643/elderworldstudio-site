@@ -4,9 +4,9 @@
 //   onState?(snapshot), onFrame?(dt, t) }. Modules share things with ctx.provide(name, v) / ctx.use(name).
 import * as THREE from '../vendor/three.module.min.js?v=169';
 import { mergeGeometries } from '../vendor/jsm/utils/BufferGeometryUtils.js?v=169';
-import * as kit from './kit.js?v=30';
+import * as kit from './kit.js?v=31';
 import * as DN from './daynight.js?v=2';
-import * as EX from './exterior.js?v=1';   /* real 3D exterior (campus + town reserve); ?ext=0 = old baked view */
+import * as EX from './exterior.js?v=2';   /* real 3D exterior (campus + town reserve); ?ext=0 = old baked view */
 const V = 30, GOLD = 0xd9b45a;
 const $ = (t, a = {}, h = '') => { const e = document.createElement(t); for (const k in a) e.setAttribute(k, a[k]); e.innerHTML = h; return e; };
 export const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -33,7 +33,7 @@ export async function start(opts = {}) {
   // GPU class: integrated/mobile GPUs get a lower pixel-ratio cap and no MSAA
   const gpuName = (() => { try { const g = document.createElement('canvas').getContext('webgl'); const x = g.getExtension('WEBGL_debug_renderer_info'); const n = x ? g.getParameter(x.UNMASKED_RENDERER_WEBGL) : ''; g.getExtension('WEBGL_lose_context')?.loseContext(); return String(n); } catch { return ''; } })();
   const igpu = /intel|uhd|iris|mali|adreno|powervr|apple gpu|llvmpipe|swiftshader|videocore/i.test(gpuName);
-  const R = new THREE.WebGLRenderer({ antialias: !igpu && devicePixelRatio < 1.5, powerPreference: 'high-performance' });
+  const R = new THREE.WebGLRenderer({ antialias: !igpu && devicePixelRatio < 1.5, powerPreference: 'high-performance', stencil: true });   /* stencil: real window openings (kit.windowPane) */
   const lowEnd = (navigator.deviceMemory || 8) <= 4 || (navigator.hardwareConcurrency || 8) <= 4, RATIOS = [0.75, 1, 1.5];   // tier base ratios; DSCALE steps below these at runtime
   let tier = lowEnd ? 0 : devicePixelRatio > 1.5 ? 1 : 2; if (tier === 2 && matchMedia('(pointer: fine)').matches) RATIOS[2] = igpu ? 1.25 : 2;   // desktop: native res up to 2x, 1.25 on integrated GPUs
   if (igpu) { RATIOS[1] = Math.min(RATIOS[1], 1.0); if (tier > 1) tier = 1; }   /* integrated GPUs start on the mid tier: no 2K maps, no MSAA */
@@ -148,7 +148,7 @@ const PUBLIC = /(^|\.)elderworldstudio\.com$/.test(location.hostname) || /[?&]pu
   wall(fx, fz, fX, fz);
   /* entrance glass front (floor_g): floor-to-ceiling glass over the shell opening, brass mullions every ~1.85 m, a baked lake view
      behind it (day/night drives that view + the glass tint), and real two-panel sliding doors centred on the red carpet. */
-  const EXT = !!EN && !/[?&]ext=0/.test(location.search);
+  const EXT = !!EN && !/[?&]ext=0/.test(location.search); ctx.extOn = EXT;
   if (EN) { const gz = fZ, gm = new THREE.MeshBasicMaterial({ color: 0x9fc4d8, transparent: true, opacity: 0.32, depthWrite: false, side: THREE.DoubleSide });
     if (!EXT) { const vv = new THREE.Mesh(new THREE.PlaneGeometry(EN.w + 2, 4.2), new THREE.MeshBasicMaterial({ map: kit.viewTex(ctx), toneMapped: false })); vv.position.set(EN.x, 2.0, gz + 0.9); vv.rotation.y = Math.PI; vv.userData.noCollide = 1; scene.add(vv); }
     const pane = (cx, w, y, h) => { const g = new THREE.Mesh(new THREE.PlaneGeometry(w, h), gm); g.position.set(cx, y, gz); g.userData.dn = 'glass'; g.userData.noCollide = 1; scene.add(g); };
@@ -352,7 +352,7 @@ const PUBLIC = /(^|\.)elderworldstudio\.com$/.test(location.hostname) || /[?&]pu
   buildColliders(); baseCols = cols.slice(); batchStatic(); collectFar(); lowMats();
   setTimeout(() => { buildColliders(); const b0 = ctx.batched; batchStatic(); ctx.batched = { before: b0.before + ctx.batched.before, after: b0.after + ctx.batched.after }; collectFar(); lowMats(); }, 10500);   /* second pass: lazy GLB props */
   { let n = 0; const iv = setInterval(() => { buildColliders(); if (n % 4 === 3) lowMats(); if (++n >= 24) clearInterval(iv); }, 500); }  /* lazy desks/props get colliders within 0.5 s of landing */   // again once the lazy props have landed
-  window.__ewsOffice.exterior = () => ctx.exterior?.info?.() || null; window.__ewsOffice.pos = () => pos.toArray().map(v => +v.toFixed(3)); window.__ewsOffice.breakdown = () => { const fr = new THREE.Frustum().setFromProjectionMatrix(new THREE.Matrix4().multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse)); const m = {}; scene.traverseVisible(o => { if (!(o.isMesh || o.isSprite || o.isPoints || o.isLine)) return; if (o.frustumCulled && !o.isSkinnedMesh && o.geometry && !fr.intersectsObject(o)) return; let r = o; while (r.parent && r.parent !== scene) r = r.parent; const k = (o.isSkinnedMesh ? "skin:" : o.isSprite ? "sprite:" : o.isInstancedMesh ? "inst:" : "") + (r.userData.mod || r.name || r.type); m[k] = (m[k] || 0) + (Array.isArray(o.material) ? o.material.length : 1); }); return Object.entries(m).sort((a, b) => b[1] - a[1]).slice(0, 40); }; window.__ewsOffice.motionAudit = (secs = 4) => new Promise(res => {   /* dev check (Joshua 2026-10-16): anything that moves and is not on the allow-list */
+  window.__ewsOffice.exterior = () => ctx.exterior?.info?.() || null; window.__ewsOffice.cam = (x, y, z, lx, ly, lz) => { window.__ewsFreeY = 1; pos.set(x, y, z); glide = null; const d = [lx - x, ly - y, lz - z]; yaw = Math.atan2(-d[0], -d[2]); pitch = Math.atan2(d[1], Math.hypot(d[0], d[2])); };   /* QA: free camera for exterior comparison shots */ window.__ewsOffice.pos = () => pos.toArray().map(v => +v.toFixed(3)); window.__ewsOffice.breakdown = () => { const fr = new THREE.Frustum().setFromProjectionMatrix(new THREE.Matrix4().multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse)); const m = {}; scene.traverseVisible(o => { if (!(o.isMesh || o.isSprite || o.isPoints || o.isLine)) return; if (o.frustumCulled && !o.isSkinnedMesh && o.geometry && !fr.intersectsObject(o)) return; let r = o; while (r.parent && r.parent !== scene) r = r.parent; const k = (o.isSkinnedMesh ? "skin:" : o.isSprite ? "sprite:" : o.isInstancedMesh ? "inst:" : "") + (r.userData.mod || r.name || r.type); m[k] = (m[k] || 0) + (Array.isArray(o.material) ? o.material.length : 1); }); return Object.entries(m).sort((a, b) => b[1] - a[1]).slice(0, 40); }; window.__ewsOffice.motionAudit = (secs = 4) => new Promise(res => {   /* dev check (Joshua 2026-10-16): anything that moves and is not on the allow-list */
       const ALLOW = /^(chairs|office chairs|world:|exterior-sky|ripple|ticket|daynight)/, snap = new Map(), path = o => { const p = []; for (let r = o; r && r !== scene; r = r.parent) p.push(r.userData.mod || r.userData.label || r.name || r.type); return p.reverse().join('>'); };
       const skip = o => { for (let r = o; r; r = r.parent) { if (r.userData?.a || r.userData?.anim || r.isCamera || r === rig || ctx.entranceDoors?.some?.(d => d.g === r)) return true; } return false; };
       const take = () => { const m = new Map(); scene.traverse(o => { if (!(o.isMesh || o.isSprite || o.isPoints || o.isLine || o.isGroup)) return; if (skip(o)) return; o.updateWorldMatrix(true, false); const e = o.matrixWorld.elements.slice(); if (o.isInstancedMesh) { const a = o.instanceMatrix.array; let h = 0; for (let i = 0; i < a.length; i += 7) h += a[i] * (i % 13 + 1); e.push(h, o.count); } m.set(o, e); }); return m; };
