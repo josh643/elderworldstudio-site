@@ -31,7 +31,20 @@ export default {
     const activity = s => { const t0 = s.since ? Date.parse(s.since) : NaN, el = Number.isNaN(t0) ? '' : ' · ' + fmt(Date.now() - t0); const sb = s.sub || {};
       const over = !s.blocked && s.eta && !Number.isNaN(t0) && (Date.now() - t0) / 1000 > s.eta * 1.6 ? ' · over ETA' : '';
       return (s.blocked ? 'blocked' + el : (SUBL[sb.k] || SUBL[s.stage] || s.stage) + (sb.n > 1 ? ' #' + sb.n : '') + el + over); };
-    this.onState = st => { last = st.last || {};
+    /* maker/checker pairs (Joshua 2026-10-16): when the feed puts a maker and its checker on the same job (same start time, or the same
+       subject after the verb), each screen shows ITS OWN step. The checker shows its check (and findings when the publisher sends
+       s.check = {n, ok, issues}); the maker shows what it handed over (s.made, else 'Submitted') and 'Waiting on <checker>'s review',
+       with no copied progress bar or timer. Applies to every team (coder/reviewer, asset maker/checker, architect/layout QA ...). */
+    const CHECKER = (id, role) => /(^|-)(qa|review|reviews|check|audit)(-|$)|qa$/i.test(id || '') || /\b(qa|review|reviewer|checker|inspector)\b/i.test(role || '');
+    const subj = t => String(t || '').toLowerCase().replace(/^\s*(surveying|inspecting|checking|reviewing|testing|auditing|building|drafting|revising|fixing|making|qa|review)\s+/, '').trim();
+    const pairs = new Map(); this.pairs = pairs;
+    const findPairs = work => { pairs.clear(); const groups = new Map();
+      for (const w of work) { for (const k of [w.since ? 's:' + w.since : null, w.task ? 't:' + subj(w.task) + '|' + (w.team || '') : null]) if (k) { if (!groups.has(k)) groups.set(k, new Set()); groups.get(k).add(w); } }
+      for (const g of groups.values()) { if (g.size < 2) continue; const L = [...g], chk = L.filter(w => CHECKER(w.agent, w.role)), mk = L.filter(w => !CHECKER(w.agent, w.role)); if (!chk.length || !mk.length) continue;
+        for (const m of mk) pairs.set(m.agent, { role: 'maker', other: chk.map(c => c.name || c.agent).join(' & ') });
+        for (const c of chk) pairs.set(c.agent, { role: 'checker', other: mk.map(m => m.name || m.agent).join(' & ') }); }
+      for (const av of ctx.use('avatar')?.all || []) { const id = av.userData.a?.id; av.userData.waitOn = pairs.get(id)?.role === 'maker' ? pairs.get(id).other : null; } };
+    this.onState = st => { last = st.last || {}; findPairs(st.work || []);
       const nowW = new Map((st.work || []).map(w => [w.agent, w]));
       for (const [id, w] of prevWork) if (!nowW.has(id)) flash.set(id, { task: w.task, until: Date.now() + 8000, from: shown.get(id)?.v || w.progress || 0, t0: Date.now() });
       for (const id of nowW.keys()) flash.delete(id); prevWork = nowW; const th = st.thumbs; if (th && th.v !== thumbs.v) { const im = new Image(); im.crossOrigin = 'anonymous'; im.onload = () => { thumbs.img = im; thumbs.map = th.map || {}; thumbs.v = th.v; }; im.src = '/api/office/thumbs?v=' + th.v; } };
@@ -61,9 +74,12 @@ export default {
         g.fillText(lab, 8, cell != null ? 129 : 100); if (A.left && cell == null) { g.font = '500 11px Inter, sans-serif'; g.fillStyle = '#7f8ea8'; g.fillText(A.left + ' in queue', 190, 100); }
         const P = alive ? live(a.id, s) : 1; if (alive && s.since) { g.font = '500 10px Inter, sans-serif'; g.fillStyle = '#8ea0c0'; g.fillText(fmt(Date.now() - Date.parse(s.since)) + ' · ' + Math.round(P * 100) + '%', 196, cell != null ? 129 : 116); }
         g.fillStyle = '#26324a'; g.fillRect(6, 136, 244, 4); g.fillStyle = SL[1]; g.fillRect(6, 136, 244 * P, 4); }
+      else if (pairs.get(a.id)?.role === 'maker') { const pr = pairs.get(a.id), y0 = cell != null ? 112 : 40;   /* maker on a job its checker is checking: its own step, no mirrored bar/timer */
+        g.fillStyle = '#ffffff'; g.font = '700 14px Inter, sans-serif'; let t1 = String(s.made || ('Submitted: ' + subj(s.task))); while (g.measureText(t1).width > 240 && t1.length > 8) t1 = t1.slice(0, -2); g.fillText(t1, 8, y0);
+        g.fillStyle = '#8ea0c0'; g.font = '600 12px Inter, sans-serif'; let t2 = (s.revising ? 'Revising: ' + s.revising : 'Waiting on ' + pr.other + "'s review"); while (g.measureText(t2).width > 240 && t2.length > 8) t2 = t2.slice(0, -2); g.fillText(t2, 8, cell != null ? 129 : 112); }
       else { const title = String(s.task || ''), y0 = cell != null ? 112 : 40, maxL = cell != null ? 1 : 3; g.fillStyle = '#ffffff'; g.font = '700 14px Inter, sans-serif';
         let ln = '', y = y0, L = 0; for (const w of title.split(/\s+/)) { if (g.measureText(ln + w).width > 240 && ln) { g.fillText(ln.trim(), 8, y); y += 18; ln = ''; if (++L >= maxL) break; } ln += w + ' '; } if (L < maxL && ln.trim()) g.fillText(ln.trim(), 8, y);
-        const P = live(a.id, s), lab = (STG[s.stage] || s.stage) + (s.blocked ? ' · blocked' : '') + ' · ' + Math.round(P * 100) + '%', ac = activity(s);
+        const P = live(a.id, s), ck = s.check, lab = ck && ck.n ? 'Checking ' + ck.n + ': ' + (ck.ok ?? 0) + ' OK' + (ck.issues ? ', ' + ck.issues + ' flagged' : '') : (STG[s.stage] || s.stage) + (s.blocked ? ' · blocked' : '') + ' · ' + Math.round(P * 100) + '%', ac = activity(s);
         g.fillStyle = s.blocked ? '#ff8a8a' : '#d9b45a';
         if (cell != null) { g.font = '600 11px Inter, sans-serif'; let line = lab + '  ' + ac; while (g.measureText(line).width > 240 && line.length > 8) line = line.slice(0, -2); g.fillText(line, 8, 129); }
         else { g.font = '600 12px Inter, sans-serif'; g.fillText(lab, 8, 112); g.font = '500 11px Inter, sans-serif'; g.fillStyle = '#8ea0c0'; g.fillText(ac, 8, 127); }   /* live activity: sub-step + elapsed, ticks every second */

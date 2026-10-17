@@ -192,7 +192,7 @@ export default {
         const P = u.path && u.path[0];
         if (P) { tmp.set(P.x - av.position.x, 0, P.z - av.position.z); const dist = tmp.length(), lastLeg = u.path.length === 1;
           if (dist < 0.05) { av.position.x = P.x; av.position.z = P.z; u.path.shift(); }
-          else { moving = true; const carryNow = ['QA', 'ready', 'review'].includes(s.stage), S3 = SPEED3[u.fem] || SPEED3[0];
+          else { moving = true; const carryNow = ['QA', 'ready', 'review'].includes(s.stage) && !u.siteJob, S3 = SPEED3[u.fem] || SPEED3[0];
             const want = Math.atan2(tmp.x, tmp.z), diff = wrap(want - av.rotation.y), turn = Math.min(Math.abs(diff), dt * 6.5) * Math.sign(diff); av.rotation.y = wrap(av.rotation.y + turn);
             /* speed = the clip's own ground speed (x height), slowed while turning sharply and on the final 0.5 m; the clip's
                playback rate follows the same factor, so feet never slide */
@@ -238,7 +238,7 @@ export default {
       av.visible = d < 15 * Math.max(0.8, L) && frustum.intersectsSphere(sph);
       if (!visible && u.frame % 90 === 0) { u.mixer.update(u.acc); u.acc = 0; }   // off-screen rigs still get a rare update so a state change never reveals a bind pose
       if (visible && u.frame % every === 0) { u.mixer.update(u.acc); u.acc = 0; if (u.layer && u.lw > 0.01 && d < 14) { u.lt = (u.lt || 0) + dt * every; av.updateMatrixWorld(true); pose(u.bones, u.layer, u.lt + u.phase, u.lw, av); } }
-      const p = s.progress; u.bar.visible = u.bg.visible = visible && p != null && !!s.stage;
+      const p = s.progress; u.bar.visible = u.bg.visible = visible && p != null && !!s.stage && !u.waitOn;   /* a maker waiting on its checker shows no copied bar */
       if (u.bar.visible) { u.bar.scale.x = Math.max(0.02, p); u.bar.position.x = -0.45 * (1 - p); u.bar.quaternion.copy(ctx.cam.quaternion); u.bg.quaternion.copy(ctx.cam.quaternion); }
       u.tagD = visible ? d : Infinity;
       u.flag.visible = false; if (s.blocked) u.flag.rotation.y += dt * 2;

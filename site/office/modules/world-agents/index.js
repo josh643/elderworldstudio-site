@@ -30,6 +30,7 @@ export default {
       release(id) { const av = find(id); if (!av) return false; take(av, false); return true; },
       /* apply(poses) : one DELTA-SCHEMA v1 agent.pose batch [{id, zone, x, z, h, act, to?, v?, lot?}] */
       apply(poses) { let n = 0; for (const p of poses || []) { const av = find(p.id); if (!av) continue; const u = av.userData; n++;
+        if (u.siteJob && (p.act === 'desk' || p.act === 'idle')) { u.serverAt = performance.now() / 1000; continue; }   /* the job record says on-site work (arch-studio walk-out): a generic desk/idle pose does not pull them back */
         if (p.act === 'desk') api.sit(p.id);
         else if (p.act === 'walk') { const to = p.to || {}; api.moveTo(p.id, { zone: to.zone || p.zone, x: to.x ?? p.x, z: to.z ?? p.z, h: to.h ?? p.h }); }
         else if (p.act === 'idle' || p.act === 'meet') { api.moveTo(p.id, p); u.serverAct = p.act; }
@@ -46,6 +47,7 @@ export default {
     if (!this.ctl?.size) return; const t = performance.now() / 1000;
     for (const [av] of this.ctl) { const u = av.userData;
       if (t - (u.serverAt || 0) > HOLD) { this.ctx.agentControl.release(u.a.id); continue; }
+      if (u.siteJob) continue;
       const away = u.serverAct === 'field' || u.serverAct === 'away'; av.scale.setScalar(away ? 1e-4 : 1);
       const at = u.target && u.target !== u.home && Math.hypot(av.position.x - u.target.x, av.position.z - u.target.z) < 0.06 && !(u.path && u.path.length);
       u.spotK = at ? (u.serverAct === 'meet' ? 'talk' : null) : null; }
