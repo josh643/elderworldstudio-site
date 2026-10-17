@@ -18,7 +18,7 @@ export function clean(e) {
     o.lot = num(e.lot, 1, 80); if (!o.lot || !Number.isInteger(o.lot)) return null;
     if (t === 'lot.lease') { o.public = e.public === true; o.tenant = o.public ? words(e.tenant, 28) : '';
       const s = e.style || {}; o.style = { floors: Math.round(num(s.floors, 1, 4) || 2), color: COLORS.includes(s.color) ? s.color : 'sandstone', kind: KINDS.includes(s.kind) ? s.kind : 'shop' };
-      o.arch = e.arch === true; o.job = words(e.job, 40); o.parts = {}; for (const [k, v] of Object.entries(e.parts || {}).slice(0, 12)) if (BUILD.includes(k) && part(v)) o.parts[k] = part(v); }
+      o.arch = e.arch === true; o.job = words(e.job, 40); if (e.leased === true) { o.leased = true; o.tenantId = String(e.tenantId || '').replace(/[^a-z0-9-]/gi, '').slice(0, 40); } o.parts = {}; for (const [k, v] of Object.entries(e.parts || {}).slice(0, 12)) if (BUILD.includes(k) && part(v)) o.parts[k] = part(v); }
     if (t !== 'lot.release') { if (e.stage != null) { if (!BUILD.includes(e.stage)) return null; o.stage = e.stage; } prog(); }
     return o;
   }
@@ -62,5 +62,8 @@ export async function onRequestPost({ request, env }) {
     const r = await worldDO(env).fetch('https://rl/world/event', { method: 'POST', body: JSON.stringify(L) }); return json(await r.json(), r.status);
   }
   const evs = raw.map(clean); if (evs.some(e => !e)) return json({ ok: false, error: 'invalid event', index: evs.findIndex(e => !e) }, 400);
+  // leased lots: only a client/owner-authorized edit (separate secret LEASE_EDIT_KEY, never given to agents) may touch them; the DO enforces (403)
+  const la = request.headers.get('x-ews-lease-auth') || ''; const leaseOk = !!env.LEASE_EDIT_KEY && la === `Bearer ${env.LEASE_EDIT_KEY}`;
+  for (const e of evs) if (leaseOk) e.lease_ok = true; else delete e.lease_ok;
   const r = await worldDO(env).fetch('https://rl/world/event', { method: 'POST', body: JSON.stringify(evs) }); return json(await r.json(), r.status);
 }

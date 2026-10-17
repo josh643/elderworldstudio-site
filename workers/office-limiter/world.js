@@ -33,12 +33,24 @@ function applyEvent(w, ev, now) {
     for (const e of Object.values(w.ents)) { if (e.kind === 'agent') continue; if (e.demo) { delete w.ents[e.id]; rm.push(e.id); continue; } hold(w, e); e.at = now; up.push(e); } return { up, rm, layout: true }; }
   const r = applyEvent0(w, ev, now); for (const e of r.up) hold(w, e); return r;
 }
+// Leased-lot protection (Joshua HARD RULE 2026-10-17 00:00): agents run, fix and build the world but NEVER change a lot leased to a client
+// (boundaries, building, content, signage, layout or data). A leased lot has leased:true + tenantId. Any event that would create, alter,
+// progress or release it is refused (403) unless the Pages Function marked it lease_ok (client/owner key LEASE_EDIT_KEY, never an agent key).
+// Engine/render/collision/perf bug fixes ship as code and never post lot events, so they cannot alter the client's stored content.
+export function leaseGuard(w, ev) {
+  if (!ev || !/^(lot\.|site\.)/.test(ev.type || '')) return null;
+  const e = w.ents['lot:' + ev.lot];
+  if (ev.lease_ok === true) return null;
+  if (e && e.leased) return 'lot ' + ev.lot + ' is leased to ' + (e.tenantId || 'a client') + ': agents may not change it (client/owner authorization required)';
+  if (ev.type === 'lot.lease' && ev.leased) return 'creating a client lease needs client/owner authorization';
+  return null;
+}
 function applyEvent0(w, ev, now) {
   const up = [], rm = [];
   if (ev.type === 'lot.lease' || ev.type === 'site.progress') {
     const id = 'lot:' + ev.lot; let e = w.ents[id];
     if (!e) { if (ev.type !== 'lot.lease') return { up, rm }; e = w.ents[id] = { id, kind: 'site', lot: ev.lot, si: 0, p: 0, since: now }; }
-    if (ev.type === 'lot.lease') { Object.assign(e, { tenant: ev.tenant || '', public: !!ev.public, style: ev.style || e.style || {}, parts: ev.parts || e.parts || {}, demo: !!ev.demo, arch: !!ev.arch, job: ev.job || e.job || '' });
+    if (ev.type === 'lot.lease') { Object.assign(e, { tenant: ev.tenant || '', public: !!ev.public, style: ev.style || e.style || {}, parts: ev.parts || e.parts || {}, demo: !!ev.demo, arch: !!ev.arch, job: ev.job || e.job || '' }); if (ev.leased && ev.lease_ok === true) { e.leased = true; e.tenantId = ev.tenantId || e.tenantId || ''; }
       if (ev.overall == null && ev.stage == null) { ev = { ...ev, stage: 'survey', progress: 0 }; } }
     stamp(e, BUILD, ev, now); up.push(e);
   } else if (ev.type === 'lot.release') { const id = 'lot:' + ev.lot; if (w.ents[id]) { delete w.ents[id]; rm.push(id); } }
@@ -75,6 +87,7 @@ export async function world(state, req) {
   if (op === 'state') { const w = await load(st); return Response.json({ t: 'snap', seq: w.seq, now, layout: w.layout || { approved: false }, ents: Object.values(w.ents), build: BUILD, road: ROAD, viewers: state.getWebSockets('world').length }); }
   if (op === 'event' && req.method === 'POST') {
     const evs = [].concat(await req.json()).slice(0, 50); const w = await load(st); const up = new Map(), rm = new Set();
+    const refused = evs.map((ev, i) => [i, leaseGuard(w, ev)]).filter(x => x[1]); if (refused.length) return Response.json({ ok: false, error: 'leased lot protected', refused }, { status: 403 });
     let lay = false; for (const ev of evs) { const r = applyEvent(w, ev, now); if (r.layout) lay = true; r.up.forEach(e => up.set(e.id, e)); r.rm.forEach(id => { rm.add(id); up.delete(id); }); }
     if (lay) { if (!w.layout.approved) { await st.put('snap:' + now, { ...w, ents: { ...w.ents } }); await st.delete('demo'); await st.deleteAlarm(); }   // restorable snapshot + demo driver stopped
       w.seq++; await st.put('world', w); broadcast(state, { t: 'delta', seq: w.seq, now, layout: w.layout, up: [...up.values()], rm: [...rm] }); return Response.json({ ok: true, layout: w.layout, changed: up.size + rm.size, seq: w.seq }); }
@@ -92,7 +105,7 @@ export async function world(state, req) {
     if (gated(w)) return Response.json({ ok: false, error: 'construction is on hold until the town layout is approved (Anna sets layout.approve)', layout: w.layout || { approved: false } }, { status: 409 });
     const prev = await st.get('demo'); if (prev && now - prev.t0 < 60e3) return Response.json({ ok: false, error: 'a demo just started; try again in a minute', retryMs: 60e3 - (now - prev.t0) }, { status: 429 });
     const lot = j.lot || 9, secs = Math.max(60, Math.min(900, j.secs || 240)), dir = j.dir === 1 ? 1 : -1;
-    if (w.ents['lot:' + lot] && !w.ents['lot:' + lot].demo) return Response.json({ ok: false, error: 'lot ' + lot + ' is leased for real; pick another' }, { status: 409 });
+    if (w.ents['lot:' + lot] && (w.ents['lot:' + lot].leased || !w.ents['lot:' + lot].demo)) return Response.json({ ok: false, error: 'lot ' + lot + ' is leased for real; pick another' }, { status: 409 });
     const demo = { t0: now, secs, lot, road: j.road || null, done: false }; await st.put('demo', demo);
     const evs = [{ type: 'lot.lease', lot, tenant: j.tenant || 'Demo Shop', public: true, demo: true, style: j.style || { floors: 2, color: 'sandstone', kind: 'shop' }, parts: j.parts || {}, stage: 'survey', progress: 0 }];
     if (demo.road) evs.push({ type: 'road.upsert', id: 'demo-ave', name: demo.road.name || 'Avenue resurfacing', a: demo.road.a, b: demo.road.b, w: demo.road.w || 10, resurface: true, demo: true, stage: 'survey', progress: 0 });
