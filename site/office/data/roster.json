@@ -339,14 +339,14 @@
     {
       "key": "world",
       "name": "World Direction",
-      "floor": "5",
+      "floor": "B1",
       "members": [
         {
           "id": "world-ops",
           "name": "Ægir",
           "role": "World Director",
           "lead": true,
-          "post": "director-office"
+          "post": "b1-director-desk"
         },
         {
           "id": "world-interiors",
@@ -360,12 +360,13 @@
           "role": "Agents & Life lead",
           "post": "rounds:floors"
         }
-      ]
+      ],
+      "restricted": true
     },
     {
       "key": "world-eng",
       "name": "World Engineering",
-      "floor": "3",
+      "floor": "B1",
       "members": [
         {
           "id": "world-physics",
@@ -390,7 +391,8 @@
           "role": "level & fps QA",
           "post": "rounds:qa"
         }
-      ]
+      ],
+      "restricted": true
     }
   ],
   "nodes": [
