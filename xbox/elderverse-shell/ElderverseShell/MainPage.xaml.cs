@@ -7,6 +7,7 @@ using Windows.UI.Core;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Navigation;
+using WV2 = Microsoft.UI.Xaml.Controls.WebView2;
 
 namespace ElderverseShell
 {
@@ -20,6 +21,11 @@ namespace ElderverseShell
         private static readonly int[] Backoff = { 5, 10, 30, 60 };
         private bool _offline;
         private string _offlineHtml = "<html><body style=\"background:#0b1320;color:#e8e2d0;font:32px Segoe UI;text-align:center;padding-top:20%\">Elderverse<br>Reconnecting...</body></html>";
+
+        private WV2 Web;
+        private WebView Classic;
+
+        public void ShowStatus(string t) { var _ = Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => { Status.Text = t; Status.Visibility = Visibility.Visible; }); }
 
         public MainPage()
         {
@@ -44,19 +50,43 @@ namespace ElderverseShell
             }
             catch { }
             _origin = new Uri(_startUrl);
-            await Web.EnsureCoreWebView2Async();
-            var core = Web.CoreWebView2;
-            core.Settings.AreDefaultContextMenusEnabled = false;
-            core.Settings.IsStatusBarEnabled = false;
-            core.Settings.AreBrowserAcceleratorKeysEnabled = false;
-#if !DEBUG
-            core.Settings.AreDevToolsEnabled = false;
-#endif
-            core.NewWindowRequested += (s, a) => { a.Handled = true; };
-            core.NavigationStarting += OnNavigationStarting;
-            core.NavigationCompleted += OnNavigationCompleted;
-            core.ProcessFailed += OnProcessFailed;
-            core.Navigate(_startUrl);
+            var ls = ApplicationData.Current.LocalSettings.Values;
+            bool wv2Crashed = ls.ContainsKey("wv2_attempt");   // previous launch died inside WebView2 init -> use classic WebView
+            try
+            {
+                if (wv2Crashed) throw new InvalidOperationException("previous WebView2 start crashed");
+                ls["wv2_attempt"] = 1;
+                Web = new WV2();
+                Root.Children.Insert(0, Web);
+                await Web.EnsureCoreWebView2Async();
+                var core = Web.CoreWebView2;
+                core.Settings.AreDefaultContextMenusEnabled = false;
+                core.Settings.IsStatusBarEnabled = false;
+                core.NewWindowRequested += (s2, a) => { a.Handled = true; };
+                core.NavigationStarting += OnNavigationStarting;
+                core.NavigationCompleted += OnNavigationCompleted;
+                core.ProcessFailed += OnProcessFailed;
+                Status.Visibility = Visibility.Collapsed;
+                core.Navigate(_startUrl);
+                ls.Remove("wv2_attempt");
+                return;
+            }
+            catch (Exception ex)
+            {
+                try { if (Web != null) Root.Children.Remove(Web); } catch { }
+                Web = null;
+                ShowStatus("WebView2 unavailable (" + ex.GetType().Name + ": " + ex.Message + "), using classic WebView");
+            }
+            try
+            {
+                Classic = new WebView(WebViewExecutionMode.SeparateThread);
+                Classic.NavigationStarting += (s3, a) => { if (a.Uri != null && !Allowed(a.Uri)) a.Cancel = true; };
+                Classic.NewWindowRequested += (s3, a) => { a.Handled = true; };
+                Classic.NavigationCompleted += (s3, a) => { if (a.IsSuccess) Status.Visibility = Visibility.Collapsed; else ShowStatus("Reconnecting... (" + a.WebErrorStatus + ")"); };
+                Root.Children.Insert(0, Classic);
+                Classic.Navigate(new Uri(_startUrl));
+            }
+            catch (Exception ex2) { ShowStatus("Shell error: " + ex2); }
         }
 
         private bool Allowed(Uri u)
@@ -94,7 +124,7 @@ namespace ElderverseShell
         {
             var _ = Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
             {
-                if (!_reloadedAfterCrash) { _reloadedAfterCrash = true; try { Web.CoreWebView2?.Reload(); } catch { } }
+                if (!_reloadedAfterCrash) { _reloadedAfterCrash = true; try { Web?.CoreWebView2?.Reload(); } catch { } }
                 else { var t = ShowOfflineThenRetry(); }
             });
         }
@@ -103,12 +133,12 @@ namespace ElderverseShell
         {
             // Gamepad B: hand to the page; never exit mid-session without the page's confirm.
             e.Handled = true;
-            try { Web.CoreWebView2?.PostWebMessageAsJson("{\"type\":\"back\"}"); } catch { }
+            try { Web?.CoreWebView2?.PostWebMessageAsJson("{\"type\":\"back\"}"); } catch { }
         }
 
         public void PostLifecycle(string type)
         {
-            try { Web.CoreWebView2?.PostWebMessageAsJson("{\"type\":\"" + type + "\"}"); } catch { }
+            try { Web?.CoreWebView2?.PostWebMessageAsJson("{\"type\":\"" + type + "\"}"); } catch { }
         }
     }
 }

@@ -1,9 +1,8 @@
 <Page x:Class="ElderverseShell.MainPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:controls="using:Microsoft.UI.Xaml.Controls"
     Background="#0b1320">
-    <Grid>
-        <controls:WebView2 x:Name="Web" />
+    <Grid x:Name="Root">
+        <TextBlock x:Name="Status" Text="Elderverse - loading..." Foreground="#e8e2d0" FontSize="28" TextWrapping="Wrap" Margin="96,54" VerticalAlignment="Bottom" />
     </Grid>
 </Page>

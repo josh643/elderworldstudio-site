@@ -13,6 +13,7 @@ namespace ElderverseShell
         {
             InitializeComponent();
             RequiresPointerMode = ApplicationRequiresPointerMode.WhenRequested; // no mouse mode on Xbox
+            UnhandledException += (s, e) => { e.Handled = true; ((Window.Current?.Content as Frame)?.Content as MainPage)?.ShowStatus("Error: " + e.Message); };
             Suspending += OnSuspending;
             Resuming += OnResuming;
         }
