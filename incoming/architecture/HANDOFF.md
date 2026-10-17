@@ -20,3 +20,8 @@ Builder asks:
 3. Put the pond, paths, monument and billboards where `landscape` says.
 4. Do NOT deploy. Anna ships one combined update.
 5. Any coordinate you can't honour (collision with existing geometry) goes back as a note in incoming/architecture/BUILDER_NOTES.md. Vili and Hœnir will revise the spec.
+
+## Trees (Joshua 2026-10-16)
+- Jörð (arch-landscape) owns tree planting and removal. Specs carry `landscape.planting` zones and, from now on, `landscape.tree_changes` ([{id, action: remove|relocate, from, to, reason}]) whenever a road or lot is built.
+- Live-construction system: when a road or lot is built, play tree removal as one of the stages: survey (stakes) → clear trees (fell/uproot the trees in tree_changes, haul away, stumps gone) → grade → pave/build. Relocated trees are replanted at `to` in the same stage.
+- Layout QA (Vé) fails specs with trees on streets or paving, trees on lots under construction/built, or camera-facing card trees. The survey also flags these in renders.

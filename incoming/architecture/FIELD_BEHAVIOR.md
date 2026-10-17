@@ -17,3 +17,4 @@ Rules:
 - Pathing: Floor 3 → elevator → lobby → sliding doors → plaza/avenue → lot. Return the same way. Respect colliders.
 - Until Floor 3 is built: their team is filtered out of the ground team-halls (team-halls skips teams with floor != G). The Floor 3 builder seats them. Field walks can start from the elevator door.
 - Do NOT deploy to staging. Anna ships one combined update.
+- Tree clearing (Jörð): during a road/lot "clear trees" construction stage, Jörð walks to the lot with a tablet and marks trees (spray-dot or ribbon prop) before they are removed. Close-range only.
