@@ -20,7 +20,7 @@ npx -y wrangler@3 pages deploy /tmp/ews-cf-deploy --project-name elderworldstudi
 PY=/workspace/.venv-gate/bin/python; [ -x "$PY" ] || PY=/workspace/avatar-office/.venv/bin/python   # needs playwright (python3 -m venv /workspace/.venv-gate && /workspace/.venv-gate/bin/pip install playwright)
 sleep 6
 GOUT=/workspace/shots/gate/$(date +%Y%m%d-%H%M%S)
-if ! timeout 600 "$PY" tools/office/playtest_gate.py https://playtest.elderworldstudio.pages.dev --live https://office-3d.elderworldstudio.pages.dev --out "$GOUT"; then
+if ! timeout 900 "$PY" tools/office/playtest_gate.py https://playtest.elderworldstudio.pages.dev --live https://office-3d.elderworldstudio.pages.dev --out "$GOUT"; then
   echo 'playtest gate: FAIL -> staging deploy REFUSED (fix tasks filed; see /workspace/shots/gate/<run>/gate.json)'; exit 1
 fi
 echo 'playtest gate: PASS -> promoting to office-3d'

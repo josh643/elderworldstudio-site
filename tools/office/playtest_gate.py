@@ -17,7 +17,8 @@ BLOCKS (exit 1):
   - vision (gpt-4o-mini, gatejudge on CT111, each hit already double-confirmed): a candidate hit is NEW (blocks) unless
       a) the same view looks unchanged vs live (mean pixel diff < SAME_PX), or
       b) the live judge in this run, or a targeted re-check of the live shot for that code, shows the same code at that view, or
-      c) the code@view is in the reviewed ledger baseline.json
+      c) the code@view is in the reviewed ledger baseline.json, or a single-object code (dome_opaque) is already known in that zone, or
+      d) a fresh candidate re-shoot (20 s settle) does not reproduce it (transient greeting bubble/toast/agent; logged as warn)
     -> half-built / placeholder geometry introduced by the candidate still blocks.
 usage: playtest_gate.py CANDIDATE_URL [--live URL] [--out DIR] [--no-vision] [--no-file] [--make-baseline]
 """
@@ -105,12 +106,31 @@ async def walk(b, url, out, full):
   json.dump(W['views'], open(f'{out}/views.json', 'w'), indent=1); W['secs'] = round(time.time() - T0, 1)
   await ctxb.close(); return W
 
+async def reshoot(url, names, out):
+  """Fresh page, 20 s settle (greeting bubbles/toasts gone), re-shoot only the views with an unclear NEW vision hit."""
+  async with async_playwright() as p:
+    b = await p.chromium.launch(executable_path='/usr/bin/google-chrome', args=['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'])
+    pg = await (await b.new_context(viewport={'width': 1280, 'height': 720})).new_page()
+    await pg.goto(url + '/office/?time=13:00', wait_until='load', timeout=90000)
+    await pg.wait_for_function("!!(window.__ewsOffice && __ewsOffice.pos && __ewsOffice.floor && __ewsOffice.look)", timeout=90000); await pg.wait_for_timeout(20000)
+    for name, fl, args, lab in INDOOR:
+      if name not in names: continue
+      await pg.evaluate(f"__ewsOffice.floor('{fl}')"); await pg.wait_for_timeout(1500); await pg.evaluate(f"__ewsOffice.look({args})"); await pg.wait_for_timeout(4000)
+      await pg.screenshot(path=f'{out}/{name}__cand.jpg', type='jpeg', quality=80)
+    await pg.evaluate("__ewsOffice.floor('G')"); await pg.wait_for_timeout(1500)
+    for name, args, lab in OUTDOOR:
+      if name not in names: continue
+      await pg.evaluate(f"window.__ewsFreeY=0;__ewsOffice.look({args})"); await pg.wait_for_timeout(4000)
+      await pg.screenshot(path=f'{out}/{name}__cand.jpg', type='jpeg', quality=80)
+    await b.close()
+
 def judge(d, gid):
   """Ship a shot dir to CT111 and run the cheap vision judge (gatejudge, double-confirmed hits)."""
   rd = f'/var/lib/ews-agent/arch/seefix/gate/{gid}'; tar = f'/tmp/{gid}.tgz'
   subprocess.run(['tar', '-C', d, '--exclude=live', '-czf', tar, '.'], check=True)
   subprocess.run([os.path.expanduser('~/bin/ct111-put'), tar, tar], check=True, capture_output=True)
-  v = subprocess.run([os.path.expanduser('~/bin/ct111'), f'mkdir -p {rd} && tar -C {rd} -xzf {tar} && rm -f {tar} && python3 /opt/ews-agent/arch_seefix.py gatejudge {rd}'], capture_output=True, text=True, timeout=200)
+  try: v = subprocess.run([os.path.expanduser('~/bin/ct111'), f'mkdir -p {rd} && tar -C {rd} -xzf {tar} && rm -f {tar} && python3 /opt/ews-agent/arch_seefix.py gatejudge {rd}'], capture_output=True, text=True, timeout=330)
+  except subprocess.TimeoutExpired: warn('vision', gid, 'gatejudge timed out (330 s)'); return None   # candidate: None -> vision_unavailable FAIL (fail closed)
   try: return json.loads([l for l in v.stdout.splitlines() if l.startswith('{')][-1])
   except Exception: warn('vision', gid, (v.stdout + v.stderr)[-300:]); return None
 
@@ -174,19 +194,24 @@ async def main():
               f'same single object already known in {zone} (ledger/live)' if f['code'] in UNIQUE_OBJ and f['code'] in known_zone else None
         if why: R['debt'].append({'code': f['code'], 'where': f['where'], 'view': f['view'], 'why': why, 'file': f.get('file')}); continue
         unclear.append(f)
-      if unclear:   # targeted second look at the LIVE shot, only for the codes in question
-        sub = OUT + '/live-recheck'; os.makedirs(sub, exist_ok=True); vm = {}
+      if unclear:   # targeted second look: LIVE shot (is it pre-existing?) + a fresh CANDIDATE re-shoot (is it persistent, not a transient bubble/toast?)
+        sub = OUT + '/recheck'; os.makedirs(sub, exist_ok=True); vm = {}
+        try: await reshoot(BASE, {f['view'] for f in unclear}, sub)
+        except Exception as e: warn('reshoot', 'candidate', str(e)[:120])
         for f in unclear:
-          if os.path.exists(f'{OUT}/live/{f["view"]}.jpg'):
-            subprocess.run(['cp', f'{OUT}/live/{f["view"]}.jpg', f'{sub}/{f["view"]}.jpg'])
-            m = dict(L['views'][f['view']]); m.setdefault('codes', []).append(f['code']); vm[f['view']] = m
+          for src, nm in ((f'{OUT}/live/{f["view"]}.jpg', f['view']), (f'{sub}/{f["view"]}__cand.jpg', f['view'] + '__cand')):
+            if not os.path.exists(src): continue
+            if src.startswith(OUT + '/live'): subprocess.run(['cp', src, f'{sub}/{nm}.jpg'])
+            m = vm.setdefault(nm, dict(C['views'][f['view']], codes=[])); m['codes'].append(f['code'])
         json.dump(vm, open(f'{sub}/views.json', 'w'))
         JR = judge(sub, 'gate-' + R['gate'] + '-recheck') if vm else None
         rh = {f"{x['code']}@{x['view']}" for x in (JR or {}).get('fails', [])}
-        if JR: R['vision']['cost_usd'] = round(R['vision']['cost_usd'] + (JR.get('cost_usd') or 0), 5); R['vision']['live_recheck'] = sorted(rh)
+        if JR: R['vision']['cost_usd'] = round(R['vision']['cost_usd'] + (JR.get('cost_usd') or 0), 5); R['vision']['recheck'] = sorted(rh)
         for f in unclear:
           k = f"{f['code']}@{f['view']}"
           if k in rh: R['debt'].append({'code': f['code'], 'where': f['where'], 'view': f['view'], 'why': 'live re-check shows it too', 'file': f.get('file')}); continue
+          if JR is not None and os.path.exists(f'{sub}/{f["view"]}__cand.jpg') and f"{f['code']}@{f['view']}__cand" not in rh:
+            warn('vision_transient', f['where'], f"{f['code']} not reproduced on a fresh candidate re-shoot ({f['view']}__cand.jpg): transient (bubble/toast/agent), not blocking"); continue
           fail(f['code'], f['where'], f"NEW vs live: vision conf {f.get('confidence')} ({f['view']}.jpg, px diff {R['view_diff'].get(f['view'])})")
       if '--make-baseline' in A:
         json.dump({**ledger, **{f"{x['code']}@{x['view']}": {'where': x['where'], 'at': time.strftime('%Y-%m-%d %H:%M')} for x in JL.get('fails', [])}}, open(LEDGER, 'w'), indent=1)
