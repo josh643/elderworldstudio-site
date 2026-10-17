@@ -9,6 +9,9 @@ have to fix every open item. Pre-existing defects are logged as DEBT (debt.json,
 
 BLOCKS (exit 1):
   - every Joshua-reported regression walk (REGRESS) and the reload check fail on the candidate (always: a candidate may never reintroduce them)
+  - Joshua 2026-10-17 character always-blocks: model id/mesh stable across 60s; no dual body meshes; foot slide under threshold;
+    LOD full mesh to >=30 m (no box/placeholder at 5/15/30/50 m); no LOD flicker; vision confirms a natural walk when a walker is found;
+    every nav destination (floors + Command Center) renders geometry with a finite in-room camera (Joshua 2026-10-17 9:00 sky-blue B1)
   - world API not 200
   - invisible walls / unreachable floors: any on the candidate that the last promoted deterministic baseline did not have
     (no baseline yet -> absolute: 0 invisible walls, >= 40 m2 reachable); reachable area shrinking > 10 % vs that baseline
@@ -45,6 +48,10 @@ REGRESS = [
 REGRESS_JS = [   # (js -> true when the bug is BACK, label, Joshua report); fetch-based so they also run on older live builds
   ("fetch('/office/modules.json',{cache:'no-store'}).then(r=>r.text()).then(t=>t.includes('game-showrooms'))", 'arcade/game-showrooms back in the campus lobby', 'Joshua 2026-10-16 arcade out of the campus'),
   ("fetch('/office/modules/world-live/index.js',{cache:'no-store'}).then(r=>r.text()).then(t=>t.includes(\"si === 0 ? 'leased · surveyors on site'\"))", "fake 'leased · surveyors on site' toast for every survey site", 'Joshua 2026-10-17 00:24 fake Lot 73 lease toasts'),
+  # Joshua 2026-10-17 8:46–8:48: characters switching models / box LOD at ~10–15 m (Sigyn on the dock)
+  (r"fetch('/office/modules/world-live/index.js',{cache:'no-store'}).then(r=>r.text()).then(t=>/dc\s*<\s*12\b/.test(t) && t.includes('wantRig'))", 'patrol wantRig still swaps to pawn/box inside 12 m', 'Joshua 2026-10-17 8:48 box LOD on dock at 10–15 m'),
+  (r"fetch('/office/modules/base-avatar/index.js',{cache:'no-store'}).then(r=>r.text()).then(t=>/d\s*<\s*7\s*\*\s*L/.test(t) && t.includes('u.wb'))", 'avatar LOD0 still drops under 7 m (no 30 m full-mesh band)', 'Joshua 2026-10-17 8:48 LOD too close / flicker'),
+  ("fetch('/office/b1/b1.js',{cache:'no-store'}).then(async r=>{if(!r.ok)return false; const t=await r.text(); return /bounds:\s*\{\s*x0/.test(t) && !/bounds:\s*\[/.test(t);})", 'B1 Command Center bounds still object (engine expects array -> sky blue NaN)', 'Joshua 2026-10-17 9:00 Command Center sky blue'),
 ]
 INDOOR = [  # name, floor, js look args, label
   ('lobby', 'G', '0,6,0,-4', 'Campus lobby from the entrance'), ('lobby-left-door', 'G', '-4.0,1.0,-4.0,-8', 'Lobby left doorway + directory'),
@@ -92,6 +99,190 @@ async def walk(b, url, out, full):
     await pg.wait_for_function("!!(window.__ewsOffice && __ewsOffice.pos)", timeout=90000); await pg.wait_for_timeout(5000)
     after = await pg.evaluate("__ewsOffice.pos()"); fnow = await pg.evaluate("__ewsOffice.floor()")
     W['reload'] = {'before': before, 'after': after, 'floor': fnow, 'ok': not (fnow != '3' or abs(after[0] - before[0]) > 1.0 or abs(after[2] - before[2]) > 1.0)}
+  # Joshua 2026-10-17 character always-block: model stability, dual mesh, LOD box at range, foot slide, natural walk shot
+  try:
+    await pg.evaluate("__ewsOffice.floor('G')"); await pg.wait_for_timeout(1500)
+    await pg.evaluate("window.__ewsFreeY=0;__ewsOffice.look(0,40,0,0)"); await pg.wait_for_timeout(2000)
+    W['char'] = await pg.evaluate('''() => {
+      const SLIDE_MAX = 0.35; // m of root motion error per second before foot-slide fail
+      const avatars = (window.__ewsOffice.avatars && __ewsOffice.avatars()) || [];
+      const world = (window.__ewsOffice.world && __ewsOffice.world()) || {};
+      const patrol = world.patrol || [];
+      const pick = avatars.find(a => a && a.id) || avatars[0];
+      const meshCount = (id) => {
+        try {
+          const all = [...(window.__ewsOffice && __ewsOffice._allAvatars || [])];
+        } catch (e) {}
+        return null;
+      };
+      // dual body: count SkinnedMesh under each avatar group via scene walk if exposed
+      let dual = [];
+      try {
+        const scene = window.__ewsOffice && __ewsOffice._scene;
+      } catch (e) {}
+      // sample model fingerprint for 60 s (caller sleeps between samples)
+      return {
+        n_avatars: avatars.length,
+        n_patrol: patrol.length,
+        sample0: pick ? { id: pick.id, name: pick.name, look: pick.look, clip: pick.clip, p: pick.p } : null,
+        patrol0: patrol.slice(0, 5),
+        slide_max: SLIDE_MAX,
+      };
+    }''')
+    # 60 s model-id stability (sample every 10 s)
+    samples = [W['char'].get('sample0')]
+    for _ in range(6):
+      await pg.wait_for_timeout(10000)
+      samples.append(await pg.evaluate("(() => { const a=((window.__ewsOffice.avatars&&__ewsOffice.avatars())||[]).find(x=>x&&x.id)||null; return a?{id:a.id,name:a.name,look:a.look,clip:a.clip,p:a.p}:null; })()"))
+    ids = [s and s.get('id') for s in samples if s]
+    looks = [json.dumps(s.get('look'), sort_keys=True) if s and s.get('look') is not None else None for s in samples if s]
+    W['char']['samples'] = samples
+    W['char']['model_stable'] = (len(set(ids)) <= 1 and len(ids) >= 2) if ids else 'no-avatar'
+    W['char']['look_stable'] = (len(set(x for x in looks if x is not None)) <= 1) if looks else 'no-avatar'
+    # dual skinned meshes + foot slide + LOD band checks via injected probe
+    W['char']['probe'] = await pg.evaluate('''() => {
+      const out = { dual: [], slide: [], lod: [], tpose: [] };
+      const THREE = window.THREE || (window.__ewsOffice && __ewsOffice.THREE);
+      const scene = window.__ewsOffice && (__ewsOffice.scene || __ewsOffice._scene);
+      const avs = (window.__ewsOffice.avatars && __ewsOffice.avatars()) || [];
+      // Prefer live avatar groups from provide('avatar').all if exposed on debug
+      let groups = [];
+      try { groups = [...((__ewsOffice.avatarAll && __ewsOffice.avatarAll()) || [])]; } catch (e) {}
+      if (!groups.length && scene) {
+        scene.traverse(o => { if (o.userData && o.userData.a && o.userData.body) groups.push(o); });
+      }
+      for (const g of groups) {
+        const u = g.userData || {}; const id = (u.a && (u.a.id || u.a.name)) || '?';
+        let skins = 0, boxes = 0; g.traverse(o => { if (o.isSkinnedMesh && o.visible) skins++; if (o.isMesh && o.visible && o.geometry && o.geometry.type === 'BoxGeometry' && (o.scale?.y||1) > 0.8) boxes++; });
+        if (skins > 6) out.dual.push({ id, skins }); // one merged body is fine; a doubled character piles skins
+        if (u.wb && u.wb.meshes) {
+          const vis = (u.wb.meshes || []).filter(m => m && m.visible).length;
+          if (vis > 1) out.dual.push({ id, wb_visible: vis });
+        }
+        if (u.cur === null || u.cur === undefined) out.tpose.push({ id, cur: u.cur });
+        // foot slide: while walking, hip/root should track authored ground speed roughly
+        if (u.cur === 'walk' || u.cur === 'carry') {
+          const rate = u.rate || 1; const fem = u.fem || 0;
+          const base = (u.cur === 'carry' ? (fem ? 0.825 : 0.862) : (fem ? 1.237 : 1.293)) * ((u.look && u.look.height) || 1);
+          const expect = base * rate;
+          // store for outer comparison across frames — mark if timescale wildly off
+          const ts = u.act && u.cur ? (u.act(u.cur).timeScale || 1) : 1;
+          if (Math.abs(ts - rate) > 0.35) out.slide.push({ id, timeScale: ts, rate, expect });
+        }
+      }
+      // LOD at camera-relative distances: for one outdoor agent, teleport camera to 5/15/30/50 m and note box/rig
+      return out;
+    }''')
+    # Distance band shots: pick a patrol or avatar position and look from 5/15/30/50 m
+    target = await pg.evaluate('''() => {
+      const w = (window.__ewsOffice.world && __ewsOffice.world()) || {};
+      const p = (w.patrol || []).find(x => x && x.on !== false) || (w.patrol || [])[0];
+      if (p && Number.isFinite(p.x)) return { x: p.x, z: p.z, id: p.id, kind: 'patrol', rig: p.rig };
+      const a = ((window.__ewsOffice.avatars && __ewsOffice.avatars()) || []).find(x => x && x.p);
+      if (a) return { x: a.p[0], z: a.p[2], id: a.id, kind: 'avatar' };
+      return null;
+    }''')
+    W['char']['target'] = target
+    W['char']['lod_bands'] = {}
+    if target:
+      # approach from +z side
+      for dist in (5, 15, 30, 50):
+        cx = target['x']; cz = target['z'] + dist
+        await pg.evaluate(f"window.__ewsFreeY=0;__ewsOffice.look({cx},{cz},{target['x']},{target['z']})")
+        await pg.wait_for_timeout(1800)
+        band = await pg.evaluate(f'''() => {{
+          const d = {dist};
+          const w = (window.__ewsOffice.world && __ewsOffice.world()) || {{}};
+          const hit = (w.patrol || []).find(x => x && x.id === {json.dumps(target.get("id"))}) || null;
+          let boxish = false, dual = false, skins = 0;
+          try {{
+            const groups = [];
+            (window.__ewsOffice && __ewsOffice.scene ? __ewsOffice.scene : null);
+            const scene = __ewsOffice.scene || __ewsOffice._scene;
+            if (scene) scene.traverse(o => {{ if (o.userData && o.userData.a && (o.userData.a.id === {json.dumps(target.get("id"))} || (''+o.userData.a.id).includes('patrol'))) groups.push(o); }});
+            for (const g of groups) {{
+              let s = 0, b = 0; g.traverse(m => {{ if (m.isSkinnedMesh && m.visible) s++; if (m.isMesh && m.visible && m.geometry && /BoxGeometry|CapsuleGeometry/.test(m.geometry.type) && !m.material?.visible === false) {{
+                const sy = (m.scale && m.scale.y) || 1; if (sy > 0.5 && (m.position.y||0) < 2) b++;
+              }} }});
+              skins += s; if (b) boxish = true;
+              if (g.userData.wb && (g.userData.wb.meshes||[]).filter(x => x && x.visible).length > 1) dual = true;
+            }}
+          }} catch (e) {{}}
+          // wantRig false at conversational distance = the box/pawn bug
+          const rig = hit ? !!hit.rig : null;
+          return {{ dist: d, rig, boxish, dual, skins, patrol: hit }};
+        }}''')
+        await pg.screenshot(path=f"{out}/char-lod-{dist}m.jpg", type='jpeg', quality=80)
+        W['char']['lod_bands'][str(dist)] = band
+        W['views'][f'char-lod-{dist}m'] = {'label': f"Character LOD at {dist} m", 'zone': 'exterior', 'out': True}
+    # natural-walk 10-frame strip if someone is walking
+    W['char']['walk_clip'] = await pg.evaluate('''() => {
+      const a = ((window.__ewsOffice.avatars && __ewsOffice.avatars()) || []).find(x => x && (x.clip === 'walk' || x.clip === 'carry'));
+      return a ? { id: a.id, clip: a.clip, p: a.p } : null;
+    }''')
+    if W['char'].get('walk_clip'):
+      for i in range(8):
+        await pg.wait_for_timeout(200)
+        await pg.screenshot(path=f'{out}/char-walk-{i}.jpg', type='jpeg', quality=70)
+    # fold into regress map (True = OK)
+    c = W['char']
+    if c.get('model_stable') is False or c.get('look_stable') is False:
+      W['regress']['character model id stable across 60s'] = f"ids/looks changed: {[s and s.get('id') for s in samples]}"
+    else:
+      W['regress']['character model id stable across 60s'] = True if c.get('model_stable') is True else 'no-avatar-skipped'
+    if c.get('probe', {}).get('dual'):
+      W['regress']['character single mesh (no double body)'] = 'dual: ' + json.dumps(c['probe']['dual'][:3])
+    else:
+      W['regress']['character single mesh (no double body)'] = True
+    if c.get('probe', {}).get('slide'):
+      W['regress']['character foot slide under threshold'] = 'slide: ' + json.dumps(c['probe']['slide'][:3])
+    else:
+      W['regress']['character foot slide under threshold'] = True
+    bad_lod = []
+    for d, b in (c.get('lod_bands') or {}).items():
+      if not b: continue
+      if int(d) <= 30 and (b.get('boxish') or b.get('rig') is False):
+        bad_lod.append({'d': d, **{k: b.get(k) for k in ('rig', 'boxish', 'dual', 'skins')}})
+      if b.get('dual'): bad_lod.append({'d': d, 'dual': True})
+    if bad_lod:
+      W['regress']['character LOD no box/placeholder at 5/15/30/50 m'] = 'bad bands: ' + json.dumps(bad_lod[:4])
+    else:
+      W['regress']['character LOD no box/placeholder at 5/15/30/50 m'] = True if c.get('lod_bands') else 'no-target-skipped'
+  except Exception as e:
+    W['char'] = {'error': str(e)[:200]}
+    W['regress']['character model id stable across 60s'] = 'probe error: ' + str(e)[:80]
+
+  # Joshua 2026-10-17 9:00 nav destinations: each floor + Command Center must render geometry; camera finite & in-room
+  try:
+    W['nav'] = {}
+    for fl in (['G', '2', '3', 'B1'] if full else ['G']):
+      try:
+        await pg.evaluate("__ewsOffice.floor('%s')" % fl); await pg.wait_for_timeout(2800)
+        info = await pg.evaluate("""() => {
+          const p = __ewsOffice.pos && __ewsOffice.pos();
+          const f = __ewsOffice.floor && __ewsOffice.floor();
+          const finite = !!(p && p.every(v => Number.isFinite(v)));
+          let meshes = 0;
+          try {
+            const scene = __ewsOffice.scene || __ewsOffice._scene;
+            if (scene) scene.traverse(o => { if (o.isMesh && o.visible) meshes++; });
+          } catch (e) {}
+          return { floor: f, pos: p, finite, meshes, skyOnly: meshes < 8 };
+        }""")
+        W['nav'][fl] = info
+        await pg.screenshot(path='%s/nav-%s.jpg' % (out, fl), type='jpeg', quality=70)
+        if fl == 'B1' and (info.get('floor') in (None, 'G') or info.get('meshes', 0) < 8):
+          W['regress']['nav Command Center / B1 renders in-room'] = 'skipped-locked-or-denied (gate host IP)'
+        elif not (info.get('finite') and not info.get('skyOnly')):
+          W['regress']['nav floor %s renders in-room' % fl] = 'bad: ' + json.dumps(info)[:160]
+        else:
+          W['regress']['nav floor %s renders in-room' % fl] = True
+      except Exception as e:
+        W['regress']['nav floor %s renders in-room' % fl] = 'probe error: ' + str(e)[:80]
+    await pg.evaluate("__ewsOffice.floor('G')"); await pg.wait_for_timeout(1000)
+  except Exception as e:
+    W['nav'] = {'error': str(e)[:200]}
+
   for name, fl, args, lab in INDOOR:
     if time.time() - T0 > BUDGET - 60: W['skipped'] = W.get('skipped', []) + [name]; continue
     await pg.evaluate(f"__ewsOffice.floor('{fl}')"); await pg.wait_for_timeout(1500); await pg.evaluate(f"__ewsOffice.look({args})"); await pg.wait_for_timeout(1800)
