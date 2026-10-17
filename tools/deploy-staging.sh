@@ -12,3 +12,7 @@ tar -C site --exclude=.htaccess --exclude=.nojekyll -cf - . | tar -C /tmp/ews-cf
 # wrangler caches under the nearest node_modules; a root-owned /node_modules on the box breaks that, so keep a local one
 mkdir -p node_modules
 npx -y wrangler@3 pages deploy /tmp/ews-cf-deploy --project-name elderworldstudio --branch office-3d --commit-dirty=true
+# hot updates: tell every connected visitor that modules/assets changed (world DO 'release' broadcast). The office key stays on CT111.
+REL=$(python3 -c "import json;m=json.load(open('site/office/manifest.json'));print(json.dumps({'code':m['code'],'modules':m.get('modules',{}),'assets':len(m['assets'])}))")
+sleep 8   # let the new deployment propagate before clients refetch the manifest
+~/bin/ct111 "set -a; . /etc/ews-agent/office.env; curl -s -m 15 -XPOST https://office-3d.elderworldstudio.pages.dev/api/office/world-release -H \"authorization: Bearer \$OFFICE_INGEST_KEY\" -H 'content-type: application/json' -d '$REL'" || echo 'release broadcast failed (clients still pick it up on the 5-min poll)'
