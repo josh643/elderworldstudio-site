@@ -39,7 +39,7 @@
     if (/swiftshader|llvmpipe|software|basic render/i.test(rn) && !forced) return false;   // no real GPU: classic site
   } catch (e) { return false; }
 
- import('/office/office.js?v=29').then(function (m) { m.start({ overlay: true }); }).catch(function (e) { console.warn('office failed, classic site stays', e); }); };
+ import('/office/office.js?v=30').then(function (m) { m.start({ overlay: true }); }).catch(function (e) { console.warn('office failed, classic site stays', e); }); };
   if (!forced && pref !== '3d') { if (document.body) choice(); else addEventListener('DOMContentLoaded', choice); return; }
   var later = function () { setTimeout(function () { (window.requestIdleCallback || setTimeout)(go, { timeout: 1500 }); }, forced ? 0 : 400); };
   document.documentElement.classList.add('office-pending');

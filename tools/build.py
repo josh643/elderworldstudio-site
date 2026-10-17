@@ -70,7 +70,7 @@ def page(path, title, desc, body, canonical, current="", noindex=False):
   <nav aria-label="Footer"><a href="{P}games/index.html">Games</a><a href="{P}testers/index.html">Testers</a><a href="{P}services/index.html">Services</a><a href="{P}merch/index.html">Merch</a><a href="{P}contact/index.html">Contact</a><a href="{P}privacy-policy/index.html">Privacy Policy</a><a href="mailto:{EMAIL}">{EMAIL}</a></nav>
  </div>
 </footer>
-{'<script src="/office/boot.js?v=29" defer></script>' if path == "index.html" else ""}
+{'<script src="/office/boot.js?v=30" defer></script>' if path == "index.html" else ""}
 </body>
 </html>
 """

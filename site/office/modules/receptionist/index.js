@@ -2,6 +2,7 @@
 // FAQ fallback) and the demo-request lead form (stored as a lead record; no email). Remove from modules.json to disable.
 import { openKiosk } from './kiosk-ui.js?v=3';
 import * as V from './voice.js?v=2';
+import { setupFloors } from '../../core/floors.js?v=1';
 export default {
   setup(ctx, cfg, [x, z]) {
     const { box, mat, esc } = ctx, A = ctx.use('avatar');
@@ -85,8 +86,8 @@ export default {
         box(0.02, 2.38, 0.07, mat.dark, x + sx * 1.1, 1.19, fz + 0.03); }          // brushed brass doors with a centre seam
       for (const sx of [-1, 1]) { const ind = ctx.panel(ctx.textCanvas(['G'], { w: 128, h: 96, size: 64, bg: '#0b1626', fg: '#9fe8ff' }), 0.24, 0.18, x + sx * 1.1 * 0.65 * 2 / 1.3, 2.65, fz + 0.14, 0); ind.material.toneMapped = false; }
       const btn = box(0.08, 0.18, 0.04, mat.dark, x, 1.15, fz + 0.15); 
-      const plate = ctx.panel(ctx.textCanvas([ctx.t ? ctx.t('Elevator') : 'Elevator', ctx.t ? ctx.t('Floors 2 to 5 open soon') : 'Floors 2 to 5 open soon'], { w: 640, h: 200, size: 64, body: 40 }), 1.3, 0.4, x, 3.25, fz + 0.14, 0); plate.userData.plate = 'Elevator';
-      const call = () => ctx.card(`<h3>${esc(ctx.t ? ctx.t('Elevator') : 'Elevator')}</h3><p>${esc(ctx.t ? ctx.t('The ground floor is open. Floors 2 to 5 (Games, Design & Marketing, Client Sites & Call Center, Ops & Leadership) open as each one is finished.') : 'The ground floor is open. Floors 2 to 5 open as each one is finished.')}</p>`);
+      const plate = ctx.panel(ctx.textCanvas([ctx.t ? ctx.t('Elevator') : 'Elevator', ctx.t ? ctx.t('Floors G to 5') : 'Floors G to 5'], { w: 640, h: 200, size: 64, body: 40 }), 1.3, 0.4, x, 3.25, fz + 0.14, 0); plate.userData.plate = 'Elevator';
+      ctx.core = { x, fz, W, D }; this.floors = setupFloors(ctx, ctx.core); const call = () => this.floors.panel(); ctx.provide('floorPanel', call);
       [...doors, btn, plate].forEach(o => ctx.onClick(o, call));
       /* stairs wrap the left side of the core: 10 risers climbing toward the back, brass handrail */
       for (let k = 0; k < 10; k++) box(1.2, 0.18 * (k + 1), 0.28, stone, x - W / 2 - 0.75, 0.09 * (k + 1), fz - 0.2 - k * 0.28);
@@ -101,7 +102,7 @@ export default {
     const bubble = ctx.label(`Hi, I'm ${me.name}!`, ctx.touch ? 'Tap me to chat' : 'Click me or press E to chat', '#ffffff'); bubble.position.set(0, 2.45, 0); bubble.scale.set(1.9, 0.48, 1);
     bubble.material.transparent = true; bubble.material.opacity = 0; f.add(bubble);
     let greeted = 0, near = false; const cam = ctx.cam;
-    this.onFrame = dt => {
+    this.onFrame = dt => { this.floors?.tick(dt);
       for (let i = tickets.length - 1; i >= 0; i--) { const k = tickets[i]; k.t += dt / 6; const tk = k.tk;
         if (k.t < 0) { tk.position.y = k.from.y + (0.25 + k.t) * 0.8; tk.rotation.x = -0.6; }           /* printing: rises out of the kiosk slot */
         else if (k.t < 1) { tk.position.lerpVectors(k.from, k.to, k.t); tk.position.y += Math.sin(k.t * Math.PI) * 1.4 + 0.4; tk.rotation.y += dt * 2; }
