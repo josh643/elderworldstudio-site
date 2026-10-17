@@ -56,15 +56,21 @@ export async function loadWardrobe(ctx, L) {
   const patch = sh => {
     sh.uniforms.uPal = { value: sh.__pal }; sh.uniforms.uTex = { value: sh.__tex };
     sh.vertexShader = 'attribute float _zone;\nattribute float _ao;\nvarying float vZone;\nvarying float vAo;\n' + sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\nvZone = _zone; vAo = _ao;');
-    sh.fragmentShader = 'uniform vec3 uPal[14];\nuniform float uTex[14];\nvarying float vZone;\nvarying float vAo;\n' + sh.fragmentShader.replace('#include <map_fragment>',
+    sh.fragmentShader = 'uniform vec3 uPal[14];\nuniform float uTex[14];\nuniform float uLodFade;\nuniform float uLodInvert;\nvarying float vZone;\nvarying float vAo;\n' + sh.fragmentShader.replace('#include <map_fragment>',
       `int zi = int(vZone + 0.5); vec3 pc = uPal[zi]; float tm = uTex[zi]; vec3 tx = texture2D(map, vMapUv).rgb * ${GAIN.toFixed(4)};
-       diffuseColor.rgb = mix(pc, pc * tx, tm) * mix(1.0, vAo, 0.8);`);
+       diffuseColor.rgb = mix(pc, pc * tx, tm) * mix(1.0, vAo, 0.8);
+       if (uLodFade < 0.999 || uLodInvert > 0.5) {
+         float ewsLodNoise = fract(sin(dot(floor(gl_FragCoord.xy), vec2(12.9898, 78.233))) * 43758.5453);
+         if (uLodInvert > 0.5 ? ewsLodNoise <= uLodFade : ewsLodNoise > uLodFade) discard;
+       }`);
   };
-  function material(pal, tex) {
+  function material(pal, tex, lodLevel) {
     const m = new THREE.MeshLambertMaterial({ map: atlas }); m.name = 'EWS_Wardrobe';
     const P = ZONES.map(z => new THREE.Color(pal[z] ?? '#808080')), T = ZONES.map(z => tex[z] ? 1 : 0);
-    m.onBeforeCompile = sh => { sh.__pal = P; sh.__tex = T; patch(sh); }; m.customProgramCacheKey = () => 'ews-wardrobe-1';
-    m.userData.pal = P; return m;
+    const fade = { value: 1 }, invert = { value: 0 };
+    m.onBeforeCompile = sh => { sh.__pal = P; sh.__tex = T; sh.uniforms.uLodFade = fade; sh.uniforms.uLodInvert = invert; patch(sh); };
+    m.customProgramCacheKey = () => 'ews-wardrobe-lod-2';
+    m.userData.pal = P; m.userData.lodFade = fade; m.userData.lodInvert = invert; m.userData.lodLevel = lodLevel; return m;
   }
   const C = c => new THREE.Color(c);
   const shade = (c, l, s = 0) => { const x = C(c), h = {}; x.getHSL(h); x.setHSL(h.h, Math.min(1, Math.max(0, h.s + s)), Math.min(0.85, Math.max(0.08, h.l + l))); return '#' + x.getHexString(); };
@@ -111,21 +117,32 @@ export async function loadWardrobe(ctx, L) {
     const root = SkeletonUtils.clone(S.tpl); const byName = {}; root.traverse(o => { if (o.isBone) byName[o.name] = o; });
     const skel = new THREE.Skeleton(S.boneNames.map(n => byName[n]), S.inv);
     let host = root; if (S.host !== S.tpl) root.traverse(o => { if (o.name === S.host.name) host = o; });
-    const mat = material(L.pal, L.tex), meshes = [0, 1].map(lod => {
-      const m = new THREE.SkinnedMesh(merged(s, lod, L.parts), mat); m.name = 'agent_L' + lod; m.frustumCulled = false; m.castShadow = false;
+    const mats = [0, 1].map(lod => material(L.pal, L.tex, lod)), meshes = [0, 1].map(lod => {
+      const m = new THREE.SkinnedMesh(merged(s, lod, L.parts), mats[lod]); m.name = 'agent_L' + lod; m.frustumCulled = false; m.castShadow = false;
       host.add(m); m.bind(skel, S.bind); m.updateMorphTargets(); if (m.morphTargetInfluences) L.morph.forEach((v, i) => { m.morphTargetInfluences[i] = v; }); return m; });
     meshes[1].visible = false;
     const tris = meshes.map(m => (m.geometry.index ? m.geometry.index.count : m.geometry.attributes.position.count) / 3);
-    return { body: root, meshes, look: L, tris, mat };
+    return { body: root, meshes, look: L, tris, mat: mats[0], mats };
   }
   /* LOD2: every far agent is one instance of one pawn mesh (capsule body + head) in its outfit colour: one draw call */
-  const MAXP = 96, pg = (() => { const b = new THREE.CapsuleGeometry(0.2, 0.95, 2, 8); b.translate(0, 0.68, 0); const hd = new THREE.SphereGeometry(0.12, 8, 6); hd.translate(0, 1.6, 0);
+  const MAXP = 192, pg = (() => { const b = new THREE.CapsuleGeometry(0.2, 0.95, 2, 8); b.translate(0, 0.68, 0); const hd = new THREE.SphereGeometry(0.12, 8, 6); hd.translate(0, 1.6, 0);
     for (const g of [b, hd]) { g.deleteAttribute('uv'); } return mergeGeometries([b, hd], false); })();
-  const pawn = new THREE.InstancedMesh(pg, new THREE.MeshLambertMaterial({ color: 0xffffff }), MAXP); pawn.count = 0; pawn.frustumCulled = false; pawn.name = 'agent-pawns';
+  const lodFade = new THREE.InstancedBufferAttribute(new Float32Array(MAXP), 1); pg.setAttribute('instanceLodFade', lodFade);
+  const pawnMat = new THREE.MeshLambertMaterial({ color: 0xffffff });
+  pawnMat.onBeforeCompile = sh => {
+    sh.vertexShader = 'attribute float instanceLodFade;\nvarying float vEwsLodFade;\n' + sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\nvEwsLodFade = instanceLodFade;');
+    sh.fragmentShader = 'varying float vEwsLodFade;\n' + sh.fragmentShader.replace('#include <map_fragment>', `#include <map_fragment>
+      if (vEwsLodFade > 0.001) {
+        float ewsLodNoise = fract(sin(dot(floor(gl_FragCoord.xy), vec2(12.9898, 78.233))) * 43758.5453);
+        if (ewsLodNoise <= vEwsLodFade) discard;
+      }`);
+  };
+  pawnMat.customProgramCacheKey = () => 'ews-pawn-lod-2';
+  const pawn = new THREE.InstancedMesh(pg, pawnMat, MAXP); pawn.count = 0; pawn.frustumCulled = false; pawn.name = 'agent-pawns';
   pawn.instanceMatrix.setUsage(THREE.DynamicDrawUsage); pawn.setColorAt(0, new THREE.Color()); ctx.scene.add(pawn);
   const pm = new THREE.Matrix4(), tc = new THREE.Color();
-  const pawns = { begin() { pawn.count = 0; }, add(av, col) { if (pawn.count >= MAXP) return; av.updateMatrixWorld(); pm.copy(av.matrixWorld); pawn.setMatrixAt(pawn.count, pm); pawn.setColorAt(pawn.count, col); pawn.count++; },
-    addAt(x, y, z, yaw, col) { if (pawn.count >= MAXP) return; pm.makeRotationY(yaw); pm.setPosition(x, y, z); pawn.setMatrixAt(pawn.count, pm); pawn.setColorAt(pawn.count, tc.set(col)); pawn.count++; },
-    end() { pawn.instanceMatrix.needsUpdate = true; if (pawn.instanceColor) pawn.instanceColor.needsUpdate = true; pawn.visible = pawn.count > 0; } };
+  const pawns = { begin() { pawn.count = 0; }, add(av, col, threshold = 0) { if (pawn.count >= MAXP) return; av.updateMatrixWorld(); pm.copy(av.matrixWorld); pawn.setMatrixAt(pawn.count, pm); pawn.setColorAt(pawn.count, col); lodFade.setX(pawn.count, threshold); pawn.count++; },
+    addAt(x, y, z, yaw, col, threshold = 0) { if (pawn.count >= MAXP) return; pm.makeRotationY(yaw); pm.setPosition(x, y, z); pawn.setMatrixAt(pawn.count, pm); pawn.setColorAt(pawn.count, tc.set(col)); lodFade.setX(pawn.count, threshold); pawn.count++; },
+    end() { pawn.instanceMatrix.needsUpdate = true; lodFade.needsUpdate = true; if (pawn.instanceColor) pawn.instanceColor.needsUpdate = true; pawn.visible = pawn.count > 0; } };
   return { build, pawns, kindOf, sexes, atlas };
 }

@@ -36,6 +36,7 @@ html.office-on body{overflow:hidden}
 .office-joy,.office-tour{display:none!important}
 
 .office-xhair{position:absolute;left:50%;top:50%;width:6px;height:6px;margin:-3px;border-radius:50%;background:#d9b45a;box-shadow:0 0 0 2px #0008;display:none;pointer-events:none}
-.office-hint{position:absolute;left:50%;bottom:22px;transform:translateX(-50%);background:#0b0716cc;color:#e8dfcc;font-size:13px;padding:8px 14px;border-radius:10px;pointer-events:none;transition:opacity 1.2s;white-space:nowrap}
+.office-hint{position:absolute;left:50%;bottom:40px;transform:translateX(-50%);background:#0b0716cc;color:#e8dfcc;font-size:13px;padding:8px 14px;border-radius:10px;pointer-events:none;transition:opacity 1.2s;white-space:nowrap}
 .office-hint.gone{opacity:0}
+@media(max-width:520px){.office-hint{left:10px;right:10px;bottom:90px;transform:none;box-sizing:border-box;white-space:normal;text-align:center;line-height:1.35}}
 .office-hud{display:none!important}
