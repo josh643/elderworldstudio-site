@@ -17,10 +17,10 @@ export default {
         ' void main(){ vec4 c = texture2D(map, vUv); float al = a(vUv);' +
         ' float o = .016, nb = max(max(a(vUv+vec2(o,0.)), a(vUv-vec2(o,0.))), max(a(vUv+vec2(0.,o)), a(vUv-vec2(0.,o)))); float rim = clamp(nb - al, 0., 1.);' +
         ' float lum = dot(c.rgb, vec3(.3,.59,.11)); vec3 col = c.rgb * 1.08 + vec3(.004,.006,.009);' +
-        ' col *= .96 + .04 * sin(vUv.y * 240.0 - t * 3.0); col = mix(col, vec3(.45,.9,1.0), rim);' +
+        ' col *= .96 + .04 * sin(vUv.y * 240.0); col = mix(col, vec3(.45,.9,1.0), rim);' +
         ' gl_FragColor = vec4(pow(col, vec3(1.0/2.2)), max(al, rim)); }' });
-    const WP = new T.Vector3(); this.onFrame = (dt, t) => { for (const p of spin) { { const c = ctx.cam.getWorldPosition(WP); p.rotation.y = Math.atan2(c.x - p.position.x, c.z - p.position.z) + Math.sin(t * 0.35 + p.userData.ph) * 0.3; }   /* always faces the viewer (never an empty-looking or mirrored back), slow +-17 deg sway */
-        const im = p.material.uniforms.map.value.image; if (!p.userData.ar && im?.width) { const r = im.width / im.height; p.userData.ar = r; if (r < 1) p.scale.x = r; else p.scale.y = 1 / r; p.position.y = (p.userData.y0 ?? 0.985) + (p.userData.half ?? 0.6) * p.scale.y; }   /* product sits on the glowing base */ p.material.uniforms.t.value = t; } };
+    this.onFrame = () => { for (const p of spin) { if (p.userData.ar) continue;   /* static (Joshua 2026-10-16: no pointless motion): products face the case front (+z, the backdrop is behind them); they used to turn toward the camera with a +-17 deg sway, which read as the shelf moving */ p.rotation.y = p.userData.ry0 ?? 0;
+        const im = p.material.uniforms.map.value.image; if (!p.userData.ar && im?.width) { const r = im.width / im.height; p.userData.ar = r; if (r < 1) p.scale.x = r; else p.scale.y = 1 / r; p.position.y = (p.userData.y0 ?? 0.985) + (p.userData.half ?? 0.6) * p.scale.y; }   /* product sits on the glowing base */ } };
     /* layout v2 (lobby): when the lobby provides store slots (ctx.merchStore.cases), each product sits in a glass display case
        (wood base, brass rim, clear glass box, warm top light) inside Hermod's Merch Store; otherwise the old open plinth rows. */
     const ST = ctx.merchStore, cases = ST?.cases || [];

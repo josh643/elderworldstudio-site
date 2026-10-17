@@ -13,5 +13,5 @@ export default {
     ctx.kit.room(ctx, { x: x0, z: (minZ - 1 + z0 + 2) / 2, w: 15, d: z0 + 3 - minZ, floor: 0x223344, title: 'Datacenter', sub: ctx.publicMode ? '' : `${nodes.length} servers`, enclose: true });   /* walled server room with a door plate */ ctx.extend(x0 - 8, minZ - 1, x0 + 8, z0 + 2);
     ctx.spot('datacenter', [x0, 2.2, z0 + 3], [x0, 1.2, z1 - 3], 'Datacenter'); return { minZ };
   },
-  onFrame(dt, t) { this.leds.forEach((l, i) => { l.userData.keep = 1; if (l.userData.on) l.visible = Math.sin(t * (3 + (i % 5)) + i) > -0.6; }); },
+  onFrame() { if (this.ledsSet) return; this.ledsSet = 1; this.leds.forEach(l => { l.userData.keep = 1; if (l.userData.on) l.visible = true; }); },   /* steady status LEDs (no random blinking, Joshua 2026-10-16) */
 };

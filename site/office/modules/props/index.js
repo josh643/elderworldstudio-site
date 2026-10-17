@@ -17,7 +17,7 @@ export default {
     const draco = new DRACOLoader().setDecoderPath('/office/vendor/draco/');
     const ktx2 = new KTX2Loader().setTranscoderPath('/office/vendor/basis/').detectSupport(R);
     const L = new GLTFLoader().setDRACOLoader(draco).setKTX2Loader(ktx2), cache = {};
-    const load = n => cache[n] ||= L.loadAsync(`/office/modules/props/assets/${n}.glb?v=1`).then(g => g.scene);
+    const load = n => cache[n] ||= L.loadAsync(`/office/modules/props/assets/${n}.glb?v=1`).then(g => { g.animations.length = 0; g.scene.animations = []; return g.scene; });   /* props never animate: embedded clips are dropped at load */
     // settle: drop a prop onto whatever surface is under it (floor, desk top), using its real bounding box
     const rc = new THREE.Raycaster(); rc.camera = ctx.camera; const bb = new THREE.Box3(), c = new THREE.Vector3(), down = new THREE.Vector3(0, -1, 0);
     const settle = o => { o.updateMatrixWorld(true); bb.setFromObject(o); bb.getCenter(c); rc.set(new THREE.Vector3(c.x, 2.5, c.z), down); rc.far = 3;

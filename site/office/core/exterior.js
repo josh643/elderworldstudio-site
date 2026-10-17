@@ -288,7 +288,7 @@ export function build(ctx, shell) {
   for (let x = fx + 2; x < fX - 2; x += 3.2) { if (Math.abs(x - X0) < EN.w / 2 + 2 || (shell.tower && x > shell.tower[0] - 1 && x < shell.tower[1] + 1)) continue; shrubSpots.push([x, Z0 + 1.1, 0, ['shrub_04', 'shrub_03'][Math.abs(Math.round(x)) % 2]]); }
   function loadShrubs() { const L = new GLTFLoader().setDRACOLoader(new DRACOLoader().setDecoderPath('/office/vendor/draco/')).setKTX2Loader(ktxL(ctx.renderer));
     for (const id of ['shrub_03', 'shrub_04']) { const spots = shrubSpots.filter(s => s[3] === id); if (!spots.length) continue;
-      L.load(A + id + '.glb?v=1', gl => { gl.scene.updateMatrixWorld(true); const bb = new T.Box3().setFromObject(gl.scene), sz = bb.getSize(new T.Vector3()), want = id === 'shrub_03' ? 0.7 : 1.1, k = want / Math.max(sz.y, 0.01);
+      L.load(A + id + '.glb?v=1', gl => { gl.animations.length = 0; gl.scene.updateMatrixWorld(true); const bb = new T.Box3().setFromObject(gl.scene), sz = bb.getSize(new T.Vector3()), want = id === 'shrub_03' ? 0.7 : 1.1, k = want / Math.max(sz.y, 0.01);
         gl.scene.traverse(o => { if (!o.isMesh) return; const M0 = o.material, mat = LM({ map: M0.map, color: M0.color, alphaTest: 0.5, side: T.DoubleSide });
           const im = new T.InstancedMesh(o.geometry, mat, spots.length); spots.forEach(([x, z, y], i) => { const s = k * (0.85 + rnd() * 0.3); im.setMatrixAt(i, new T.Matrix4().compose(v3.set(x, y - bb.min.y * s, z), q4.setFromEuler(e3.set(0, rnd() * 6.28, 0)), s3.set(s, s, s)).multiply(o.matrixWorld)); });
           im.userData.noCollide = 1; im.computeBoundingSphere(); root.add(im); }); ctx.extInfo.shrubs = (ctx.extInfo.shrubs || 0) + spots.length; }); } }

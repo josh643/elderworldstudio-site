@@ -30,7 +30,7 @@ const POTS = { terracotta: [0xb5653e, 'taper'], terracotta2: [0xa65a38, 'bowl'],
   black: [0x1c1c1e, 'tall'], black2: [0x232326, 'bowl'], white: [0xeeeae2, 'rim'], white2: [0xe4e0d6, 'taper'], sage: [0x8aa088, 'cyl'], sage2: [0x7d9a84, 'rim'],
   navy: [0x283a5c, 'tall'], navy2: [0x34486e, 'bowl'], basket: [0xb89566, 'basket'], basket2: [0xa98858, 'basket'] };
 let loader; const cache = {};
-const load = (T, f) => cache[f] ||= (loader ||= new GLTFLoader().setDRACOLoader(new DRACOLoader().setDecoderPath('/office/vendor/draco/'))).loadAsync(`/office/assets/plants/${f}.glb?v=1`).then(g => g.scene);
+const load = (T, f) => cache[f] ||= (loader ||= new GLTFLoader().setDRACOLoader(new DRACOLoader().setDecoderPath('/office/vendor/draco/'))).loadAsync(`/office/assets/plants/${f}.glb?v=1`).then(g => { g.animations.length = 0; g.scene.animations = []; return g.scene; });   /* props never animate: embedded clips are dropped at load */
 function pot(T, style, h, r) {   // lathe pot + soil disc; returns { group, top }
   const [col, shape] = POTS[style], g = new T.Group(), k = r;
   const prof = { taper: [[0.72, 0], [1, h]], cyl: [[1, 0], [1, h]], tall: [[0.8, 0], [0.92, h * 0.7], [1, h]], bowl: [[0.55, 0], [0.95, h * 0.55], [1, h]], rim: [[0.75, 0], [0.9, h * 0.82], [1.06, h * 0.84], [1.06, h]], basket: [[0.8, 0], [1, h]] }[shape];

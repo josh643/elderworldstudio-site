@@ -54,10 +54,17 @@ export default {
     const clipsF = { ...clips }; if (packs) { packs.slice(0, PK.length).forEach(g => g.animations.forEach(c => { clips[c.name] = c; })); packs.slice(PK.length).forEach(g => g.animations.forEach(c => { clipsF[c.name] = c; })); }
     if (packs) { SEATED.add('blocked'); SEATED.add('phone'); }
     if (packs) Object.assign(CLIP, { idle: 'Sit_ReadMonitor_Loop', type: 'Sit_Type_Loop', mouse: 'Sit_Mouse_Loop', stand: 'Idle_Loop', walk: 'Walk_Loop', run: 'Walk_Loop', carry: 'Walk_Carry_Loop', inspect: 'Interact', talk: 'Idle_Talking_Loop', pickup: 'PickUp_Table',
-      blocked: 'Sit_LeanBack_Loop', cheer: 'Dance_Loop', greet: 'Wave', phone: 'Sit_Phone_Loop', nod: 'Yes', host: 'Freyja_Desk_Idle', sitIn: 'Sitting_Enter', sitOut: 'Sitting_Exit', blockedStand: 'Idle_FoldArms_Loop', phoneStand: 'Idle_TalkingPhone_Loop',
+      blocked: 'Sit_LeanBack_Loop', cheer: 'Yes', greet: 'Wave', phone: 'Sit_Phone_Loop', nod: 'Yes', host: 'Idle_Loop', sitIn: 'Sitting_Enter', sitOut: 'Sitting_Exit', blockedStand: 'Idle_FoldArms_Loop', phoneStand: 'Idle_TalkingPhone_Loop',
       /* life moments (Joshua 2026-10-16), all CC0 Quaternius-derived clips already retargeted to our rigs (assets/anims) */
       stretch: 'Sit_Stretch', coffee: 'Sit_Coffee', think: 'Sit_LeanBack_Loop', chat: 'Sitting_Talking_Loop', write: 'Sit_Write_Loop', present: 'Present_Loop', point: 'Point_Fwd', wave: 'Wave', read: 'Sit_ReadMonitor_Loop' });
+    /* explicit clip allow-list (Joshua 2026-10-16: Freyja played 'Freyja_Desk_Idle', a derived clip that reads as driving: knees bent, arms
+       on a wheel, no seat). Every state maps to ONE exact clip name above; nothing is matched by substring. Vehicle, combat, dance, sprint,
+       swim, crawl and the derived character clips are removed from the clip tables, so they can never play on an agent, even by fallback. */
+    const BLOCK = /^(drive|driving|car_|vehicle|steer|dance|punch|kick|sword|spell|fight|combat|attack|hit_|death|swim|sprint|jog|crawl|climb|laytoidle|freyja_|hermod_|arcade_|farm_|idle_lantern|idle_rail)|drive|driving/i;
+    for (const T of [clips, clipsF]) for (const n of Object.keys(T)) if (BLOCK.test(n)) delete T[n];
+    for (const k of Object.keys(CLIP)) if (BLOCK.test(CLIP[k])) { console.warn('base-avatar: blocked clip for', k, CLIP[k]); CLIP[k] = SEATED.has(k) || /^sit|^Sit/.test(CLIP[k]) ? 'Sit_ReadMonitor_Loop' : 'Idle_Loop'; }
     for (const k of Object.keys(CLIP)) if (!clips[CLIP[k]]) console.warn('base-avatar: missing clip', k, CLIP[k]);
+    this.clipAudit = () => ({ map: { ...CLIP }, male: Object.keys(clips).sort(), female: Object.keys(clipsF).sort() });
     const bases = humans.map(h => { const b = h.scene; const bb = new THREE.Box3(); b.updateMatrixWorld(true); b.traverse(o => { if (o.isSkinnedMesh) bb.expandByObject(o); }); const hh = bb.isEmpty() ? 0 : bb.max.y - bb.min.y; b.userData.k = 1; b.userData.h = hh;   /* GLBs are authored at real scale; the old bbox included a hidden 2 m sphere and shrank everyone to ~89% (hands missed props) */
       b.traverse(o => { if (o.isMesh) { o.frustumCulled = false; o.castShadow = false; } }); return b; });
     let _skin = null; const skinMat = () => _skin ||= new THREE.MeshLambertMaterial({ vertexColors: true });
