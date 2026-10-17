@@ -25,18 +25,78 @@ export function setupFloors(ctx, core) {
   let b1Ok = null; const b1Check = async () => { if (b1Ok !== null) return b1Ok; try { const r = await fetch('/api/office/b1/access', { cache: 'no-store' }); b1Ok = r.ok; } catch { b1Ok = false; } return b1Ok; };
   b1Check();
   const b1Locked = () => ctx.card(`<h3>${esc(T('Restricted: World Operations'))}</h3><p>${esc(T('This level is for Elder World Studio staff only. Sorry, the door is locked.'))}</p>`);
+  const lobbyBounds = () => [core.x - 18, core.x + 18, core.fz - 8.6, core.fz + 22];
+  const asBounds = b => Array.isArray(b) ? b : b ? [b.x0, b.x1, b.z0, b.z1] : null;
+  const boundsFor = n => n === 'G' ? lobbyBounds() : asBounds(built[n]?.bounds);
+  const visibleMeshes = n => {
+    const root = n === 'G' ? ctx.scene : built[n]?.group;
+    if (!root?.visible) return 0;
+    let count = 0;
+    if (n !== 'G') root.traverse(o => { if (o.isMesh && o.geometry && o.visible && (!Array.isArray(o.material) ? o.material?.visible !== false : o.material.some(m => m?.visible !== false))) count++; });
+    else {
+      const b = boundsFor('G');
+      const room = new THREE.Box3(new THREE.Vector3(b[0], -1, b[2]), new THREE.Vector3(b[1], 5, b[3]));
+      ctx.scene.updateMatrixWorld(true);
+      root.traverseVisible(o => { if (!o.isMesh || !o.geometry || (Array.isArray(o.material) ? !o.material.some(m => m?.visible !== false) : o.material?.visible === false)) return;
+        if (new THREE.Box3().setFromObject(o).intersectsBox(room)) count++; });
+    }
+    return count;
+  };
+  const floorHealth = n => {
+    const p = ctx.player.pos;
+    const camera = ctx.cam?.getWorldPosition ? (ctx.cam.updateWorldMatrix?.(true, false), ctx.cam.getWorldPosition(new THREE.Vector3())) : p;
+    const b = boundsFor(n), finite = v => !!v && Number.isFinite(v.x) && Number.isFinite(v.y) && Number.isFinite(v.z);
+    const inside = (v, bounds) => finite(v) && bounds?.length === 4 && bounds.every(Number.isFinite) && v.x > bounds[0] + 0.05 && v.x < bounds[1] - 0.05 && v.z > bounds[2] + 0.05 && v.z < bounds[3] - 0.05;
+    const meshes = visibleMeshes(n);
+    return { floor: n, camera: camera.toArray(), bounds: b, visibleMeshes: meshes, ok: finite(p) && finite(camera) && inside(p, b) && inside(camera, b) && meshes > 0 };
+  };
+  let navSeq = 0, requestSeq = 0;
+  const nextFrames = () => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+  const activate = (n, at, preserve = false) => {
+    const ox = offX(n);
+    cur = n; ctx.curFloor = n; ctx.curBounds = n === 'G' ? null : asBounds(built[n]?.bounds);
+    ctx.rebuildColliders(); ctx.daynight?.apply?.();
+    if (preserve) { /* stairs already moved the player into the adjacent floor's frame */ }
+    else if (at) ctx.player.teleport(at.x, at.z);
+    else ctx.teleport(core.x + ox, core.fz + 1.6, core.x + ox, core.fz + 8);
+    return ++navSeq;
+  };
+  const fallbackLobby = async seq => {
+    if (seq != null && seq !== navSeq) return;
+    let lobbySeq;
+    try { lobbySeq = activate('G', null); }
+    catch { ctx.card(`<h3>${esc(T('Floor unavailable'))}</h3><p>${esc(T('Lobby recovery failed. Please reload.'))}</p>`); return; }
+    await nextFrames();
+    if (lobbySeq !== navSeq) return;
+    let restored = false; try { restored = floorHealth('G').ok; } catch {}
+    const message = restored ? T('Returned to the lobby.') : T('Lobby recovery failed. Please reload.');
+    ctx.card(`<h3>${esc(T('Floor unavailable'))}</h3><p>${esc(message)}</p>`);
+    ctx.announce?.(`${T('Floor unavailable.') } ${message}`);
+  };
+  const verifyDestination = async (n, seq, recover = true) => {
+    await nextFrames();
+    if (seq !== navSeq) return false;
+    try { if (floorHealth(n).ok) return true; } catch {}
+    if (recover) await fallbackLobby(seq);
+    return false;
+  };
   async function go(n) {
+    const request = ++requestSeq;
     if (n === cur) { ctx.closeCard(); return; }
-    if (n === 'B1') { if (!(await b1Check())) { b1Locked(); return; }
-      if (!built.B1) { try { const m = await import('/office/b1/b1.js?v=3'); built.B1 = m.buildB1(ctx, core, offX('B1')); } catch { b1Ok = false; b1Locked(); return; } } }
+    if (n === 'B1') { if (!(await b1Check())) { if (request === requestSeq) b1Locked(); return; }
+      if (request !== requestSeq) return;
+      if (!built.B1) { try { const m = await import('/office/b1/b1.js?v=3'); built.B1 = m.buildB1(ctx, core, offX('B1')); } catch { b1Ok = false; if (request === requestSeq) await fallbackLobby(); return; } } }
     ctx.closeCard(); fade.style.opacity = 1;
-    setTimeout(() => {
-      if (n !== 'G' && n !== 'B1' && !built[n]) built[n] = buildFloor(ctx, core, FLOORS.find(f => f.n === n), offX(n), go);
-      const ox = offX(n); ctx.teleport(core.x + ox, core.fz + 1.6, core.x + ox, core.fz + 8);
-      cur = n; ctx.curFloor = n; ctx.curBounds = n === 'G' ? null : built[n].bounds; ctx.rebuildColliders(); ctx.daynight?.apply?.();
-      ctx.announce?.(`${T('Floor')} ${n}: ${T(FLOORS.find(f => f.n === n).name)}`);
+    return new Promise(resolve => setTimeout(async () => {
+      if (request !== requestSeq) { fade.style.opacity = 0; resolve(); return; }
+      try {
+        if (n !== 'G' && n !== 'B1' && !built[n]) built[n] = buildFloor(ctx, core, FLOORS.find(f => f.n === n), offX(n), go);
+        const seq = activate(n, null);
+        if (await verifyDestination(n, seq)) ctx.announce?.(`${T('Floor')} ${n}: ${T(FLOORS.find(f => f.n === n).name)}`);
+      } catch { if (request === requestSeq) await fallbackLobby(); }
       setTimeout(() => (fade.style.opacity = 0), 120);
-    }, 380);
+      resolve();
+    }, 380));
   }
   function panel() {
     const rows = FLOORS.map(f => `<button type="button" class="btn" data-f="${f.n}" style="display:flex;gap:.8em;align-items:center;width:100%;margin:.3em 0;text-align:left${f.n === cur ? ';outline:2px solid #d9b45a' : ''}"><b style="font-size:1.4em;min-width:1.4em">${f.n}</b><span>${esc(T(f.name))}<br><small>${esc(T(f.sub))}</small></span></button>`).join('');
@@ -52,21 +112,29 @@ export function setupFloors(ctx, core) {
      stays there, the nearest allowed spot). Anything unknown -> the lobby, never open terrain. */
   const floorOfX = x => (x < -200 ? 'B1' : x > 200 ? String(Math.round(x / 400) + 1) : 'G');
   const inB = (b, x, z) => { if (!b) return false; const [x0, x1, z0, z1] = Array.isArray(b) ? b : [b.x0, b.x1, b.z0, b.z1]; return x > x0 + 0.3 && x < x1 - 0.3 && z > z0 + 0.3 && z < z1 - 0.3; };
-  const place = (n, at) => { const ox = offX(n), b = n === 'G' ? null : built[n]?.bounds;
-    const lobbyOk = n === 'G' && at && Math.abs(at.x - (ctx.lobbyAt?.x ?? 0)) < 60 && at.z > core.fz - 12 && at.z < (ctx.town?.Z0 ?? 10) + 40;   /* G: the building + plaza/lawn/parking, not the far grass */
-    if (at && (n === 'G' ? lobbyOk : inB(b, at.x, at.z))) { ctx.player.teleport(at.x, at.z); return 'saved'; }
-    ctx.teleport(core.x + ox, core.fz + 1.6, core.x + ox, core.fz + 8); return 'elevator'; };
-  const settle = n => { cur = n; ctx.curFloor = n; ctx.curBounds = n === 'G' ? null : built[n].bounds; ctx.rebuildColliders(); ctx.daynight?.apply?.(); };
+  const lobbyOk = at => !!at && Math.abs(at.x - (ctx.lobbyAt?.x ?? 0)) < 60 && at.z > core.fz - 12 && at.z < (ctx.town?.Z0 ?? 10) + 40;   /* G: the building + plaza/lawn/parking, not the far grass */
   const restore = (n, at) => { n = n && (n === 'B1' || n === 'G' || FLOORS.some(f => f.n === n)) ? n : at ? floorOfX(at.x) : 'G';
-    if (n === 'B1') { place('G', null); (async () => { if (!(await b1Check())) return; try { if (!built.B1) { const m = await import('/office/b1/b1.js?v=2'); built.B1 = m.buildB1(ctx, core, offX('B1')); } settle('B1'); place('B1', at); } catch { b1Ok = false; } })(); return 'B1-pending'; }
-    if (n !== 'G' && !built[n]) { const F = FLOORS.find(f => f.n === n); if (!F) { place('G', null); return 'lobby'; } built[n] = buildFloor(ctx, core, F, offX(n), go); }
-    settle(n); return n + ':' + place(n, at); };
+    if (n === 'B1') { const waiting = activate('G', null); (async () => { if (!(await b1Check())) { if (waiting === navSeq && await verifyDestination('G', waiting)) b1Locked(); return; }
+        if (waiting !== navSeq) return;
+        try { if (!built.B1) { const m = await import('/office/b1/b1.js?v=3'); built.B1 = m.buildB1(ctx, core, offX('B1')); }
+          if (waiting !== navSeq) return;
+          const saved = inB(built.B1.bounds, at?.x, at?.z), seq = activate('B1', saved ? at : null);
+          if (!(await verifyDestination('B1', seq))) return;
+        } catch { b1Ok = false; await fallbackLobby(waiting); } })(); return 'B1-pending'; }
+    try {
+      if (n !== 'G' && !built[n]) { const F = FLOORS.find(f => f.n === n); if (!F) n = 'G'; else built[n] = buildFloor(ctx, core, F, offX(n), go); }
+      const saved = n === 'G' ? lobbyOk(at) : inB(built[n].bounds, at?.x, at?.z), seq = activate(n, saved ? at : null);
+      verifyDestination(n, seq);
+      return n + ':' + (saved ? 'saved' : 'elevator');
+    } catch { const seq = activate('G', null); fallbackLobby(seq); return 'lobby'; } };
   ctx.floorRestore = restore; ctx.floorOfX = floorOfX;
-  const reg = () => { if (window.__ewsOffice?.health) window.__ewsOffice.floor = n => (n ? go(String(n)) : cur); else setTimeout(reg, 500); }; reg();
+  const reg = () => { if (window.__ewsOffice?.health) { window.__ewsOffice.floor = n => (n ? go(String(n)) : cur); window.__ewsOffice.floorHealth = () => floorHealth(cur); } else setTimeout(reg, 500); }; reg();
   /* stairs (modules/stairs): build the floors next to the one you are on before you reach them, and switch frames with no fade */
   const ensure = n => { if (n !== 'G' && !built[n] && FLOORS.some(f => f.n === n)) built[n] = buildFloor(ctx, core, FLOORS.find(f => f.n === n), offX(n), go); };
-  const hop = n => { ensure(n); cur = n; ctx.curFloor = n; ctx.curBounds = n === 'G' ? null : built[n].bounds; ctx.rebuildColliders(); ctx.daynight?.apply?.(); ctx.announce?.(`${T('Floor')} ${n}: ${T(FLOORS.find(f => f.n === n).name)}`); };
-  const api = { panel, go, ensure, hop, tick: dt => built[cur]?.onFrame?.(dt) }; ctx.floorsApi = api; return api;
+  const hop = n => { if (!FLOORS.some(f => f.n === n)) return; try { ensure(n); const seq = activate(n, null, true);
+      verifyDestination(n, seq).then(ok => { if (ok) ctx.announce?.(`${T('Floor')} ${n}: ${T(FLOORS.find(f => f.n === n).name)}`); });
+    } catch { fallbackLobby(); } };
+  const api = { panel, go, ensure, hop, health: () => floorHealth(cur), tick: dt => built[cur]?.onFrame?.(dt) }; ctx.floorsApi = api; return api;
 }
 
 function buildFloor(ctx, core, F, ox, go) {
