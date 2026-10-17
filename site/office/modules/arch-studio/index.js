@@ -42,7 +42,8 @@ export default {
     /* out in the town (world-live field figure, CT119 agent.pose zone 'town'): the studio avatar steps out of view so the
        same person is never in two places; checked once a second */
     if (!(this.fT > t)) { this.fT = t + 1; let f = []; try { f = window.__ewsOffice?.world?.().field || []; } catch {} this.field = new Set(f.filter(F => !F.leaving).map(F => String(F.id).replace(/^agent:/, ''))); }
-    for (const o of this.list) { const u = o.av.userData, st = o.force || u.state?.stage || null, want = st ? STAND[st] || null : (o.idleUntil > t ? 'plan' : null);
+    for (const o of this.list) { if (o.av.userData.serverAct) continue;   /* world server is driving this agent (modules/world-agents) */
+      const u = o.av.userData, st = o.force || u.state?.stage || null, want = st ? STAND[st] || null : (o.idleUntil > t ? 'plan' : null);
       if (!st && !(o.idleUntil > t) && !(o.idleNext > t)) { o.idleNext = t + 40 + Math.random() * 50; if (Math.random() < 0.3) o.idleUntil = t + 12 + Math.random() * 10; }
       const away = this.field?.has(o.a.id); o.away = away; o.av.scale.setScalar(away ? 1e-4 : 1);
       const spot = want && !away ? this.spots[want][o.i % 4] : u.home;

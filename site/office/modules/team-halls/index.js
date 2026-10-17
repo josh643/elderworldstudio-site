@@ -101,8 +101,9 @@ export default {
     this.drawBoards(s); const t0 = performance.now() / 1000;
     const agents = this.ctx.use('agents'), dais = this.ctx.use('dais'), gate = this.ctx.use('gate');
     for (const av of this.A.all) if (av.userData.team && !av.userData.selfDriven) { const u = av.userData; u.state = {}; if (u.wander && t0 < u.wander.until) continue; if (u.spot) { u.spot.holder = null; u.spot = null; } u.spotK = null; u.target = u.home; }
+    for (const av of this.A.all) if (av.userData.serverAct) av.userData.state = {};
     for (const w of s.work || []) {
-      const av = agents.get(w.agent); if (!av || !av.userData.team || av.userData.selfDriven) continue; const u = av.userData, r = this.rooms[u.team]; u.state = w;
+      const av = agents.get(w.agent); if (!av || !av.userData.team) continue; const u = av.userData, r = this.rooms[u.team]; if (u.selfDriven) { if (u.serverAct) u.state = w; continue; } u.state = w;   /* server-driven agents keep their live state (desk screen + clip), the server decides where they go */
       /* quality checklist (Joshua 2026-10-16): an agent whose desk screen shows active work is SEATED at that desk facing it;
          only a released task sends them to the gate. Agents with no work wander their room (see onFrame). */
       if (u.spot) { u.spot.holder = null; u.spot = null; } u.spotK = null; u.target = w.stage === 'released' && gate ? gate : u.home; u.wander = null;

@@ -92,6 +92,10 @@
    "src": "modules/arch-studio/index.js"
   },
   {
+   "id": "world-agents",
+   "src": "modules/world-agents/index.js"
+  },
+  {
    "id": "main-hall",
    "src": "modules/main-hall/index.js"
   },
