@@ -1,0 +1,34 @@
+<!doctype html><html><body style="margin:0;background:#2d2f33"><script type="importmap">{"imports":{"three":"/office/vendor/three.module.min.js"}}</script>
+<script type="module">
+// Character line-up (tools/characters QA): every outfit kind on the shared rig, one clip. ?clip=Walk_Loop&lod=1&parts=1&cam=close
+import * as THREE from '/office/vendor/three.module.min.js?v=169';
+import { GLTFLoader } from '/office/vendor/jsm/loaders/GLTFLoader.js?v=169';
+import { KTX2Loader } from '/office/vendor/jsm/loaders/KTX2Loader.js?v=169';
+import { MeshoptDecoder } from '/office/vendor/jsm/libs/meshopt_decoder.module.js?v=169';
+import { loadWardrobe } from '/office/modules/base-avatar/wardrobe.js?v=1';
+const q = new URLSearchParams(location.search);
+const R = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true }); R.setSize(+q.get('w') || 1600, +q.get('h') || 700); R.outputColorSpace = THREE.SRGBColorSpace; document.body.append(R.domElement);
+const S = new THREE.Scene(); S.background = new THREE.Color(0x3a3d42); S.add(new THREE.HemisphereLight(0xfff4e6, 0x404040, 1.6)); const dl = new THREE.DirectionalLight(0xffffff, 1.8); dl.position.set(2, 4, 5); S.add(dl);
+const cam = new THREE.PerspectiveCamera(28, R.domElement.width / R.domElement.height, 0.05, 200);
+const L = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).setKTX2Loader(new KTX2Loader().setTranscoderPath('/office/vendor/basis/').detectSupport(R));
+const ctx = { THREE, scene: S };
+const W = await loadWardrobe(ctx, L);
+const fem = q.get('fem');
+const anim = await L.loadAsync('/office/assets/anims/' + (q.get('pack') || 'locomotion') + (fem === '1' ? '_f' : '') + '.glb?v=3');
+const clip = anim.animations.find(c => c.name === (q.get('clip') || 'Idle_Loop')) || anim.animations[0];
+const cast = (q.get('cast') || 'Brokkr:0:games:0x3f6fb5,Lofn:1:games:0x3f6fb5,Freyja:1:receptionist:0x2f7d6a,Hermod:0:games:0x3f6fb5,Máni:0:architecture:0x6a8fb8,Jörð:1:architecture:0x6a8fb8,Hœnir:0:sec:0x1f2a3d,Sigyn:1:sec:0x1f2a3d,crew-1:0:crew:0,crew-2:1:crew:0,Odin:0:subceo:0x8a1c2c,Frigg:1:client:0x8a5bb5').split(',');
+const lod = +(q.get('lod') || 0), out = [];
+cast.forEach((s, i) => { const [name, f, team, col] = s.split(':'); if (fem != null && f !== fem) return;
+  const a = { id: team === 'receptionist' ? 'receptionist' : team === 'subceo' ? 'subceo' : name.startsWith('crew') ? name : 'x-' + name, name: name.startsWith('crew') ? '' : name, role: team === 'sec' ? 'Elderverse patrol' : team === 'crew' ? 'construction crew' : team, lead: name === 'Frigg' };
+  const b = W.build(a, +f, +col || 0x777777, team === 'architecture' ? 'architecture' : team); if (q.get('mi') != null) b.meshes.forEach(m => { m.morphTargetInfluences.fill(0); m.morphTargetInfluences[+q.get('mi')] = 1; }); if (q.get('nomorph')) b.meshes.forEach(m => m.morphTargetInfluences?.fill(0)); if (q.get('rest')) b.meshes.forEach(m => m.skeleton.pose()); b.meshes[0].visible = lod === 0; b.meshes[1].visible = lod === 1;
+  const n = out.length; b.body.position.x = n * 0.9; S.add(b.body); const m = new THREE.AnimationMixer(b.body); m.clipAction(clip).play(); if (!q.get('rest')) m.update(+(q.get('t') || 0.5)); out.push({ name, b }); });
+const span = (out.length - 1) * 0.9; out.forEach(o => o.b.body.position.x -= span / 2);
+const c = q.get('cam') || 'all', cx = +(q.get('cx') || 0);
+if (c === 'close') { cam.position.set(cx, 1.62, 1.05); cam.lookAt(cx, 1.52, 0); }
+else if (c === 'far') { cam.position.set(cx, 1.6, 14); cam.lookAt(cx, 0.9, 0); }
+else if (c === 'side') { cam.position.set(cx + 3.2, 1.0, 0.0); cam.lookAt(cx, 0.9, 0); }
+else if (c === 'feet') { cam.position.set(cx, 0.35, 1.6); cam.lookAt(cx, 0.2, 0); }
+else { cam.position.set(0, 1.1, span * 0.95 + 3); cam.lookAt(0, 0.95, 0); }
+S.add(new THREE.GridHelper(30, 30, 0x555555, 0x444444));
+R.render(S, cam); window.__chars = out.map(o => ({ name: o.name, kind: o.b.look.kind, parts: o.b.look.parts, tris: o.b.tris })); window.__dbg = out.slice(0,1).map(o => { const g = o.b.meshes[0].geometry, ma = g.morphAttributes.position; return { rel: g.morphTargetsRelative, n: ma?.length, types: ma?.map(a => a.array.constructor.name + a.normalized + a.count + '/' + g.attributes.position.count), max: ma?.map(a => { let m = 0; for (const v of a.array) m = Math.max(m, Math.abs(v)); return m; }), posType: g.attributes.position.array.constructor.name, mi: o.b.meshes[0].morphTargetInfluences }; }); document.title = 'done';
+</script></body></html>

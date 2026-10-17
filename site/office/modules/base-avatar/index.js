@@ -10,6 +10,7 @@ import { DRACOLoader } from '../../vendor/jsm/loaders/DRACOLoader.js?v=169';
 import { KTX2Loader } from '../../vendor/jsm/loaders/KTX2Loader.js?v=169';
 import { pose, bonesOf } from './poses.js?v=1';
 import capsule from './capsule.js?v=6';
+import { loadWardrobe } from './wardrobe.js?v=1';
 import { mergeGeometries } from '../../vendor/jsm/utils/BufferGeometryUtils.js?v=169';
 const CLIP = { idle: 'Sitting_Idle_Loop', type: 'Sitting_Idle_Loop', stand: 'Idle_Loop', walk: 'Walk_Loop', run: 'Jog_Fwd_Loop', carry: 'Walk_Carry_Loop',
   inspect: 'Interact', talk: 'Idle_Talking_Loop', pickup: 'PickUp_Table', blocked: 'Idle_FoldArms_Loop', cheer: 'Dance_Loop', greet: 'Idle_Loop', phone: 'Idle_TalkingPhone_Loop', nod: 'Yes' };
@@ -23,6 +24,9 @@ const SPEED3 = [{ walk: 1.293, carry: 0.862 }, { walk: 1.237, carry: 0.825 }];
 const SEAT_CLIPS = new Set(['read', 'idle', 'type', 'blocked', 'phone', 'sitIn', 'sitOut', 'stretch', 'coffee', 'think', 'chat', 'write', 'mouse']);
 const LAYER = { type: 'type', greet: 'wave' };   // NOTE: with the v3 packs the clips themselves type/wave; layers are skipped when packs load   // procedural arm layers (poses.js) on top of the base clip
 const SEATED = new Set(['idle', 'type']);
+/* Character rollout (2026-10-16): new wardrobe characters per team, Games first. ?chars=all | ?chars=0 | ?chars=games,host
+   (keys: team keys, 'host' = Freyja + Hermod, 'security', 'construction', 'exec', 'crews' = town crews). */
+const CHARS_DEFAULT = 'games';
 /* Role-appropriate desk work (Joshua 2026-10-16: non-coders shouldn't type code). Coders/writers type; artists, store and QA work the mouse
    and read the screen; money/compliance/research read and write notes; client care and call-centre agents take calls. Each agent cycles
    its role's clips slowly (phase-offset), so a room never moves in lockstep. Without the v3 desk pack every role falls back to 'type'. */
@@ -64,6 +68,11 @@ export default {
     for (const T of [clips, clipsF]) for (const n of Object.keys(T)) if (BLOCK.test(n)) delete T[n];
     for (const k of Object.keys(CLIP)) if (BLOCK.test(CLIP[k])) { console.warn('base-avatar: blocked clip for', k, CLIP[k]); CLIP[k] = SEATED.has(k) || /^sit|^Sit/.test(CLIP[k]) ? 'Sit_ReadMonitor_Loop' : 'Idle_Loop'; }
     for (const k of Object.keys(CLIP)) if (!clips[CLIP[k]]) console.warn('base-avatar: missing clip', k, CLIP[k]);
+    const qs = new URLSearchParams(location.search).get('chars'), CH_ON = String(qs ?? cfg?.chars ?? CHARS_DEFAULT).split(',').filter(Boolean);
+    let W = null; if (!CH_ON.includes('0')) try { W = await loadWardrobe(ctx, L); } catch (e) { console.warn('wardrobe load failed, old bodies', e); }
+    const teamOf = a => (ctx.roster?.teams || []).find(t => t.members?.some(m => m.id === a.id))?.key;
+    const wantW = (a, kind, team) => W && (CH_ON.includes('all') || CH_ON.includes(team) || CH_ON.includes(kind) || (kind === 'host' && CH_ON.includes('receptionist')) || (a.crew && CH_ON.includes('crews')));
+    this.W = W; this.CH_ON = CH_ON;
     this.clipAudit = () => ({ map: { ...CLIP }, male: Object.keys(clips).sort(), female: Object.keys(clipsF).sort() });
     const bases = humans.map(h => { const b = h.scene; const bb = new THREE.Box3(); b.updateMatrixWorld(true); b.traverse(o => { if (o.isSkinnedMesh) bb.expandByObject(o); }); const hh = bb.isEmpty() ? 0 : bb.max.y - bb.min.y; b.userData.k = 1; b.userData.h = hh;   /* GLBs are authored at real scale; the old bbox included a hidden 2 m sphere and shrank everyone to ~89% (hands missed props) */
       b.traverse(o => { if (o.isMesh) { o.frustumCulled = false; o.castShadow = false; } }); return b; });
@@ -86,9 +95,10 @@ export default {
          Realistic ranges only; height stays within +-3% so hands still land within the 5 cm contact gate. */
       const k = (sexCount[fem] = (sexCount[fem] ?? -1) + 1), look = { skin: k % SKIN.length, hair: (Math.floor(k / SKIN.length) + k) % HAIR.length, height: HEIGHT[(k * 2 + fem) % HEIGHT.length], build: BUILD[(k * 7 + 1) % BUILD.length], chest: CHEST[(k * 5 + fem) % CHEST.length], pants: PANTS[(k * 3) % PANTS.length] };
       const scale = base.userData.k * look.height;
-      const g = new THREE.Group(), body = SkeletonUtils.clone(base); body.scale.setScalar(scale); body.rotation.y = 0; body.userData.cloneOf = a.id || a.name; g.add(body);   // UBC humans face +z = the group's forward
+      const team = teamOf(a), kind = W ? W.kindOf(a, team) : null, wb = wantW(a, kind, team) ? W.build(a, fem, col, team) : null;
+      const g = new THREE.Group(), body = wb ? wb.body : SkeletonUtils.clone(base); body.scale.setScalar(scale); body.rotation.y = 0; body.userData.cloneOf = a.id || a.name; g.add(body);   // UBC humans face +z = the group's forward
       const hit = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 1.8, 6), new THREE.MeshBasicMaterial({ visible: false })); hit.position.y = 0.9; g.add(hit);
-      body.traverse(o => { if (!o.isMesh) return; const n = o.material?.name || '';
+      if (!wb) body.traverse(o => { if (!o.isMesh) return; const n = o.material?.name || '';
         if (n === 'Shirt') o.material = shirt(o.material, col); else if (/hair|eyebrow/i.test(n)) o.material = hair(o.material, look.hair);
         else if (/superhero|skin|body/i.test(n)) { o.material = o.material.clone(); o.material.color = new THREE.Color(SKIN[look.skin]); }
         else if (n === 'Pants') { o.material = o.material.clone(); o.material.color = new THREE.Color(look.pants); } });
@@ -96,7 +106,7 @@ export default {
         const sc = (b, v) => { if (!b) return; b.scale.multiply(v); for (const c of b.children) if (c.isBone) c.scale.divide(v); };
         sc(B.spine_02, new THREE.Vector3(look.build, 1, look.build)); sc(B.spine_03, new THREE.Vector3(1, 1, look.chest)); }
       /* one draw call per agent: merge the untextured skinned parts (same skin) into a single vertex-coloured SkinnedMesh */
-      { const parts = []; body.traverse(o => { if (o.isSkinnedMesh && !Array.isArray(o.material) && !o.material.map && !o.material.transparent) parts.push(o); });
+      if (!wb) { const parts = []; body.traverse(o => { if (o.isSkinnedMesh && !Array.isArray(o.material) && !o.material.map && !o.material.transparent) parts.push(o); });
         if (parts.length > 1 && parts.every(p => p.skeleton.bones.length === parts[0].skeleton.bones.length && p.skeleton.bones.every((b, i) => b === parts[0].skeleton.bones[i]))) {
           const geos = parts.map(p => { let g = p.geometry.clone(); for (const k of Object.keys(g.attributes)) if (!['position', 'normal', 'skinIndex', 'skinWeight'].includes(k)) g.deleteAttribute(k); for (const k of Object.keys(g.morphAttributes)) delete g.morphAttributes[k];   /* keep indices: skinning cost scales with vertex count */
             const n = g.attributes.position.count, c = new Float32Array(n * 3), col = p.material.color; for (let i = 0; i < n; i++) { c[i * 3] = col.r; c[i * 3 + 1] = col.g; c[i * 3 + 2] = col.b; } g.setAttribute('color', new THREE.BufferAttribute(c, 3)); return g; });
@@ -114,7 +124,8 @@ export default {
       const flag = new THREE.Mesh(geo.flag, red); flag.position.y = 2.62; flag.visible = false; g.add(flag);
       const mixer = new THREE.AnimationMixer(body), actions = {};
       const C = base === bases[1] ? clipsF : clips; const act = k => actions[k] ||= mixer.clipAction(C[CLIP[k]] || C[CLIP.stand] || C.Idle_Loop);
-      g.userData = { a, fem, look, body, tag, bones: bonesOf(body), lw: 0, layer: null, bar, bg, flag, folder, mixer, act, cur: null, state: {}, target: null, home: null, phase: Math.random() * 6, pose: null, acc: 0, frame: 0 };
+      if (wb) look.wardrobe = { kind: wb.look.kind, parts: wb.look.parts, tris: wb.tris, morph: wb.look.morph.map(v => +v.toFixed(2)) };
+      g.userData = { a, fem, look, wb, body, tag, bones: bonesOf(body), lw: 0, layer: null, bar, bg, flag, folder, mixer, act, cur: null, state: {}, target: null, home: null, phase: Math.random() * 6, pose: null, acc: 0, frame: 0 };
       play(g, 'stand', 0); mixer.update(0.05); g.userData.posed = true; /* never show a bind/T-pose: pose the rig before its first frame */ ctx.onClick(hit, () => { ctx.revealTag(g); onPick && onPick(); });
       all.add(g); if (a.id) agents.set(a.id, g); return g;
     }
@@ -236,6 +247,7 @@ export default {
       sph.center.copy(av.position).setY(0.9); const d = sph.center.distanceTo(ctx.cam.position); u.acc += dt; u.frame++;
       const L = ctx.lod || 1, visible = d < 16 * L && frustum.intersectsSphere(sph), every = d < 8 * L ? 1 : d < 14 * L ? 2 : 6;   // far agents: hidden; mid: thinned updates
       av.visible = d < 15 * Math.max(0.8, L) && frustum.intersectsSphere(sph);
+      if (u.wb) { const near = d < 7 * L; if (u.wb.meshes[0].visible !== near) { u.wb.meshes[0].visible = near; u.wb.meshes[1].visible = !near; } u.far = !av.visible && d < 34 * L && frustum.intersectsSphere(sph) && !!av.parent; }   /* LOD0 < 7 m, LOD1 to the cull distance, LOD2 pawn beyond */
       if (!visible && u.frame % 90 === 0) { u.mixer.update(u.acc); u.acc = 0; }   // off-screen rigs still get a rare update so a state change never reveals a bind pose
       if (visible && u.frame % every === 0) { u.mixer.update(u.acc); u.acc = 0; if (u.layer && u.lw > 0.01 && d < 14) { u.lt = (u.lt || 0) + dt * every; av.updateMatrixWorld(true); pose(u.bones, u.layer, u.lt + u.phase, u.lw, av); } }
       const p = s.progress; u.bar.visible = u.bg.visible = visible && p != null && !!s.stage && !u.waitOn;   /* a maker waiting on its checker shows no copied bar */
@@ -245,6 +257,31 @@ export default {
     }
     this.pre = () => { ctx.cam.updateMatrixWorld(); pm.multiplyMatrices(ctx.cam.projectionMatrix, ctx.cam.matrixWorldInverse); frustum.setFromProjectionMatrix(pm); };
     ctx.provide('avatar', { make, animate, all, rigged: true }); ctx.provide('agents', agents);
+    /* Town crews on the shared rig (Joshua 2026-10-16: Lot 11 crews were box-head stick figures). world-live's crew pools call
+       crews.draw(pool, kind, t) before drawing: the nearest workers get a pooled wardrobe character (LOD0/LOD1, real clips),
+       everyone else inside 70 m becomes an instanced LOD2 pawn, and all of them are flagged w.rigged so the old instanced
+       figures are skipped. Patrol officers that world-live already rigs (w.av) are left to it. Tier 0 keeps 6 rigs, others 12. */
+    const ARCH = Object.fromEntries((ctx.roster?.teams || []).find(t => t.key === 'architecture')?.members?.map(m => [m.id, m.name]) || []);
+    const crewPool = new Map(), extra = []; this.crewExtra = extra; const cpos = new THREE.Vector3();
+    const CREW_CLIP = { walk: 'walk', work: 'pickup', survey: 'inspect', wave: 'wave', idle: 'stand' };
+    const crewOn = () => W && (CH_ON.includes('all') || CH_ON.includes('crews'));
+    ctx.provide('crews', { draw(P, kind, t) {
+      if (!crewOn() || !P?.list) return false;
+      const N = (ctx.tier ?? 2) === 0 ? 6 : 12, cam = ctx.cam.position, pool = crewPool.get(kind) || []; crewPool.set(kind, pool);
+      const live = P.list.filter(w => w.on && !w.av).map(w => ({ w, d: Math.hypot(w.x - cam.x, w.z - cam.z) })).sort((x, y) => x.d - y.d);
+      let n = 0;
+      for (const { w, d } of live) {
+        w.rigged = true;
+        if (n < N && d < 34) {
+          let av = pool[n]; if (!av) { const i = pool.length, aid = String(w.id || '').replace(/^agent:/, '');
+            const a = kind === 'arch' ? { id: 'field-' + (aid || i), name: ARCH[aid] || 'Architect', role: 'architect (survey)', crew: 1 } : kind === 'sec' ? { id: 'patrol-x' + i, name: 'Patrol', role: 'Elderverse patrol', crew: 1 } : { id: 'crew-' + i, name: 'Builder', role: 'construction crew', crew: 1, female: i % 3 === 2 ? 1 : 0 };
+            av = make(a, kind === 'arch' ? 0x6a8fb8 : 0x777777); av.userData.selfDriven = true; av.userData.crew = kind; pool.push(av); }
+          if (!av.parent) ctx.scene.add(av); const u = av.userData; u.target = null; u.path = []; u.wander = null;
+          av.position.set(w.x, w.y || 0, w.z); av.rotation.y = w.yaw || 0; u.spotK = w.tablet && w.mode === 'walk' ? 'carry' : CREW_CLIP[w.mode] || 'stand'; u.crewW = w; n++;
+        } else if (d < 70) extra.push(w);
+      }
+      for (let i = n; i < pool.length; i++) if (pool[i].parent) pool[i].parent.remove(pool[i]);
+      return true; } });
     // name tags: only within ~6 m (or briefly after a tap), fade with distance, nearest first, no screen overlap
     const NEAR = 6, shown = [], pv = new THREE.Vector3(), cam = ctx.cam;
     ctx.revealTag = g => { g.userData.reveal = performance.now() + 4000; };
@@ -266,5 +303,8 @@ export default {
       agentHome: n => { const av = find(n); if (!av) return false; av.userData.wander = { until: Infinity }; av.userData.target = av.userData.home; return true; },
       agentLife: (n, k, secs = 6) => { const av = find(n); if (!av) return false; const t = performance.now() / 1000; av.userData.life = { k, until: t + secs, next: t + secs + 60 }; return true; } };
   },
-  onFrame(dt, t) { if (this.fb) return this.fb.onFrame(dt, t); if (this.dbgApi && window.__ewsOffice && !window.__ewsOffice.agentGo) Object.assign(window.__ewsOffice, this.dbgApi); this.pre(); this.CH?.update(dt); for (const av of this._all) this._animate(av, dt); this._tags(); },
+  onFrame(dt, t) { if (this.fb) return this.fb.onFrame(dt, t); if (this.dbgApi && window.__ewsOffice && !window.__ewsOffice.agentGo) Object.assign(window.__ewsOffice, this.dbgApi); this.pre(); this.CH?.update(dt); for (const av of this._all) this._animate(av, dt);
+    if (this.W) { const P = this.W.pawns; P.begin(); for (const av of this._all) { const u = av.userData; if (u.wb && u.far) P.add(av, u.wb.mat.userData.pal[3]); }
+      for (const w of this.crewExtra) P.addAt(w.x, w.y || 0, w.z, w.yaw || 0, w.tablet ? '#22324f' : '#ff7a1a'); this.crewExtra.length = 0; P.end(); }   /* LOD2: far agents + far crews = one instanced draw call */
+    this._tags(); },
 };
