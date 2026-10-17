@@ -433,7 +433,7 @@ export default {
       const moving = (F.speed || 0) > 0.15; F.mode = moving ? 'walk' : 'idle'; if (!moving && a.act !== 'walk') F.yaw = sid === 'sec-lead' ? 0 : (a.h ?? F.yaw);
       F.on = onG && (ctx.exterior?.root?.visible ?? true);
       // near the camera: the shared rigged avatar (real walk clip at its measured ground speed, tablet = the carry prop); far: instanced figure
-      const dc = Math.hypot(F.x - cam.x, F.z - cam.z), wantRig = !!av?.make && F.on && dc < 12 && (ctx.lod || 1) >= 0.5;
+      const dc = Math.hypot(F.x - cam.x, F.z - cam.z), wantRig = !!av?.make && F.on && dc < 40 && (ctx.lod || 1) >= 0.5;
       if (wantRig && !F.av) { try { F.av = av.make({ id: 'patrol-' + sid, name: NAMES[sid], role: 'Elderverse patrol' }, '#1f2a3d'); ctx.scene.add(F.av); const fo = F.av.userData.folder; if (fo) { fo.material = new T.MeshLambertMaterial({ color: '#101318' }); fo.scale.multiplyScalar(1.15); } } catch { F.av = null; } }
       F.rigged = !!(wantRig && F.av);
       if (F.av) { const u = F.av.userData; F.av.visible = F.rigged; if (F.rigged) { u.state = { stage: 'review' }; u.target = moving ? { x: F.x + Math.sin(F.yaw) * 0.4, z: F.z + Math.cos(F.yaw) * 0.4 } : null;
