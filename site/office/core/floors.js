@@ -28,7 +28,7 @@ export function setupFloors(ctx, core) {
   async function go(n) {
     if (n === cur) { ctx.closeCard(); return; }
     if (n === 'B1') { if (!(await b1Check())) { b1Locked(); return; }
-      if (!built.B1) { try { const m = await import('/office/b1/b1.js?v=2'); built.B1 = m.buildB1(ctx, core, offX('B1')); } catch { b1Ok = false; b1Locked(); return; } } }
+      if (!built.B1) { try { const m = await import('/office/b1/b1.js?v=3'); built.B1 = m.buildB1(ctx, core, offX('B1')); } catch { b1Ok = false; b1Locked(); return; } } }
     ctx.closeCard(); fade.style.opacity = 1;
     setTimeout(() => {
       if (n !== 'G' && n !== 'B1' && !built[n]) built[n] = buildFloor(ctx, core, FLOORS.find(f => f.n === n), offX(n), go);

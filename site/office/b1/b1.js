@@ -67,7 +67,7 @@ export function buildB1(ctx, core, ox) {
       let p = posts[m.id]; if (!p && m.offDuty) { p = [-12 + 1.4 + (k++) * 1.1, -2.9, 0]; off.push(m.id); } if (!p || !A) continue;
       const av = A.make(m, t.floor === 'B1' ? 0x6a8fb0 : 0x8a7a6a, () => ctx.card(`<h3>${ctx.esc(m.name)}</h3><p>${ctx.esc(m.role)}${m.offDuty ? ' · off duty (paused)' : ''}</p>`));
       av.position.set(cx + p[0], 0, fz + p[1]); av.rotation.y = p[2]; av.userData.b1 = true; g.add(av); }
-    window.__ewsB1 = { offDuty: off, avatars: !!A };
+    window.__ewsB1 = { offDuty: off, avatars: !!A, bar: [X0 + 2.6, fz - 3.8], room: [X0, Z0, X1, Z1], at: () => ({ cam: ctx.cam ? [ctx.cam.position.x, ctx.cam.position.z].map(v => +v.toFixed(1)) : null, people: g.children.filter(o => o.userData?.b1).map(o => [o.userData?.a?.id || '', +o.position.x.toFixed(1), +o.position.z.toFixed(1)]) }) };   // read-only test probe
   } catch (e) { console.warn('b1 people', e); window.__ewsB1 = { err: String(e) }; } })();
   refresh();
   return { group: g, bounds: { x0: X0 + 0.5, z0: Z0 + 0.5, x1: X1 - 0.5, z1: Z1 - 0.5 }, onFrame() { const t = performance.now(); if (t - last > 1000) { last = t; refresh(); } }, dispose() { alive = false; } };
