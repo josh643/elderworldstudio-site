@@ -88,21 +88,8 @@
    }
   },
   {
-   "id": "lobby-stations",
-   "src": "modules/lobby-stations/index.js",
-   "config": {
-    "coders": [
-     "games lead",
-     "game coder",
-     "coder",
-     "animation",
-     "animation polish",
-     "qa"
-    ],
-    "store": [
-     "store"
-    ]
-   }
+   "id": "arch-studio",
+   "src": "modules/arch-studio/index.js"
   },
   {
    "id": "main-hall",

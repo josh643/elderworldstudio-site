@@ -6,7 +6,7 @@ import { mergeGeometries } from '../vendor/jsm/utils/BufferGeometryUtils.js?v=16
 export const FLOORS = [
   { n: 'G', name: 'Lobby', sub: 'Reception, merch store, studio' },
   { n: '2', name: 'Games', sub: 'Arcade and game showcase', floor: 0x5a4632 },
-  { n: '3', name: 'Design & Marketing', sub: 'Opening soon', floor: 0x4a4f5a },
+  { n: '3', name: 'Architecture, Design & Marketing', sub: 'Architecture studio open; more opening soon', floor: 0x4a4f5a },
   { n: '4', name: 'Client Sites & Call Center', sub: 'Opening soon', floor: 0x3f4a44 },
   { n: '5', name: 'Ops & Leadership', sub: 'Opening soon', floor: 0x3a3a48 },
 ];
@@ -90,7 +90,7 @@ function buildFloor(ctx, core, F, ox, go) {
 function buildSoon(ctx, { g, B, M, cx, fz, X0, X1, Z1, F }) {
   const T = k => (ctx.t ? ctx.t(k) : k), tape = M(0xe0b020), blk = M(0x1a1a1a);
   const zones = { '3': ['Design studio', 'Marketing room', 'Video & capture'], '4': ['Client sites team', 'Call center', 'Meeting rooms'], '5': ['Ops room', 'Server room', 'Leadership'] }[F.n] || [];
-  zones.forEach((nm, i) => { const x = cx - 11 + i * 11, z = fz + 12, w = 8, d = 7;
+  zones.forEach((nm, i) => { const x = cx - 11 + i * 11, z = fz + 12, w = 8, d = 7; if (F.n === '3' && i === 0 && ctx.archStudio) return;   /* this zone is the open Architecture studio (modules/arch-studio) */
     for (const [px, pz, L, ry] of [[x, z - d / 2, w, 0], [x, z + d / 2, w, 0], [x - w / 2, z, d, Math.PI / 2], [x + w / 2, z, d, Math.PI / 2]]) { B(L, 0.08, 0.06, tape, px, 0.9, pz, ry, true); for (let k = -1; k <= 1; k += 2) B(0.06, 0.9, 0.06, blk, px + (ry ? 0 : k * L / 2), 0.45, pz + (ry ? k * L / 2 : 0)); }
     const s = ctx.panel(ctx.textCanvas([T(nm), T('Opening soon')], { w: 640, h: 200, size: 58, body: 40 }), 1.6, 0.5, x, 1.5, z + d / 2 + 0.05, 0); s.material.toneMapped = false; g.attach?.(s);
     B(0.06, 1.2, 0.06, blk, x, 0.6, z + d / 2 + 0.02); });

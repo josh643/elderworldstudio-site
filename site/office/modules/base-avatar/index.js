@@ -160,9 +160,9 @@ export default {
     function animate(av, dt) {
       const u = av.userData, s = u.state || {}, t = performance.now() / 1000; let moving = false, sp = 0;
       u.ph ||= { m: 'stand', t: 0 }; const ph = u.ph; ph.t += dt;
-      if (u.target !== u._tgt) { u._tgt = u.target; if (ph.m === 'stand') buildPath(av); else u.repath = true; }
+      if (u.target !== u._tgt) { u._tgt = u.target; const same = u.seat && ph.m !== 'stand' && CH && u.target && CH.at(u.target) === u.seat; if (same) { u.goalSeat = u.seat; u.repath = false; u.path = []; } else if (ph.m === 'stand') buildPath(av); else u.repath = true; }   /* sent to the chair they already sit on: stay seated (was a stand-up/sit-down loop at load) */
       /* first frame: agents that start on their own chair are seated already (no pop) */
-      if (!u._init) { u._init = 1; const st = CH && u.home && CH.at(u.home); if (st && u.team && Math.hypot(av.position.x - st.root.x, av.position.z - st.root.z) < 0.05 && CH.reserve(st, av)) { u.seat = u.lastSeat = st; u.goalSeat = st; u.path = []; setPh(u, 'seated'); u.off = 0.25; st.c.off = OFF.tucked; } }
+      if (!u._init && u.home) { u._init = 1; const st = CH && CH.at(u.home); if (st && u.team && Math.hypot(av.position.x - st.root.x, av.position.z - st.root.z) < 0.05 && CH.reserve(st, av)) { u.seat = u.lastSeat = st; u.goalSeat = st; u.path = []; setPh(u, 'seated'); u.off = 0.25; st.c.off = OFF.tucked; play(av, 'idle', 0); u.mixer.update(0.05); } }   /* wait for a home (floor modules set it after the avatar exists); start in the seated pose, no fade from standing */
       const seat = u.seat; let k = 'stand';
       if (ph.m !== 'stand' && seat) {
         const stay = u.goalSeat === seat && !u.repath; const c = seat.c; av.position.set(seat.root.x, 0, seat.root.z); av.rotation.y = seat.rot;

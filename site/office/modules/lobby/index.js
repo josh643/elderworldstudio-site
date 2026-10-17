@@ -99,7 +99,7 @@ export default {
     // low planter partition between the coders and the carpet (gap at the back for the elevator doorway path)
     { const px = 4.5, z1 = -3.2, z2 = 0.3; box(0.38, 0.62, z2 - z1, wood, X(px), 0.31, Z((z1 + z2) / 2)); box(0.42, 0.04, z2 - z1 + 0.04, trim, X(px), 0.64, Z((z1 + z2) / 2));
       for (let zz = z1 + 0.15; zz < z2; zz += 0.16) { leaf(X(px + (rnd() - 0.5) * 0.2), 0.72 + rnd() * 0.12, Z(zz), 1.1); if (rnd() < 0.5) leaf(X(px + (rnd() - 0.5) * 0.2), 0.88 + rnd() * 0.12, Z(zz + 0.05), 0.9); } }
-    plate(['Coders', 'Building our games live'], 2.0, 0.5, 7.3, 2.95, 0.55, 0, { body: 34 });
+    if (cfg?.coders) plate(['Coders', 'Building our games live'], 2.0, 0.5, 7.3, 2.95, 0.55, 0, { body: 34 });   /* 2026-10-16: the Games builders sit at their own Games room desks again (Joshua); the bay sign only shows when lobby-stations seats coders here (lobby config coders:true) */
 
     /* ---- Hermod's Merch Store (front right) ---- */
     const SX0 = 4.8, SZ0 = 2.6;
@@ -139,7 +139,7 @@ export default {
     ctx.extend(X(X0), Z(ZB), X(X1), Z(ZF));
     ctx.spot('lobby', [x, 1.65, z + 8.6], [x, 1.45, z - 2], 'Lobby');   // spawn just inside the entrance, looking down the carpet at Freyja
     ctx.spot('hub', [X(-2.6), 1.6, Z(6.8)], [X(HX), 1.0, Z(HZ)], 'Collaboration Hub');
-    ctx.spot('coders', [X(3.4), 1.6, Z(1.6)], [X(7.3), 1.0, Z(-2.4)], 'Coders');
+    if (cfg?.coders) ctx.spot('coders', [X(3.4), 1.6, Z(1.6)], [X(7.3), 1.0, Z(-2.4)], 'Coders');
     this.ctx = ctx;
   },
   /* QA helper: __ewsOffice.iso(x, y, z, lookX, lookY, lookZ, cutY) = isometric-style cutaway camera (walls/ceiling above cutY

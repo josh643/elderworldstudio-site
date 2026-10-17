@@ -4,9 +4,11 @@ const COLS = [0x5b8def, 0xe0794a, 0x6cc48a, 0xc86ad9, 0xe2c35a, 0x4ac4c8, 0xe25a
 let G2 = null;
 export default {
   setup(ctx, cfg, [x0, z0]) {
-    const { THREE, box, M, roster } = ctx, A = ctx.use('avatar'), cols = cfg.cols || 3, W = cfg.w || 10, D = cfg.d || 9, teams = roster.teams.filter(t => !t.floor || t.floor === 'G');   /* 2026-10-16: upper-floor teams (architecture, Floor 3) are placed by their floor builder, not the ground halls */
-    const totalW = cols * W, rooms = {}; this.rooms = rooms; this.A = A; this.ctx = ctx;
-    teams.forEach((t, i) => {
+    const { THREE, box, M, roster } = ctx, A = ctx.use('avatar'), cols = cfg.cols || 3, W = cfg.w || 10, D = cfg.d || 9, teams = roster.teams;   /* every roster team (filter removed 2026-10-16, arch-studio request): upper-floor teams (floor != 'G', e.g. architecture on Floor 3) get their avatars here but no ground room; their floor module (modules/arch-studio) gives them desks and chairs */
+    const totalW = cols * W, rooms = {}; this.rooms = rooms; this.A = A; this.ctx = ctx; let gi = 0;
+    teams.forEach(t => {
+      if (t.floor && t.floor !== 'G') { const col = COLS[(gi + 4) % COLS.length]; for (const a of t.members) { const av = A.make(a, col, () => { const s = av.userData.state || {}; ctx.card(`<h3>${ctx.esc(a.name)}</h3><p>${ctx.esc(a.role)} · ${ctx.esc(t.name)} (Floor ${ctx.esc(t.floor)})</p><p>${s.stage ? `Working · stage <b>${ctx.esc(s.stage)}</b>` : 'In the studio'}</p>`); }); av.userData.team = t.key; av.userData.floorTeam = t.floor; ctx.scene.add(av); } return; }
+      const i = gi++;
       const cx = x0 - totalW / 2 + (i % cols) * W + W / 2, cz = z0 - Math.floor(i / cols) * D - D / 2, col = COLS[i % COLS.length];
       (ctx.teamSpot ||= {})[t.key || t.id] = [cx, cz];   /* Freyja's ticket handoff target */
       ctx.kit.room(ctx, { x: cx, z: cz, w: W, d: D, floor: new THREE.Color(col).multiplyScalar(0.25).getHex(), title: ctx.publicMode && /money|cfo/i.test(t.key + t.name) ? 'Private Office' : t.name, sub: ctx.publicMode ? '' : `${t.members.length} agents`, enclose: true, doorX: Math.abs(cx - x0) < 0.5 ? W / 2 - 1.4 : 0 });   /* the room straight behind the lobby logo wall gets its door at the side */
@@ -48,7 +50,7 @@ export default {
         rooms[t.key].deskRects.push([dx - 0.95, dz - 1.2, dx + 0.95, dz - 0.05]);
         const { monitor, seat } = ctx.kit.desk(ctx, dx, dz); if (seat) { seat.owner = a.id; seat.label = a.name; }
         const av = A.make(a, col, () => { const s = av.userData.state || {}; ctx.card(`<h3>${ctx.esc(a.name)}</h3><p>${ctx.esc(a.role)} · ${ctx.esc(t.name)}</p>${s.asset ? `<p>Asset desk · <b>${ctx.esc(s.asset.name)}</b> (${ctx.esc(s.asset.kind)}) · ${ctx.esc(s.asset.step)}${s.asset.left ? ` · ${s.asset.left} in queue` : ''}</p>` : ''}<p>${s.stage ? `Working · stage <b>${ctx.esc(s.stage)}</b> · ${Math.round((s.progress || 0) * 100)}%${s.blocked ? ' · <b>blocked</b>' : ''}` : 'Idle at the desk'}</p>`); });
-        av.position.set(dx, 0, dz); av.rotation.y = Math.PI; Object.assign(av.userData, { home: seat ? seat.root : new THREE.Vector3(dx, 0, dz), team: t.key, monitor }); ctx.scene.add(av);
+        const home = seat ? seat.root : new THREE.Vector3(dx, 0, dz); av.position.set(home.x, 0, home.z); av.rotation.y = Math.PI; Object.assign(av.userData, { home   /* start ON the own chair (seated from frame 1), not at the desk centre */, team: t.key, monitor }); ctx.scene.add(av);
       });
       ctx.spot('team-' + t.key, [cx, 2.2, cz + D / 2 + 1.5], [cx, 0.8, cz - 1]);
     });
@@ -63,7 +65,7 @@ export default {
       if (ia && ib) { if (!hits(r, a, b)) return []; const lx = lane(Math.abs(a.x - r.cx) > Math.abs(b.x - r.cx) ? a : b); return [V(lx, a.z), V(lx, b.z)]; }
       if (ia && !ib) { const p1 = V(dx, front); if (hits(r, a, p1)) { const lx = lane(a); out.push(V(lx, a.z), V(lx, front)); } out.push(p1, V(dx, r.cz + r.D / 2 + 0.8)); return out; }
       const p0 = V(dx, r.cz + r.D / 2 + 0.8), p1 = V(dx, front); out.push(p0, p1); if (hits(r, p1, b)) { const lx = lane(b); out.push(V(lx, front), V(lx, b.z)); } return out; });
-    const minZ = z0 - Math.ceil(teams.length / cols) * D;
+    const minZ = z0 - Math.ceil(gi / cols) * D;
     ctx.spot('teams', [x0, 4.5, z0 + 5], [x0, 0, (z0 + minZ) / 2], 'Teams');
     return { minZ };
   },
@@ -83,14 +85,14 @@ export default {
   },
   onFrame(dt) {
     if (!this.A) return; const t = performance.now() / 1000;
-    for (const av of this.A.all) { const u = av.userData; if (!u.team || !u.home || (u.state && u.state.stage)) continue; const r = this.rooms[u.team]; if (!r) continue;
+    for (const av of this.A.all) { const u = av.userData; if (!u.team || !u.home || u.selfDriven || (u.state && u.state.stage)) continue; const r = this.rooms[u.team]; if (!r) continue;
       if (!u.wander || t > u.wander.until) {
         /* idle agents: mostly at their own desk (seated life moments), sometimes the whiteboard, cooler, printer, tray or QA chair.
            Spots and chairs are exclusive: a taken one is skipped, never shared. */
         if (u.spot) { u.spot.holder = null; u.spot = null; } u.spotK = null;
         const roll = Math.random(); let p = u.home;
         if (roll < 0.35) { const free = r.spots.filter(q => !q.holder); if (free.length) { const q = free[Math.floor(Math.random() * free.length)]; q.holder = av; u.spot = q; p = q; } }
-        else if (roll < 0.45) { const qs = this.ctx.kit.chairs?.(this.ctx).at(r.qa); if (qs && !qs.holder) p = r.qa; }
+        /* (idle agents no longer borrow the QA chair: sitting in another desk's chair read as 'seated off his desk', Joshua 2026-10-16) */
         const atHome = p === u.home; u.wander = { until: t + (atHome ? 25 + Math.random() * 35 : 10 + Math.random() * 12) }; u.target = p; }
       /* the moment at a standing spot starts once they arrive and face it */
       if (u.spot && u.target === u.spot) u.spotK = Math.hypot(av.position.x - u.spot.x, av.position.z - u.spot.z) < 0.06 ? u.spot.k : null; }
@@ -98,9 +100,9 @@ export default {
   onState(s) {
     this.drawBoards(s); const t0 = performance.now() / 1000;
     const agents = this.ctx.use('agents'), dais = this.ctx.use('dais'), gate = this.ctx.use('gate');
-    for (const av of this.A.all) if (av.userData.team) { const u = av.userData; u.state = {}; if (u.wander && t0 < u.wander.until) continue; if (u.spot) { u.spot.holder = null; u.spot = null; } u.spotK = null; u.target = u.home; }
+    for (const av of this.A.all) if (av.userData.team && !av.userData.selfDriven) { const u = av.userData; u.state = {}; if (u.wander && t0 < u.wander.until) continue; if (u.spot) { u.spot.holder = null; u.spot = null; } u.spotK = null; u.target = u.home; }
     for (const w of s.work || []) {
-      const av = agents.get(w.agent); if (!av || !av.userData.team) continue; const u = av.userData, r = this.rooms[u.team]; u.state = w;
+      const av = agents.get(w.agent); if (!av || !av.userData.team || av.userData.selfDriven) continue; const u = av.userData, r = this.rooms[u.team]; u.state = w;
       /* quality checklist (Joshua 2026-10-16): an agent whose desk screen shows active work is SEATED at that desk facing it;
          only a released task sends them to the gate. Agents with no work wander their room (see onFrame). */
       if (u.spot) { u.spot.holder = null; u.spot = null; } u.spotK = null; u.target = w.stage === 'released' && gate ? gate : u.home; u.wander = null;
