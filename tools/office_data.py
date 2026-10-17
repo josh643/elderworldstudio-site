@@ -109,6 +109,8 @@ names = json.load(open(ROOT / "tools/office/agent-names.json"))["agents"]
 for k, v in json.load(open(ROOT / "tools/office/name-overrides.json")).items():
     if not k.startswith("_"): names[k] = {"name": v["name"], "role": v["role"]}
 teams = json.load(open(ROOT / "tools/office/teams.json"))["teams"]
+try: STAFF = json.load(open(ROOT / "tools/office/staffing.json"))
+except Exception: STAFF = {}
 seen, R = set(), []
 for tk, t in teams.items():
     ids = [t.get("lead")] + list(t.get("members") or [])
@@ -117,9 +119,13 @@ for tk, t in teams.items():
         if not i: continue
         n = names.get(i) or {"name": i.replace("-", " ").title(), "role": i.replace("-", " ")}
         if n["name"] in seen: continue          # shared agents sit at their first team's desks
-        seen.add(n["name"]); mem.append({"id": i, "name": n["name"], "role": n["role"], "lead": i == t.get("lead")})
+        seen.add(n["name"]); m = {"id": i, "name": n["name"], "role": n["role"], "lead": i == t.get("lead")}
+        if i in STAFF.get("offDuty", []): m["offDuty"] = True; m["status"] = "off duty (paused)"
+        if i in STAFF.get("unstaffed", []): m["unstaffed"] = True; m["status"] = "not staffed yet"; m["role"] = n["role"] + " (not staffed yet)"
+        mem.append(m)
     row = {"key": tk, "name": t.get("name") or tk.title(), "members": mem}
-    if t.get("floor"): row["floor"] = t["floor"]            # 2026-10-16: upper-floor teams (architecture = Floor 3)
+    if t.get("floor"): row["floor"] = t["floor"]
+    if t.get("floor") == "B1": row["restricted"] = True   # 2026-10-17 world team: renders only inside the IP-locked B1 module            # 2026-10-16: upper-floor teams (architecture = Floor 3)
     if t.get("seats"): row["seats"] = t["seats"]            # assigned chair id per agent (one chair each)
     R.append(row)
 sub = names.get("subceo", {"name": "Odin", "role": "Sub-CEO"})

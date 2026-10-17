@@ -1,0 +1,13 @@
+{
+ "_note": "2026-10-17 staffing flags for the office roster (display only). offDuty = paused job: sits at the B1 coffee bar (staff-only) and never idles in a work room; unstaffed = no running job: no avatar, tablets say not staffed yet.",
+ "offDuty": [
+  "design-ui",
+  "design-qa",
+  "prospects"
+ ],
+ "unstaffed": [
+  "lead-callcenter",
+  "callcenter-voice",
+  "callcenter-sms"
+ ]
+}

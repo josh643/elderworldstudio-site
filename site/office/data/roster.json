@@ -36,19 +36,19 @@
     {
      "id": "assets",
      "name": "Dvalin",
-     "role": "assets",
+     "role": "assets + office characters",
      "lead": false
     },
     {
      "id": "animation",
      "name": "Loki",
-     "role": "animation",
+     "role": "animation + office motion",
      "lead": false
     },
     {
      "id": "anim-polish",
      "name": "Lofn",
-     "role": "animation polish",
+     "role": "animation polish + office motion",
      "lead": false
     },
     {
@@ -132,14 +132,16 @@
     {
      "id": "stats",
      "name": "Mímir",
-     "role": "stats",
+     "role": "stats + world analytics",
      "lead": false
     },
     {
      "id": "prospects",
      "name": "Skaði",
      "role": "prospects",
-     "lead": false
+     "lead": false,
+     "offDuty": true,
+     "status": "off duty (paused)"
     }
    ]
   },
@@ -240,20 +242,26 @@
     {
      "id": "lead-callcenter",
      "name": "Gná",
-     "role": "call center lead",
-     "lead": true
+     "role": "call center lead (not staffed yet)",
+     "lead": true,
+     "unstaffed": true,
+     "status": "not staffed yet"
     },
     {
      "id": "callcenter-voice",
-     "name": "Var",
-     "role": "phone answering",
-     "lead": false
+     "name": "Rind",
+     "role": "phone answering (not staffed yet)",
+     "lead": false,
+     "unstaffed": true,
+     "status": "not staffed yet"
     },
     {
      "id": "callcenter-sms",
      "name": "Syn",
-     "role": "texts",
-     "lead": false
+     "role": "texts (not staffed yet)",
+     "lead": false,
+     "unstaffed": true,
+     "status": "not staffed yet"
     },
     {
      "id": "callcenter-email",
@@ -274,16 +282,32 @@
    "name": "Design",
    "members": [
     {
+     "id": "lead-design",
+     "name": "Gerðr",
+     "role": "design lead",
+     "lead": true
+    },
+    {
      "id": "design-ui",
      "name": "Rán",
      "role": "UI designer",
+     "lead": false,
+     "offDuty": true,
+     "status": "off duty (paused)"
+    },
+    {
+     "id": "design-brand",
+     "name": "Ilmr",
+     "role": "brand designer",
      "lead": false
     },
     {
      "id": "design-qa",
-     "name": "Vor",
+     "name": "Eistla",
      "role": "design QA",
-     "lead": false
+     "lead": false,
+     "offDuty": true,
+     "status": "off duty (paused)"
     }
    ]
   },
@@ -323,6 +347,62 @@
     "arch-landscape": "f3-arch-arch-landscape",
     "arch-qa": "f3-arch-arch-qa"
    }
+  },
+  {
+   "key": "world",
+   "name": "World Command (B1)",
+   "members": [
+    {
+     "id": "world-ops",
+     "name": "Ægir",
+     "role": "World Director",
+     "lead": true
+    },
+    {
+     "id": "world-interiors",
+     "name": "Bestla",
+     "role": "Interiors & Floors lead",
+     "lead": false
+    },
+    {
+     "id": "world-exterior",
+     "name": "Nerthus",
+     "role": "Exterior & Town lead",
+     "lead": false
+    },
+    {
+     "id": "world-life",
+     "name": "Fjörgyn",
+     "role": "Agents & Life lead",
+     "lead": false
+    },
+    {
+     "id": "world-character",
+     "name": "Ívaldi",
+     "role": "Character Artist",
+     "lead": false
+    },
+    {
+     "id": "world-physics",
+     "name": "Sleipnir",
+     "role": "physics, collision & navigation",
+     "lead": false
+    },
+    {
+     "id": "world-light",
+     "name": "Sunna",
+     "role": "lighting, sky, ambience & visual QA",
+     "lead": false
+    },
+    {
+     "id": "world-qa",
+     "name": "Alvíss",
+     "role": "level & fps QA",
+     "lead": false
+    }
+   ],
+   "floor": "B1",
+   "restricted": true
   }
  ],
  "nodes": [

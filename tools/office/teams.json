@@ -1,388 +1,402 @@
 {
-  "version": 1,
-  "note": "Joshua 2026-10-12: NO NEW MOBILE GAMES — Games team polishes existing only. 2026-10-10 Joshua approved 5 teams. Lead = team_lead.py (luna). Stages build -> check -> fix -> release. Max 2 fix retries then Anna. Hard rules: money/prices/contracts/legal, production/live/public release, first contact -> Joshua. Case-study proof loops (2026-10-10): metrics/milestone/interest are low-priority idle work; never preempt running jobs. Mandatory QA gate on every team (2026-10-11): see qa_gate.",
-  "max_fix_retries": 2,
-  "teams": {
-    "games": {
-      "name": "Games",
-      "lead": "lead-games",
-      "schedule": "nightly 00:40",
-      "members": {
-        "game-coder": "codex:game-coder",
-        "coder": "codex",
-        "assets": "codex",
-        "animation": "content",
-        "anim-polish": "content",
-        "qa": "codex",
-        "store": "codex"
-      },
-      "stages": {
-        "build": [
-          "game-coder",
-          "assets",
-          "animation"
-        ],
-        "check": [
-          "qa"
-        ],
-        "fix": [
-          "game-coder",
-          "assets",
-          "anim-polish"
-        ],
-        "release": [
-          "store"
-        ]
-      },
-      "repos": [
-        "star-wayfarers",
-        "ews-astro-dodge",
-        "ews-crystal-merge",
-        "ews-stack-tower",
-        "ews-tile-2048",
-        "ews-color-gate",
-        "ews-neon-snake",
-        "ews-brick-blitz",
-        "ews-spiral-drop",
-        "ews-gem-hopper",
-        "ews-void-flip",
-        "ews-game-scaffold"
-      ],
-      "release_target": "Google Play internal testing (store agent, test ads); production track + live-ads AAB needs Joshua (live ads standing-approved 2026-10-11)",
-      "coders": [
-        "game-coder-1",
-        "game-coder-2",
-        "game-coder-3"
-      ],
-      "note": "Joshua 2026-10-12: NO NEW MOBILE GAMES. Polish existing only. Priority: (1) Star Wayfarer on-foot controls/game-feel, (2) Astro Dodge, (3) ASO/store pages, (4) retention, (5) ads tuning, (6) bug fixes. Do not submit \"New mobile game\" pipelines; nextgame paused. Keep built games + Joshua release cards (Tile 2048, Stack Tower, Crystal Merge, etc.). game-coder-1..3 parallel; one coder per repo; test ads on agent/internal; live ads only production kits. Never Play production upload / money without Joshua.",
-      "qa_gate": "game_qa.py (unit/logic, node --check, headless smoke, debug APK + aapt2 + apksigner) + qa_gate listing (no price claims, no clone similarity, brand spelling, title/short/full limits, icon 512, feature 1024x500, screenshots 320-3840 <=2:1) + publish-kit validation (AAB layout, data safety, rating cheat sheet, checklist, versionCode); assets/animation stages also need preview media. publish_kit.py runs the same listing/kit gate before the Joshua card and upload() refuses without kit qa_verdict PASS.",
-      "no_new_games": true,
-      "polish_focus": [
-        "star-wayfarer-on-foot-controls",
-        "astro-dodge-polish",
-        "aso-store-pages",
-        "retention",
-        "ads-tuning",
-        "bug-fixes"
-      ]
-    },
-    "client": {
-      "name": "Client sites",
-      "lead": "lead-client",
-      "schedule": "weekly Tue 09:20",
-      "members": {
-        "client-fast": "codex:client-sites",
-        "client-care": "llm",
-        "qa": "codex",
-        "followup": "llm:follow-up",
-        "kiosk-polish": "llm"
-      },
-      "stages": {
-        "build": [
-          "client-fast",
-          "kiosk-polish"
-        ],
-        "check": [
-          "qa"
-        ],
-        "fix": [
-          "client-fast"
-        ],
-        "release": [
-          "client-care",
-          "followup"
-        ]
-      },
-      "repos": [
-        "testclient-demo",
-        "testfleet-demo",
-        "capbar-demo",
-        "capbar-admin",
-        "jacob-cdjr",
-        "capbar-kiosk-demo",
-        "capbar-admin-staging",
-        "ews-pos"
-      ],
-      "release_target": "staging branch + preview link drafted for the client; main/live needs the client's approval",
-      "qa_gate": "qa_gate site on STAGING for every changed page (+ /), phone 390x844 + desktop 1366x900: HTTP OK, zero JS errors, no failing same-site requests, images load, link check, form submit test (POST intercepted, nothing reaches the backend), basics (title, viewport, description, lang, alt, load <6 s, weight <5 MB), before (live) / after (staging) screenshots on the card. clientflow.autosend holds any preview email without a staging QA PASS; on_approval_changes merges to main only on QA PASS, then re-runs QA on the LIVE site (fail -> Anna card with undo command). Kiosk/admin (Build-a-Cap): qa_gate kiosk = headless design-a-cap (3 designs x tablet/phone), order submit on staging, admin Orders page renders the order."
-    },
-    "marketing": {
-      "name": "Marketing",
-      "lead": "lead-marketing",
-      "schedule": "daily 07:50",
-      "members": {
-        "social": "llm",
-        "devlog": "llm",
-        "research": "codex",
-        "stats": "llm",
-        "prospects": "llm"
-      },
-      "stages": {
-        "build": [
-          "research",
-          "social",
-          "devlog",
-          "prospects"
-        ],
-        "check": [
-          "stats"
-        ],
-        "fix": [
-          "social",
-          "devlog",
-          "prospects"
-        ],
-        "release": [
-          "social"
-        ]
-      },
-      "repos": [
-        "none"
-      ],
-      "release_target": "QA-passed social/devlog posts auto-queue to the social-scheduler Worker, links reported (Joshua standing rule); money/prices/legal and first contact need Joshua",
-      "launch_kit": {
-        "trigger": "Play listing public (HTTP 200 on play.google.com/store/apps/details?id=<pkg>)",
-        "parts": [
-          "15s gameplay clip -> social-scheduler (Shorts/Bluesky/X)",
-          "Reddit r/AndroidGaming r/playmygame r/IndieGaming + itch.io drafts (Joshua posts/approves first contact)",
-          "made-in-a-night devlog",
-          "ASO listing copy"
-        ],
-        "paid_ads": false
-      },
-      "qa_gate": "qa_gate social pre-post (social_agent.check + links resolve + media present when the post refers to a clip/image + no price claims + \"Elder World Studio\" spelling + no duplicates vs recent posts) in team social_release AND social_agent topup; devlog/assets stages need preview media.",
-      "clients": [
-        "jacob"
-      ],
-      "note": "Joshua 2026-10-12: grow installs for EXISTING games (Star Wayfarer, Astro Dodge, then other built titles with Play listings). No launch kits or promo for brand-new unreleased titles. ASO + organic social for what is already on Play."
-    },
-    "money": {
-      "name": "Money",
-      "lead": "lead-money",
-      "schedule": "daily 07:05",
-      "members": {
-        "cfo": "llm",
-        "bookkeeper": "llm",
-        "compliance": "llm",
-        "finance": "llm"
-      },
-      "stages": {
-        "build": [
-          "bookkeeper",
-          "finance"
-        ],
-        "check": [
-          "compliance"
-        ],
-        "fix": [
-          "bookkeeper",
-          "finance"
-        ],
-        "release": [
-          "cfo"
-        ]
-      },
-      "repos": [
-        "none"
-      ],
-      "release_target": "memo/card to Joshua (everything here touches money)",
-      "qa_gate": "compliance reviewer gate on the official Mercury facts (VERDICT: PASS required); every release is still a Joshua card."
-    },
-    "ops": {
-      "name": "Ops",
-      "lead": "lead-ops",
-      "schedule": "hourly :48",
-      "members": {
-        "guard": "llm",
-        "watchdog": "llm",
-        "docs": "codex",
-        "support": "llm",
-        "inbox": "llm:inbox-watch",
-        "bugs": "llm:bug-triage",
-        "coder": "codex",
-        "pipeline-audit": "code",
-        "qa": "codex"
-      },
-      "stages": {
-        "build": [
-          "coder",
-          "docs",
-          "bugs",
-          "support",
-          "inbox"
-        ],
-        "check": [
-          "qa",
-          "guard",
-          "watchdog"
-        ],
-        "fix": [
-          "coder",
-          "docs",
-          "bugs",
-          "support"
-        ],
-        "release": [
-          "guard"
-        ]
-      },
-      "repos": [
-        "ews-agent-ops",
-        "atlas-cloud",
-        "star-wayfarers",
-        "ews-pos"
-      ],
-      "release_target": "agent/ branch + Anna card; never main",
-      "qa_gate": "For code repos (ews-pos, atlas-cloud, star-wayfarers, ews-agent-ops): codex qa reviewer (mode:read) VERDICT on the branch diff + ews-qa on script edits. For non-code ops drafts: guard/watchdog llm reviewer. CC deploys use cc-qa (redeploy.sh)."
-    },
-    "callcenter": {
-      "name": "Call Center",
-      "lead": "lead-callcenter",
-      "schedule": "email log hourly :27; training export daily 02:40",
-      "members": {
-        "callcenter-voice": "llm",
-        "callcenter-sms": "llm",
-        "callcenter-email": "llm",
-        "callcenter-train": "llm",
-        "follow-up": "llm",
-        "prospects": "llm",
-        "support": "llm"
-      },
-      "stages": {
-        "build": [
-          "callcenter-email",
-          "callcenter-voice",
-          "callcenter-sms"
-        ],
-        "check": [
-          "callcenter-train"
-        ],
-        "fix": [
-          "callcenter-email"
-        ],
-        "release": [
-          "support"
-        ]
-      },
-      "repos": [
-        "none"
-      ],
-      "release_target": "replies stay drafts (needs-anna) unless an existing auto rule allows; voice/SMS live only with TWILIO_LIVE=1",
-      "qa_gate": "callcenter.py eval (20 cases) + pii-scan on every export; money/legal/price/refund -> Joshua card; else Sub-CEO triage -> Anna",
-      "rules": [
-        "recording notice on every call",
-        "SMS opt-in only, STOP/HELP/START",
-        "outbound calls only to callback requests (7 days)",
-        "cold outreach email-only via prospects; first contact = Joshua card",
-        "client lines only with client written OK (callcenter.json answering_approved)",
-        "no AgentOS customer code in training data",
-        "raw recordings deleted after 30 days",
-        "deletion requests honoured (callcenter.py forget)"
-      ]
-    },
-    "design": {
-      "name": "Design",
-      "lead": "lead-design",
-      "schedule": "on-demand (team_lead submit); idle tick via ews-team-tick",
-      "members": {
-        "design-lead": "llm",
-        "design-ui": "llm",
-        "design-brand": "llm",
-        "design-qa": "llm",
-        "coder": "codex",
-        "qa": "codex"
-      },
-      "stages": {
-        "build": [
-          "coder",
-          "design-ui",
-          "design-brand",
-          "design-lead"
-        ],
-        "check": [
-          "design-qa",
-          "qa"
-        ],
-        "fix": [
-          "coder",
-          "design-ui",
-          "design-brand"
-        ],
-        "release": [
-          "design-lead"
-        ]
-      },
-      "repos": [
-        "ews-pos",
-        "capbar-kiosk-demo",
-        "capbar-admin-staging",
-        "atlas-cloud",
-        "elderworldstudio-site"
-      ],
-      "release_target": "Penpot project + exported PNG/SVG on agent/ branch; client-facing drafts only until Joshua/Anna approve; never main",
-      "qa_gate": "design-qa VERDICT: PASS + ews-qa on penpot.py; money/legal/public brand -> Joshua card; else Anna",
-      "rules": [
-        "modern/futuristic style only — no medieval/fantasy crests, runes, or ornate gothic marks (Joshua dislikes)",
-        "work in Penpot projects per product (EWS POS, Cap Bar kiosk, AgentOS, games store art)",
-        "export PNG/SVG via penpot.py into the target repo through build->check->fix->release",
-        "draft-only for client-facing until approved",
-        "model: luna (gpt-6-luna) locked for build/check/fix/release; sol only if design-qa fails twice and sol_left>0.30",
-        "never spend money; never email clients unasked"
-      ],
-      "model": "luna"
-    },
-    "architecture": {
-      "name": "Architecture",
-      "lead": "lead-arch",
-      "floor": "3",
-      "members": {
-        "lead-arch": "llm",
-        "arch-building": "llm",
-        "arch-landscape": "llm",
-        "arch-qa": "llm"
-      },
-      "seats": {
-        "lead-arch": "f3-arch-lead-arch",
-        "arch-building": "f3-arch-arch-building",
-        "arch-landscape": "f3-arch-arch-landscape",
-        "arch-qa": "f3-arch-arch-qa"
-      },
-      "note": "2026-10-16 Architecture team. Floor 3 (Design) desks + assigned chairs: incoming/architecture/spec.json interiors floor 3. Hidden from ground-floor team halls until Floor 3 is built."
-    }
-  },
-  "schedules": {
-    "games-liveops": "weekly Sun 01:10 (one polish/update pipeline per live game: player-feedback + Play vitals/ratings + Unity stats)",
-    "games-trends": "weekly Mon 06:40 (research; ASO/install ideas for EXISTING games only — never reprioritize to start a new title while no_new_games)",
-    "community": "daily 11:20 + 18:20 (reply drafts/replies on own channels; hostile/refund/legal/money -> Joshua)",
-    "games-launchkit": "every tick (only after listing public)",
-    "casestudy-metrics": "weekly Sun 04:50 idle-only (never preempt). Writes policy/casestudy/metrics.json",
-    "casestudy-milestone": "daily 05:00 idle-only. Per 1/3/5/10 games: social counts-only post + Joshua FYI with $",
-    "casestudy-interest": "weekly Wed 05:10 idle-only. Interest signals weekly summary",
-    "qa-smoke": "daily 03:20 live smoke test of elderworldstudio.com, elderai.cloud, jacobcarsalesjones.com; failures -> Anna queue",
-    "jacob-seo": "weekly Mon 09:25 (Client Sites pipeline: local/vehicle/FAQ page via staging+QA; luna)",
-    "jacob-leads": "daily 08:02 lead-flow log + Mon weekly stats email (public search retired)",
-    "jacob-promo": "daily 08:10 posting kit email to Jacob",
-    "games-nextgame": "PAUSED 2026-10-12 (Joshua: no new mobile games). Was 00:45/12:45.",
-    "callcenter-email": "hourly :27 (read-only AgentMail -> scrubbed transcripts)",
-    "callcenter-export": "daily 02:40 (training JSONL, PII scan gate, 30-day recording purge)",
-    "design": "on-demand via team_lead submit (priority Cap Bar/kiosk/POS through Oct 23)"
-  },
-  "qa_gate": {
-    "added": "2026-10-11",
-    "rule": "Joshua: QA must check EVERYTHING. team_lead.qa_gate runs after every check stage (reviewer PASS AND deterministic checks); release asserts the last QA verdict is PASS. FAIL -> fix by the build agent (max_fix_retries 2) -> Sub-CEO triage (2 attempts) -> needs-anna route anna with Sub-CEO notes (never Joshua). Every card carries qa_verdict, qa_kind, qa_report (reports/qa/runs/<run>/REPORT.md) and media evidence.",
-    "script": "/opt/ews-agent/qa_gate.py",
-    "evidence": "/var/lib/ews-agent/qa-runs/<run>/ (+ copy in agent-reports reports/qa/runs/<run>/)",
-    "log": "/var/lib/ews-agent/qa/gate.jsonl",
-    "nightly_smoke": "ews-qa-smoke.timer 03:20: elderworldstudio.com, elderai.cloud, jacobcarsalesjones.com (sitemap pages, phone+desktop, forms intercepted, links, sitemap.xml) -> needs-anna source qa-smoke route anna on fail (dedup 20 h)"
-  },
-  "escalation": {
-    "added": "2026-10-11",
-    "order": [
-      "build agent fix loop (max_fix_retries 2)",
-      "Sub-CEO triage (subceo_triage.py, ews-subceo-triage.timer */10, max 2 attempts: rerun | requeue with better instructions | restart | sol within pool)",
-      "Anna needs-anna with Sub-CEO notes"
+ "version": 1,
+ "note": "Joshua 2026-10-12: NO NEW MOBILE GAMES — Games team polishes existing only. 2026-10-10 Joshua approved 5 teams. Lead = team_lead.py (luna). Stages build -> check -> fix -> release. Max 2 fix retries then Anna. Hard rules: money/prices/contracts/legal, production/live/public release, first contact -> Joshua. Case-study proof loops (2026-10-10): metrics/milestone/interest are low-priority idle work; never preempt running jobs. Mandatory QA gate on every team (2026-10-11): see qa_gate.",
+ "max_fix_retries": 2,
+ "teams": {
+  "games": {
+   "name": "Games",
+   "lead": "lead-games",
+   "schedule": "nightly 00:40",
+   "members": {
+    "game-coder": "codex:game-coder",
+    "coder": "codex",
+    "assets": "codex",
+    "animation": "content",
+    "anim-polish": "content",
+    "qa": "codex",
+    "store": "codex"
+   },
+   "stages": {
+    "build": [
+     "game-coder",
+     "assets",
+     "animation"
     ],
-    "never": "Joshua",
-    "covers": "all team pipelines incl. money reviewer, qa_gate alerts, nightly smoke, watchdog.py, CT112 cc-watchdog"
+    "check": [
+     "qa"
+    ],
+    "fix": [
+     "game-coder",
+     "assets",
+     "anim-polish"
+    ],
+    "release": [
+     "store"
+    ]
+   },
+   "repos": [
+    "star-wayfarers",
+    "ews-astro-dodge",
+    "ews-crystal-merge",
+    "ews-stack-tower",
+    "ews-tile-2048",
+    "ews-color-gate",
+    "ews-neon-snake",
+    "ews-brick-blitz",
+    "ews-spiral-drop",
+    "ews-gem-hopper",
+    "ews-void-flip",
+    "ews-game-scaffold"
+   ],
+   "release_target": "Google Play internal testing (store agent, test ads); production track + live-ads AAB needs Joshua (live ads standing-approved 2026-10-11)",
+   "coders": [
+    "game-coder-1",
+    "game-coder-2",
+    "game-coder-3"
+   ],
+   "note": "Joshua 2026-10-12: NO NEW MOBILE GAMES. Polish existing only. Priority: (1) Star Wayfarer on-foot controls/game-feel, (2) Astro Dodge, (3) ASO/store pages, (4) retention, (5) ads tuning, (6) bug fixes. Do not submit \"New mobile game\" pipelines; nextgame paused. Keep built games + Joshua release cards (Tile 2048, Stack Tower, Crystal Merge, etc.). game-coder-1..3 parallel; one coder per repo; test ads on agent/internal; live ads only production kits. Never Play production upload / money without Joshua.",
+   "qa_gate": "game_qa.py (unit/logic, node --check, headless smoke, debug APK + aapt2 + apksigner) + qa_gate listing (no price claims, no clone similarity, brand spelling, title/short/full limits, icon 512, feature 1024x500, screenshots 320-3840 <=2:1) + publish-kit validation (AAB layout, data safety, rating cheat sheet, checklist, versionCode); assets/animation stages also need preview media. publish_kit.py runs the same listing/kit gate before the Joshua card and upload() refuses without kit qa_verdict PASS.",
+   "no_new_games": true,
+   "polish_focus": [
+    "star-wayfarer-on-foot-controls",
+    "astro-dodge-polish",
+    "aso-store-pages",
+    "retention",
+    "ads-tuning",
+    "bug-fixes"
+   ]
+  },
+  "client": {
+   "name": "Client sites",
+   "lead": "lead-client",
+   "schedule": "weekly Tue 09:20",
+   "members": {
+    "client-fast": "codex:client-sites",
+    "client-care": "llm",
+    "qa": "codex",
+    "followup": "llm:follow-up",
+    "kiosk-polish": "llm"
+   },
+   "stages": {
+    "build": [
+     "client-fast",
+     "kiosk-polish"
+    ],
+    "check": [
+     "qa"
+    ],
+    "fix": [
+     "client-fast"
+    ],
+    "release": [
+     "client-care",
+     "followup"
+    ]
+   },
+   "repos": [
+    "testclient-demo",
+    "testfleet-demo",
+    "capbar-demo",
+    "capbar-admin",
+    "jacob-cdjr",
+    "capbar-kiosk-demo",
+    "capbar-admin-staging",
+    "ews-pos"
+   ],
+   "release_target": "staging branch + preview link drafted for the client; main/live needs the client's approval",
+   "qa_gate": "qa_gate site on STAGING for every changed page (+ /), phone 390x844 + desktop 1366x900: HTTP OK, zero JS errors, no failing same-site requests, images load, link check, form submit test (POST intercepted, nothing reaches the backend), basics (title, viewport, description, lang, alt, load <6 s, weight <5 MB), before (live) / after (staging) screenshots on the card. clientflow.autosend holds any preview email without a staging QA PASS; on_approval_changes merges to main only on QA PASS, then re-runs QA on the LIVE site (fail -> Anna card with undo command). Kiosk/admin (Build-a-Cap): qa_gate kiosk = headless design-a-cap (3 designs x tablet/phone), order submit on staging, admin Orders page renders the order."
+  },
+  "marketing": {
+   "name": "Marketing",
+   "lead": "lead-marketing",
+   "schedule": "daily 07:50",
+   "members": {
+    "social": "llm",
+    "devlog": "llm",
+    "research": "codex",
+    "stats": "llm",
+    "prospects": "llm"
+   },
+   "stages": {
+    "build": [
+     "research",
+     "social",
+     "devlog",
+     "prospects"
+    ],
+    "check": [
+     "stats"
+    ],
+    "fix": [
+     "social",
+     "devlog",
+     "prospects"
+    ],
+    "release": [
+     "social"
+    ]
+   },
+   "repos": [
+    "none"
+   ],
+   "release_target": "QA-passed social/devlog posts auto-queue to the social-scheduler Worker, links reported (Joshua standing rule); money/prices/legal and first contact need Joshua",
+   "launch_kit": {
+    "trigger": "Play listing public (HTTP 200 on play.google.com/store/apps/details?id=<pkg>)",
+    "parts": [
+     "15s gameplay clip -> social-scheduler (Shorts/Bluesky/X)",
+     "Reddit r/AndroidGaming r/playmygame r/IndieGaming + itch.io drafts (Joshua posts/approves first contact)",
+     "made-in-a-night devlog",
+     "ASO listing copy"
+    ],
+    "paid_ads": false
+   },
+   "qa_gate": "qa_gate social pre-post (social_agent.check + links resolve + media present when the post refers to a clip/image + no price claims + \"Elder World Studio\" spelling + no duplicates vs recent posts) in team social_release AND social_agent topup; devlog/assets stages need preview media.",
+   "clients": [
+    "jacob"
+   ],
+   "note": "Joshua 2026-10-12: grow installs for EXISTING games (Star Wayfarer, Astro Dodge, then other built titles with Play listings). No launch kits or promo for brand-new unreleased titles. ASO + organic social for what is already on Play."
+  },
+  "money": {
+   "name": "Money",
+   "lead": "lead-money",
+   "schedule": "daily 07:05",
+   "members": {
+    "cfo": "llm",
+    "bookkeeper": "llm",
+    "compliance": "llm",
+    "finance": "llm"
+   },
+   "stages": {
+    "build": [
+     "bookkeeper",
+     "finance"
+    ],
+    "check": [
+     "compliance"
+    ],
+    "fix": [
+     "bookkeeper",
+     "finance"
+    ],
+    "release": [
+     "cfo"
+    ]
+   },
+   "repos": [
+    "none"
+   ],
+   "release_target": "memo/card to Joshua (everything here touches money)",
+   "qa_gate": "compliance reviewer gate on the official Mercury facts (VERDICT: PASS required); every release is still a Joshua card."
+  },
+  "ops": {
+   "name": "Ops",
+   "lead": "lead-ops",
+   "schedule": "hourly :48",
+   "members": {
+    "guard": "llm",
+    "watchdog": "llm",
+    "docs": "codex",
+    "support": "llm",
+    "inbox": "llm:inbox-watch",
+    "bugs": "llm:bug-triage",
+    "coder": "codex",
+    "pipeline-audit": "code",
+    "qa": "codex"
+   },
+   "stages": {
+    "build": [
+     "coder",
+     "docs",
+     "bugs",
+     "support",
+     "inbox"
+    ],
+    "check": [
+     "qa",
+     "guard",
+     "watchdog"
+    ],
+    "fix": [
+     "coder",
+     "docs",
+     "bugs",
+     "support"
+    ],
+    "release": [
+     "guard"
+    ]
+   },
+   "repos": [
+    "ews-agent-ops",
+    "atlas-cloud",
+    "star-wayfarers",
+    "ews-pos"
+   ],
+   "release_target": "agent/ branch + Anna card; never main",
+   "qa_gate": "For code repos (ews-pos, atlas-cloud, star-wayfarers, ews-agent-ops): codex qa reviewer (mode:read) VERDICT on the branch diff + ews-qa on script edits. For non-code ops drafts: guard/watchdog llm reviewer. CC deploys use cc-qa (redeploy.sh)."
+  },
+  "callcenter": {
+   "name": "Call Center",
+   "lead": "lead-callcenter",
+   "schedule": "email log hourly :27; training export daily 02:40",
+   "members": {
+    "callcenter-voice": "llm",
+    "callcenter-sms": "llm",
+    "callcenter-email": "llm",
+    "callcenter-train": "llm",
+    "follow-up": "llm",
+    "prospects": "llm",
+    "support": "llm"
+   },
+   "stages": {
+    "build": [
+     "callcenter-email",
+     "callcenter-voice",
+     "callcenter-sms"
+    ],
+    "check": [
+     "callcenter-train"
+    ],
+    "fix": [
+     "callcenter-email"
+    ],
+    "release": [
+     "support"
+    ]
+   },
+   "repos": [
+    "none"
+   ],
+   "release_target": "replies stay drafts (needs-anna) unless an existing auto rule allows; voice/SMS live only with TWILIO_LIVE=1",
+   "qa_gate": "callcenter.py eval (20 cases) + pii-scan on every export; money/legal/price/refund -> Joshua card; else Sub-CEO triage -> Anna",
+   "rules": [
+    "recording notice on every call",
+    "SMS opt-in only, STOP/HELP/START",
+    "outbound calls only to callback requests (7 days)",
+    "cold outreach email-only via prospects; first contact = Joshua card",
+    "client lines only with client written OK (callcenter.json answering_approved)",
+    "no AgentOS customer code in training data",
+    "raw recordings deleted after 30 days",
+    "deletion requests honoured (callcenter.py forget)"
+   ]
+  },
+  "design": {
+   "name": "Design",
+   "lead": "lead-design",
+   "schedule": "on-demand (team_lead submit); idle tick via ews-team-tick",
+   "members": {
+    "design-lead": "llm",
+    "design-ui": "llm",
+    "design-brand": "llm",
+    "design-qa": "llm",
+    "coder": "codex",
+    "qa": "codex"
+   },
+   "stages": {
+    "build": [
+     "coder",
+     "design-ui",
+     "design-brand",
+     "design-lead"
+    ],
+    "check": [
+     "design-qa",
+     "qa"
+    ],
+    "fix": [
+     "coder",
+     "design-ui",
+     "design-brand"
+    ],
+    "release": [
+     "design-lead"
+    ]
+   },
+   "repos": [
+    "ews-pos",
+    "capbar-kiosk-demo",
+    "capbar-admin-staging",
+    "atlas-cloud",
+    "elderworldstudio-site"
+   ],
+   "release_target": "Penpot project + exported PNG/SVG on agent/ branch; client-facing drafts only until Joshua/Anna approve; never main",
+   "qa_gate": "design-qa VERDICT: PASS + ews-qa on penpot.py; money/legal/public brand -> Joshua card; else Anna",
+   "rules": [
+    "modern/futuristic style only — no medieval/fantasy crests, runes, or ornate gothic marks (Joshua dislikes)",
+    "work in Penpot projects per product (EWS POS, Cap Bar kiosk, AgentOS, games store art)",
+    "export PNG/SVG via penpot.py into the target repo through build->check->fix->release",
+    "draft-only for client-facing until approved",
+    "model: luna (gpt-6-luna) locked for build/check/fix/release; sol only if design-qa fails twice and sol_left>0.30",
+    "never spend money; never email clients unasked"
+   ],
+   "model": "luna"
+  },
+  "architecture": {
+   "name": "Architecture",
+   "lead": "lead-arch",
+   "floor": "3",
+   "members": {
+    "lead-arch": "llm",
+    "arch-building": "llm",
+    "arch-landscape": "llm",
+    "arch-qa": "llm"
+   },
+   "seats": {
+    "lead-arch": "f3-arch-lead-arch",
+    "arch-building": "f3-arch-arch-building",
+    "arch-landscape": "f3-arch-arch-landscape",
+    "arch-qa": "f3-arch-arch-qa"
+   },
+   "note": "2026-10-16 Architecture team. Floor 3 (Design) desks + assigned chairs: incoming/architecture/spec.json interiors floor 3. Hidden from ground-floor team halls until Floor 3 is built."
+  },
+  "world": {
+   "name": "World Command (B1)",
+   "lead": "world-ops",
+   "members": [
+    "world-interiors",
+    "world-exterior",
+    "world-life",
+    "world-character",
+    "world-physics",
+    "world-light",
+    "world-qa"
+   ],
+   "floor": "B1"
   }
+ },
+ "schedules": {
+  "games-liveops": "weekly Sun 01:10 (one polish/update pipeline per live game: player-feedback + Play vitals/ratings + Unity stats)",
+  "games-trends": "weekly Mon 06:40 (research; ASO/install ideas for EXISTING games only — never reprioritize to start a new title while no_new_games)",
+  "community": "daily 11:20 + 18:20 (reply drafts/replies on own channels; hostile/refund/legal/money -> Joshua)",
+  "games-launchkit": "every tick (only after listing public)",
+  "casestudy-metrics": "weekly Sun 04:50 idle-only (never preempt). Writes policy/casestudy/metrics.json",
+  "casestudy-milestone": "daily 05:00 idle-only. Per 1/3/5/10 games: social counts-only post + Joshua FYI with $",
+  "casestudy-interest": "weekly Wed 05:10 idle-only. Interest signals weekly summary",
+  "qa-smoke": "daily 03:20 live smoke test of elderworldstudio.com, elderai.cloud, jacobcarsalesjones.com; failures -> Anna queue",
+  "jacob-seo": "weekly Mon 09:25 (Client Sites pipeline: local/vehicle/FAQ page via staging+QA; luna)",
+  "jacob-leads": "daily 08:02 lead-flow log + Mon weekly stats email (public search retired)",
+  "jacob-promo": "daily 08:10 posting kit email to Jacob",
+  "games-nextgame": "PAUSED 2026-10-12 (Joshua: no new mobile games). Was 00:45/12:45.",
+  "callcenter-email": "hourly :27 (read-only AgentMail -> scrubbed transcripts)",
+  "callcenter-export": "daily 02:40 (training JSONL, PII scan gate, 30-day recording purge)",
+  "design": "on-demand via team_lead submit (priority Cap Bar/kiosk/POS through Oct 23)"
+ },
+ "qa_gate": {
+  "added": "2026-10-11",
+  "rule": "Joshua: QA must check EVERYTHING. team_lead.qa_gate runs after every check stage (reviewer PASS AND deterministic checks); release asserts the last QA verdict is PASS. FAIL -> fix by the build agent (max_fix_retries 2) -> Sub-CEO triage (2 attempts) -> needs-anna route anna with Sub-CEO notes (never Joshua). Every card carries qa_verdict, qa_kind, qa_report (reports/qa/runs/<run>/REPORT.md) and media evidence.",
+  "script": "/opt/ews-agent/qa_gate.py",
+  "evidence": "/var/lib/ews-agent/qa-runs/<run>/ (+ copy in agent-reports reports/qa/runs/<run>/)",
+  "log": "/var/lib/ews-agent/qa/gate.jsonl",
+  "nightly_smoke": "ews-qa-smoke.timer 03:20: elderworldstudio.com, elderai.cloud, jacobcarsalesjones.com (sitemap pages, phone+desktop, forms intercepted, links, sitemap.xml) -> needs-anna source qa-smoke route anna on fail (dedup 20 h)"
+ },
+ "escalation": {
+  "added": "2026-10-11",
+  "order": [
+   "build agent fix loop (max_fix_retries 2)",
+   "Sub-CEO triage (subceo_triage.py, ews-subceo-triage.timer */10, max 2 attempts: rerun | requeue with better instructions | restart | sol within pool)",
+   "Anna needs-anna with Sub-CEO notes"
+  ],
+  "never": "Joshua",
+  "covers": "all team pipelines incl. money reviewer, qa_gate alerts, nightly smoke, watchdog.py, CT112 cc-watchdog"
+ }
 }
