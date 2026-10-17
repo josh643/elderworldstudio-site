@@ -508,7 +508,7 @@ export default {
     S.board.grp.visible = si < 8 || el.banner.visible;
     if (near) { const hold = !!e.hold; S.board.draw(title, 'Website → explorable building', hold ? 'Planned · awaiting layout approval' : si >= 8 ? 'Open now' : BL[si], hold ? 0 : Math.min(pct, 1), hold ? 0 : si, 8,
       hold ? 'Survey crew: pad staked · build starts after Joshua approves the town layout' : si >= 8 ? 'Built live in the Elderverse' : 'Live · crew: ' + CS[si] + ' · ' + this.ago(e.since),
-      { plaque: lotN, hold, header: e.demo ? 'STAGING DEMO · NOT A REAL LEASE' : 'ELDER WORLD STUDIO · CONSTRUCTION', labels: ['Survey', 'Ground', 'Found.', 'Frame', 'Walls', 'Glass', 'Signs', 'Land'] }); }
+      { plaque: lotN, hold, header: e.demo ? 'STAGING DEMO · NOT A REAL LEASE' : 'ELDERVERSE · DISTRICT 1 · CONSTRUCTION', labels: ['Survey', 'Ground', 'Found.', 'Frame', 'Walls', 'Glass', 'Signs', 'Land'] }); }
     // crew
     this.ensureCrew(S, near ? crewN + (si === 3 || si === 4 ? 1 : 0) : 0); const top = sc ? 99 : 0.45 + floorsUp * FH + 0.01, ck = si + ':' + top;
     if (S.ptsK !== ck) { S.ptsK = ck; S.ptsOk = S.pts[si].filter(p => p[1] <= 0.01 || p[1] <= top); if (!S.ptsOk.length) S.ptsOk = S.pts[0].slice(1); S.ptsOk.gen = ck; S.ptsOk.top = top; }   // only levels that exist right now
