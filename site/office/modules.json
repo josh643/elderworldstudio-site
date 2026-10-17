@@ -105,6 +105,10 @@
    }
   },
   {
+   "id": "main-hall",
+   "src": "modules/main-hall/index.js"
+  },
+  {
    "id": "monitors",
    "src": "modules/monitors/index.js"
   },
