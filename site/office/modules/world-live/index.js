@@ -144,6 +144,7 @@ export default {
   crewStep(list, pts, dt, origin, rot) {
     const c = Math.cos(rot), s = Math.sin(rot);
     for (const w of list) {
+      const ox = w.x, oz = w.z;
       if (!pts.length) { w.on = false; continue; } w.on = true;
       if (!w.tgt || w.gen !== pts.gen) { const p = pts[(w.i++) % pts.length]; w.tgt = p; w.gen = pts.gen; w.wait = 0; w.mode = 'walk'; }
       w.top = pts.top ?? 0.01;
@@ -152,6 +153,7 @@ export default {
       if (w.mode === 'walk' && Math.abs(w.y - w.tgt[1]) > 0.05) w.y = d < 1.2 ? w.tgt[1] : 0;                 // off a level: down the ladder to the ground, up again at the target's ladder
       if (d > 0.15 && w.mode === 'walk') { const st = Math.min(d, dt * 1.35); w.x += dx / d * st; w.z += dz / d * st; w.yaw = Math.atan2(dx, dz); }
       else { if (w.mode === 'walk') { w.mode = w.tgt[3] || 'work'; w.wait = 3 + Math.random() * 4; if (w.tgt[4] != null) w.yaw = rot + w.tgt[4]; } w.wait -= dt; if (w.wait <= 0) { w.tgt = pts[(w.i++ + (Math.random() * 3 | 0)) % pts.length]; w.mode = 'walk'; } }
+      w.speed = dt > 0 ? Math.hypot(w.x - ox, w.z - oz) / dt : 0;
     }
   },
 
@@ -403,9 +405,10 @@ export default {
     }
     for (const [id, F] of figs) if (!out.find(a => a.id === id) && !F.leaving && !(F.arrivedAt && performance.now() - F.arrivedAt < 60000) && !(F.path.length && !F.arrivedAt)) { F.leaving = true; F.path = F.z < town.Z0 ? [door, doorIn] : [curb, door, doorIn]; F.arrive = 'gone'; F.key = ''; }
     for (const [id, F] of figs) {
+      F.speed = 0;
       const wp = F.path[0];
-      if (wp) { const dx = wp[0] - F.x, dz = wp[1] - F.z, d = Math.hypot(dx, dz); if (d < 0.2) { F.path.shift(); if (!F.path.length && F.arrive !== 'gone') F.arrivedAt = performance.now(); } else { let rem = d; for (let i = 1; i < F.path.length; i++) rem += Math.hypot(F.path[i][0] - F.path[i - 1][0], F.path[i][1] - F.path[i - 1][1]); const st = Math.min(d, dt * (rem > 15 ? 2.6 : 1.35)); F.x += dx / d * st; F.z += dz / d * st; F.yaw = Math.atan2(dx, dz); F.mode = 'walk'; } }
-      else if (F.arrive === 'gone') { F.on = false; pool.list = pool.list.filter(x => x !== F); figs.delete(id); F.tag?.parent?.remove(F.tag); continue; }
+      if (wp) { const dx = wp[0] - F.x, dz = wp[1] - F.z, d = Math.hypot(dx, dz); if (d < 0.2) { F.path.shift(); if (!F.path.length && F.arrive !== 'gone') F.arrivedAt = performance.now(); } else { let rem = d; for (let i = 1; i < F.path.length; i++) rem += Math.hypot(F.path[i][0] - F.path[i - 1][0], F.path[i][1] - F.path[i - 1][1]); const st = Math.min(d, dt * (rem > 15 ? 2.6 : 1.35)); F.x += dx / d * st; F.z += dz / d * st; F.yaw = Math.atan2(dx, dz); F.speed = st / Math.max(dt, 1e-3); F.mode = 'walk'; } }
+      else if (F.arrive === 'gone') { F.on = false; F.crewAvatar && (F.crewAvatar.userData.lodEnabled = false, F.crewAvatar.visible = false); pool.list = pool.list.filter(x => x !== F); figs.delete(id); F.tag?.parent?.remove(F.tag); continue; }
       else { F.mode = F.arrive || 'work'; if (F.face != null) F.yaw = F.face; }
       if (!F.tag && ctx.label) { F.tag = ctx.label(NAMES[id.replace(/^agent:/, '')] || 'Architect', 'Architecture team'); F.tag.userData.noCollide = 1; ctx.scene.add(F.tag); }
       if (F.tag) { F.tag.position.set(F.x, 2.15, F.z); const dd = Math.hypot(F.x - ctx.cam.position.x, F.z - ctx.cam.position.z); F.tag.visible = onG && dd < 28; F.tag.quaternion.copy(ctx.cam.quaternion); }
@@ -420,7 +423,7 @@ export default {
       this.ctx.colliders?.push?.([town.X0 + 3.7, town.Z0 + 53.6, town.X0 + 5.5, town.Z0 + 55.4]); }
     this.post.visible = onG && (ctx.exterior?.root?.visible ?? true);
     const NAMES = { 'sec-lead': 'Hœnir', 'sec-vuln': 'Geri', 'sec-harden': 'Sigyn', 'sec-pentest': 'Skírnir', 'sec-watch': 'Freki' }, now = Date.now(), cops = (this.cops ||= new Map()), pool = this.crew('sec');
-    const av = ctx.use('avatar'), cam = ctx.cam.position, seen = new Set();
+    const av = ctx.use('avatar'), seen = new Set();
     for (const a of this.agents.values()) {
       const sid = a.id.replace(/^agent:/, ''); if (!NAMES[sid] || a.zone !== 'town') continue; seen.add(sid);
       // server position, dead-reckoned along its walk target at its speed between the ~1 s pose batches (never past the target)
@@ -428,16 +431,19 @@ export default {
       const wx = town.X0 + px, wz = town.Z0 + pz;
       let F = cops.get(sid); if (!F) { F = { id: sid, x: wx, y: 0, z: wz, yaw: a.h || 0, phase: Math.random() * 6, ph: 0, mode: 'walk', on: true, tablet: true }; cops.set(sid, F); pool.list.push(F); }
       const dx = wx - F.x, dz = wz - F.z, d = Math.hypot(dx, dz);
-      if (d > 12) { F.x = wx; F.z = wz; } else if (d > 0.03) { const sp = Math.min(d / Math.max(dt, 1e-3), d > 1.5 ? 2.2 : 1.45), st = Math.min(d, sp * dt); F.x += dx / d * st; F.z += dz / d * st; F.yaw = Math.atan2(dx, dz); F.ph += st * 4.4; F.speed = st / Math.max(dt, 1e-3); }   // stride-synced: 4.4 rad per metre
+      if (d > 12) { F.x = wx; F.z = wz; F.speed = 0; } else if (d > 0.03) { const sp = Math.min(d / Math.max(dt, 1e-3), d > 1.5 ? 2.2 : 1.45), st = Math.min(d, sp * dt); F.x += dx / d * st; F.z += dz / d * st; F.yaw = Math.atan2(dx, dz); F.ph += st * 4.4; F.speed = st / Math.max(dt, 1e-3); }   // stride-synced: 4.4 rad per metre
       else F.speed = 0;
       const moving = (F.speed || 0) > 0.15; F.mode = moving ? 'walk' : 'idle'; if (!moving && a.act !== 'walk') F.yaw = sid === 'sec-lead' ? 0 : (a.h ?? F.yaw);
       F.on = onG && (ctx.exterior?.root?.visible ?? true);
       // near the camera: the shared rigged avatar (real walk clip at its measured ground speed, tablet = the carry prop); far: instanced figure
-      const dc = Math.hypot(F.x - cam.x, F.z - cam.z), wantRig = !!av?.make && F.on && dc < 12 && (ctx.lod || 1) >= 0.5;
-      if (wantRig && !F.av) { try { F.av = av.make({ id: 'patrol-' + sid, name: NAMES[sid], role: 'Elderverse patrol' }, '#1f2a3d'); ctx.scene.add(F.av); const fo = F.av.userData.folder; if (fo) { fo.material = new T.MeshLambertMaterial({ color: '#101318' }); fo.scale.multiplyScalar(1.15); } } catch { F.av = null; } }
+      const wantRig = !!av?.make && F.on;
+      if (wantRig && !F.av) { try { F.av = av.make({ id: 'patrol-' + sid, name: NAMES[sid], role: 'Elderverse patrol' }, '#1f2a3d'); }
+        catch (e) { console.warn('patrol wardrobe model failed; using shared human rig', e); try { F.av = av.make({ id: 'patrol-' + sid, name: NAMES[sid], role: 'Elderverse patrol', noWardrobe: true }, '#1f2a3d'); } catch { F.av = null; } }
+        if (F.av) { ctx.scene.add(F.av); const fo = F.av.userData.folder; if (fo) { fo.material = new T.MeshLambertMaterial({ color: '#101318' }); fo.scale.multiplyScalar(1.15); } } }
       F.rigged = !!(wantRig && F.av);
-      if (F.av) { const u = F.av.userData; F.av.visible = F.rigged; if (F.rigged) { u.state = { stage: 'review' }; u.target = moving ? { x: F.x + Math.sin(F.yaw) * 0.4, z: F.z + Math.cos(F.yaw) * 0.4 } : null;
-          F.av.position.set(F.x, 0, F.z); F.av.rotation.y = F.yaw; if (moving && u.cur === 'carry') u.act('carry').timeScale = (F.speed || 1.3) / 0.65; } }
+      if (F.av) { const u = F.av.userData; u.lodEnabled = F.on; u.state = {}; if (!u.patrolPose) { u.patrolPose = true; u.target = null; u.path = []; }
+        u.externalSpeed = moving ? F.speed : 0; u.spotK = moving ? 'carry' : 'stand';
+        F.av.position.set(F.x, 0, F.z); F.av.rotation.y = F.yaw; }
     }
     for (const [sid, F] of cops) if (!seen.has(sid)) { F.on = false; if (F.av) F.av.visible = false; }
     pool.draw(t);
@@ -469,7 +475,7 @@ export default {
     this.architects(dt, t, onG); this.patrols(dt, t, onG);
     this.flushToast(dt);
   },
-  ensureCrew(S, n) { const W = this.crew(); while (S.crew.length < n && W.list.length < W.MAX) { const w = { x: S.g.position.x + (Math.random() - 0.5) * 4, y: 0, z: S.g.position.z + (Math.random() - 0.5) * 4, yaw: 0, phase: Math.random() * 6, i: (Math.random() * 5) | 0, mode: 'walk', on: false }; S.crew.push(w); W.list.push(w); } },
+  ensureCrew(S, n) { const W = this.crew(); while (S.crew.length < n && W.list.length < W.MAX) { this.workerSeq = (this.workerSeq || 0) + 1; const w = { id: 'site-worker-' + this.workerSeq, x: S.g.position.x + (Math.random() - 0.5) * 4, y: 0, z: S.g.position.z + (Math.random() - 0.5) * 4, yaw: 0, phase: Math.random() * 6, i: (Math.random() * 5) | 0, mode: 'walk', speed: 0, on: false }; S.crew.push(w); W.list.push(w); } },
   drawSite(S, si, f, t, near, dt, crewN, night) {
     const el = S.el, F = S.F, FH = S.FH, e = S.e, cur = BUILD[si], done = k => si > BUILD.indexOf(k), at = k => si === BUILD.indexOf(k), from = k => si >= BUILD.indexOf(k);
     // survey
