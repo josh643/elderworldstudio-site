@@ -94,7 +94,7 @@ export function build(ctx, shell) {
         }` });
     const dome = new T.Mesh(sg, sm); dome.renderOrder = -100; dome.frustumCulled = false; sky.add(dome);
     const sp = new Float32Array(600 * 3); for (let i = 0; i < 600; i++) { const a = rnd() * Math.PI * 2, y = 0.08 + rnd() * 0.92, r = Math.sqrt(1 - y * y); sp.set([Math.cos(a) * r * 95, y * 95, Math.sin(a) * r * 95], i * 3); }
-    const stars = new T.Points(new T.BufferGeometry().setAttribute('position', new T.BufferAttribute(sp, 3)), new T.PointsMaterial({ color: 0xfff8e8, size: 1.6, sizeAttenuation: false, transparent: true, opacity: 0, depthWrite: false, depthTest: false, fog: false }));
+    const stars = new T.Points(new T.BufferGeometry().setAttribute('position', new T.BufferAttribute(sp, 3)), new T.PointsMaterial({ color: 0xfff8e8, size: 1.6, sizeAttenuation: false, transparent: true, opacity: 0, depthWrite: false, depthTest: true, fog: false }));   /* depthTest on: as a transparent Points object it draws AFTER the opaque pass, so with depthTest off the stars speckled the indoor walls and ceilings (walkthrough REPORT item 9) */
     stars.renderOrder = -99; stars.frustumCulled = false; sky.add(stars); sky.userData.stars = stars;
     // distant hills: 3 rings, pre-hazed by layer
     const hillMat = (col, hz) => new T.ShaderMaterial({ uniforms: { uHazeC: U.uHazeC, uLit: U.uLit, uCol: { value: new T.Color(col) }, uHz: { value: hz } }, depthWrite: false, depthTest: false, fog: false,

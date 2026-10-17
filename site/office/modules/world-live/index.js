@@ -378,7 +378,7 @@ export default {
   drawZone(S, si, f, t, near, dt, crewN) {
     const el = S.el, e = S.e, at = k => si === BUILD.indexOf(k);
     el.cones.visible = si < 8; el.stakes.count = at('survey') ? Math.ceil(f * S.stakeN) : si <= 2 ? S.stakeN : 0; el.stakes.instanceMatrix.needsUpdate = true; el.tripod.visible = si <= 1;
-    el.pallet.visible = si >= 1 && si <= 5; el.tower.visible = si >= 3 && si <= 6; if (el.tower.visible && near) el.tower.position.set(Math.sin(t * 0.05) * (S.w / 2 - 3), 0, -S.d / 4);
+    el.pallet.visible = si >= 1 && si <= 5; el.tower.visible = !e.floor && si >= 3 && si <= 6; if (el.tower.visible) el.tower.position.set(S.w / 2 - 3, 0, -S.d / 4);   /* indoor zones (e.floor, e.g. the ground-floor rebuild) get no rolling scaffold: it slid across the finished lobby and read as a moving shelf (Joshua 11:29 PM); outdoors it stands still */
     S.board.grp.visible = si < 8; if (near && si < 8) S.board.draw(e.name.toUpperCase().slice(0, 26), e.arch ? 'Architecture team job · live' : 'Work zone · live', e.hold ? 'Planned · awaiting layout approval' : BL[si], e.hold ? 0 : (si + f) / 8, e.hold ? 0 : si, 8, e.hold ? 'Architects planning on site · no building until the layout is approved' : 'Real progress from the team · ' + this.ago(e.since), { plaque: 'ZONE', hold: !!e.hold });
     const n = near && si < 8 && si >= 1 ? Math.min(2, crewN) : 0; this.ensureCrew(S, n); for (let i = n; i < S.crew.length; i++) S.crew[i].on = false;
     const pts = S.pts[0].slice(1); pts.gen = 'z' + si; this.crewStep(S.crew.slice(0, n), pts, dt, S.g.position, 0);
