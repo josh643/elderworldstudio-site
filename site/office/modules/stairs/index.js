@@ -74,6 +74,14 @@ export default {
       ctx.rebuildColliders?.(); return (built[n] = { g, o });
     };
     ctx.extraCols ||= []; buildFrame('G'); for (const n of FLOORS.slice(1)) buildFrame(n);
+    // The restricted basement entrance sits beside the G landing. Its click route uses the same server access check as the
+    // elevator's B1 floor button, so the stair reader cannot bypass the asset/API allowlist.
+    { const o = O('G'), x = o.x + W - 0.14, z = o.z - 1.1, dark = M(0x20242a);
+      const reader = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.42, 0.34), dark); reader.position.set(x, 1.55, z); ctx.scene.add(reader); reader.userData.noCollide = 1;
+      const lamp = new THREE.Mesh(new THREE.BoxGeometry(0.025, 0.05, 0.16), new THREE.MeshBasicMaterial({ color: 0xffc978, toneMapped: false })); lamp.position.set(x - 0.055, 1.68, z); ctx.scene.add(lamp); lamp.userData.noCollide = 1;
+      const plate = ctx.panel(ctx.textCanvas([T('B1 · Staff only'), T('Keycard access')], { w: 560, h: 180, size: 62, body: 40 }), 0.8, 0.3, x - 0.04, 2.0, z, -Math.PI / 2);
+      plate.material.toneMapped = false; plate.userData.plate = 'B1 staff stair access'; ctx.scene.add(plate);
+      const enter = () => ctx.floorsApi?.go('B1'); ctx.onClick(reader, enter); ctx.onClick(lamp, enter); ctx.onClick(plate, enter); }
     /* ---- height field: local (lx, lz) -> surface heights in the frame of floor index i ---- */
     const segH = (lx, lz, i, k) => { const f = i + k; if (f < 0 || f > top) return null; const b = 4 * k;
       if (lz > ZL) return b; if (f === top) return null;

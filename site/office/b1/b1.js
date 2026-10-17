@@ -12,7 +12,12 @@ export function buildB1(ctx, core, ox) {
   add(new THREE.BoxGeometry(24, 0.2, 22), slate, cx, -0.1, (Z0 + Z1) / 2);
   add(new THREE.BoxGeometry(24, 0.1, 22), dark, cx, 3.2, (Z0 + Z1) / 2);
   for (const [x, z, w, d] of [[cx, Z0, 24, 0.3], [cx, Z1, 24, 0.3], [X0, (Z0 + Z1) / 2, 0.3, 22], [X1, (Z0 + Z1) / 2, 0.3, 22]]) add(new THREE.BoxGeometry(w, 3.2, d), walnut, x, 1.6, z, 0, true, w, d);
-  for (let x = X0 + 3; x < X1; x += 6) for (let z = Z0 + 3; z < Z1; z += 6) add(new THREE.CylinderGeometry(0.22, 0.22, 0.04, 16), warm, x, 3.13, z);   // warm downlight discs (emissive)
+  const lamps = []; for (let x = X0 + 3; x < X1; x += 6) for (let z = Z0 + 3; z < Z1; z += 6) {
+    lamps.push([x, z]);
+    add(new THREE.CylinderGeometry(0.24, 0.24, 0.1, 16), dark, x, 3.14, z);                // recessed metal can, fixed to ceiling
+    add(new THREE.CylinderGeometry(0.22, 0.22, 0.03, 16), warm, x, 3.075, z);              // warm diffuser, flush below the can
+    add(new THREE.CylinderGeometry(0.25, 0.25, 0.025, 16), brass, x, 3.04, z);             // narrow brass trim ring
+  }
   // curved monitor wall at the far end
   const MON = ['World map', 'Agent status', 'FPS per tier', 'Deploys + hot updates', 'Security patrols', 'Construction gate', 'Budget'];
   const mons = MON.map((title, i) => { const cv = document.createElement('canvas'); cv.width = 384; cv.height = 216; const tex = new THREE.CanvasTexture(cv);
@@ -32,10 +37,24 @@ export function buildB1(ctx, core, ox) {
   add(new THREE.BoxGeometry(2.4, 0.04, 0.05), brass, cx, 1.1, fz + 10.75);
   const consoles = [[-6, 7, 'Bestla'], [6, 7, 'Nerthus'], [-6, 10, 'Fjörgyn']];
   for (const [dx, dz] of consoles) { add(new THREE.BoxGeometry(1.8, 0.8, 0.8), slate, cx + dx, 0.4, fz + dz, 0, true, 1.8, 0.8); add(new THREE.BoxGeometry(0.9, 0.55, 0.05), E(0x274a5a), cx + dx, 1.15, fz + dz - 0.2); }
-  for (const [dx, dz] of [[-8, 11], [-8, 13], [8, 11], [8, 13]]) add(new THREE.BoxGeometry(0.6, 0.45, 0.6), seat, cx + dx, 0.23, fz + dz);
+  // Four actual chairs around the command table; the old blocks sat directly under the four staff avatars.
+  const namedSeats = ['Sleipnir', 'Sunna', 'Alvíss', 'Ívaldi'];
+  const chairs = [[-3.2, 4.1, 1.034], [3.2, 4.1, -1.034], [-3.2, 7.9, 2.107], [3.2, 7.9, -2.107]];
+  chairs.forEach(([dx, dz, ry], i) => { const x = cx + dx, z = fz + dz;
+    add(new THREE.BoxGeometry(0.72, 0.12, 0.72), seat, x, 0.52, z, ry, true, 0.72, 0.72);
+    add(new THREE.BoxGeometry(0.72, 0.62, 0.12), seat, x - Math.sin(ry) * 0.28, 0.86, z - Math.cos(ry) * 0.28, ry);
+    for (const sx of [-1, 1]) for (const sz of [-1, 1]) add(new THREE.BoxGeometry(0.08, 0.48, 0.08), walnut, x + sx * 0.27, 0.24, z + sz * 0.27);
+    const tag = ctx.panel(ctx.textCanvas([namedSeats[i]], { w: 320, h: 100, size: 56, bg: '#17191d', fg: '#e7d3a8' }), 0.62, 0.2, x - Math.sin(ry) * 0.38, 1.27, z - Math.cos(ry) * 0.38, ry + Math.PI);
+    tag.material.toneMapped = false; tag.userData.seatName = namedSeats[i]; g.add(tag);
+  });
   add(new THREE.BoxGeometry(4, 1.05, 0.7), walnut, X0 + 2.6, 0.52, fz - 3.8, 0, true, 4, 0.7);
   add(new THREE.BoxGeometry(0.5, 0.45, 0.4), brass, X0 + 1.5, 1.27, fz - 3.8);
   add(new THREE.BoxGeometry(3.6, 0.05, 0.3), warm, X0 + 2.6, 2.4, fz - 5.7);
+  // Interior elevator selector, beside the arrival point. It opens the same floor list as the lobby elevator.
+  const liftPlate = ctx.panel(ctx.textCanvas([ctx.t?.('Elevator') || 'Elevator', ctx.t?.('Floor selector') || 'Floor selector'], { w: 560, h: 180, size: 62, body: 40 }), 1.15, 0.38, X1 - 0.12, 1.8, fz + 8, -Math.PI / 2);
+  liftPlate.material.toneMapped = false; liftPlate.userData.plate = 'B1 elevator selector'; g.add(liftPlate);
+  const liftButton = add(new THREE.BoxGeometry(0.12, 0.22, 0.08), brass, X1 - 0.18, 1.15, fz + 7.25, 0, false);
+  ctx.onClick(liftPlate, () => ctx.use?.('floorPanel')?.()); ctx.onClick(liftButton, () => ctx.use?.('floorPanel')?.());
   // data -> canvases, at most once per second
   const draw = (m, lines, col = '#9fd8ff') => { const c = m.cv.getContext('2d'); c.fillStyle = '#0b0e13'; c.fillRect(0, 0, 384, 216); c.fillStyle = '#d9b45a'; c.font = '700 18px Inter,sans-serif'; c.fillText(m.title, 14, 26);
     c.fillStyle = col; c.font = '14px Inter,sans-serif'; lines.slice(0, 10).forEach((l, i) => c.fillText(String(l).slice(0, 46), 14, 52 + i * 17)); m.tex.needsUpdate = true; };
@@ -67,7 +86,7 @@ export function buildB1(ctx, core, ox) {
       let p = posts[m.id]; if (!p && m.offDuty) { p = [-12 + 1.4 + (k++) * 1.1, -2.9, 0]; off.push(m.id); } if (!p || !A) continue;
       const av = A.make(m, t.floor === 'B1' ? 0x6a8fb0 : 0x8a7a6a, () => ctx.card(`<h3>${ctx.esc(m.name)}</h3><p>${ctx.esc(m.role)}${m.offDuty ? ' · off duty (paused)' : ''}</p>`));
       av.position.set(cx + p[0], 0, fz + p[1]); av.rotation.y = p[2]; av.userData.b1 = true; g.add(av); }
-    window.__ewsB1 = { offDuty: off, avatars: !!A, bar: [X0 + 2.6, fz - 3.8], room: [X0, Z0, X1, Z1], at: () => ({ cam: ctx.cam ? [ctx.cam.position.x, ctx.cam.position.z].map(v => +v.toFixed(1)) : null, people: g.children.filter(o => o.userData?.b1).map(o => [o.userData?.a?.id || '', +o.position.x.toFixed(1), +o.position.z.toFixed(1)]) }) };   // read-only test probe
+    window.__ewsB1 = { offDuty: off, avatars: !!A, bar: [X0 + 2.6, fz - 3.8], room: [X0, Z0, X1, Z1], monitors: MON.slice(), seats: namedSeats.slice(), lamps: lamps.length, at: () => ({ cam: ctx.cam ? [ctx.cam.position.x, ctx.cam.position.z].map(v => +v.toFixed(1)) : null, people: g.children.filter(o => o.userData?.b1).map(o => [o.userData?.a?.id || '', +o.position.x.toFixed(1), +o.position.z.toFixed(1)]) }) };   // read-only test probe
   } catch (e) { console.warn('b1 people', e); window.__ewsB1 = { err: String(e) }; } })();
   refresh();
   return { group: g, bounds: { x0: X0 + 0.5, z0: Z0 + 0.5, x1: X1 - 0.5, z1: Z1 - 0.5 }, onFrame() { const t = performance.now(); if (t - last > 1000) { last = t; refresh(); } }, dispose() { alive = false; } };

@@ -22,13 +22,20 @@ export function setupFloors(ctx, core) {
   const offX = n => (n === 'G' ? 0 : n === 'B1' ? -400 : (+n - 1) * 400);
   // B1 is IP-locked server-side (functions/office/b1/_middleware.js + /api/office/b1/*): the room module and its data are only served to
   // allowlisted IPs, so a visitor can't build or teleport there. They see the locked staff door message instead.
-  let b1Ok = null; const b1Check = async () => { if (b1Ok !== null) return b1Ok; try { const r = await fetch('/api/office/b1/access', { cache: 'no-store' }); b1Ok = r.ok; } catch { b1Ok = false; } return b1Ok; };
+  // Only a positive, explicit server decision grants access. Keep denied/network results retryable so an allowlist update
+  // can take effect without a page reload; the room assets remain independently protected by the B1 middleware.
+  let b1Pending = null; const b1Check = async () => {
+    if (b1Pending) return b1Pending;
+    b1Pending = (async () => { try { const r = await fetch('/api/office/b1/access', { cache: 'no-store' }); const d = await r.json();
+      return r.ok && d?.allowed === true; } catch { return false; } })();
+    try { return await b1Pending; } finally { b1Pending = null; }
+  };
   b1Check();
   const b1Locked = () => ctx.card(`<h3>${esc(T('Restricted: World Operations'))}</h3><p>${esc(T('This level is for Elder World Studio staff only. Sorry, the door is locked.'))}</p>`);
   async function go(n) {
     if (n === cur) { ctx.closeCard(); return; }
     if (n === 'B1') { if (!(await b1Check())) { b1Locked(); return; }
-      if (!built.B1) { try { const m = await import('/office/b1/b1.js?v=3'); built.B1 = m.buildB1(ctx, core, offX('B1')); } catch { b1Ok = false; b1Locked(); return; } } }
+      if (!built.B1) { try { const m = await import('/office/b1/b1.js?v=3'); built.B1 = m.buildB1(ctx, core, offX('B1')); } catch { b1Locked(); return; } } }
     ctx.closeCard(); fade.style.opacity = 1;
     setTimeout(() => {
       if (n !== 'G' && n !== 'B1' && !built[n]) built[n] = buildFloor(ctx, core, FLOORS.find(f => f.n === n), offX(n), go);
@@ -58,7 +65,7 @@ export function setupFloors(ctx, core) {
     ctx.teleport(core.x + ox, core.fz + 1.6, core.x + ox, core.fz + 8); return 'elevator'; };
   const settle = n => { cur = n; ctx.curFloor = n; ctx.curBounds = n === 'G' ? null : built[n].bounds; ctx.rebuildColliders(); ctx.daynight?.apply?.(); };
   const restore = (n, at) => { n = n && (n === 'B1' || n === 'G' || FLOORS.some(f => f.n === n)) ? n : at ? floorOfX(at.x) : 'G';
-    if (n === 'B1') { place('G', null); (async () => { if (!(await b1Check())) return; try { if (!built.B1) { const m = await import('/office/b1/b1.js?v=2'); built.B1 = m.buildB1(ctx, core, offX('B1')); } settle('B1'); place('B1', at); } catch { b1Ok = false; } })(); return 'B1-pending'; }
+    if (n === 'B1') { place('G', null); (async () => { if (!(await b1Check())) return; try { if (!built.B1) { const m = await import('/office/b1/b1.js?v=3'); built.B1 = m.buildB1(ctx, core, offX('B1')); } settle('B1'); place('B1', at); } catch {} })(); return 'B1-pending'; }
     if (n !== 'G' && !built[n]) { const F = FLOORS.find(f => f.n === n); if (!F) { place('G', null); return 'lobby'; } built[n] = buildFloor(ctx, core, F, offX(n), go); }
     settle(n); return n + ':' + place(n, at); };
   ctx.floorRestore = restore; ctx.floorOfX = floorOfX;
