@@ -26,7 +26,7 @@ function applyEvent(w, ev, now) {
   if (ev.type === 'lot.lease' || ev.type === 'site.progress') {
     const id = 'lot:' + ev.lot; let e = w.ents[id];
     if (!e) { if (ev.type !== 'lot.lease') return { up, rm }; e = w.ents[id] = { id, kind: 'site', lot: ev.lot, si: 0, p: 0, since: now }; }
-    if (ev.type === 'lot.lease') { Object.assign(e, { tenant: ev.tenant || '', public: !!ev.public, style: ev.style || e.style || {}, parts: ev.parts || e.parts || {}, demo: !!ev.demo });
+    if (ev.type === 'lot.lease') { Object.assign(e, { tenant: ev.tenant || '', public: !!ev.public, style: ev.style || e.style || {}, parts: ev.parts || e.parts || {}, demo: !!ev.demo, arch: !!ev.arch, job: ev.job || e.job || '' });
       if (ev.overall == null && ev.stage == null) { ev = { ...ev, stage: 'survey', progress: 0 }; } }
     stamp(e, BUILD, ev, now); up.push(e);
   } else if (ev.type === 'lot.release') { const id = 'lot:' + ev.lot; if (w.ents[id]) { delete w.ents[id]; rm.push(id); } }
@@ -36,6 +36,14 @@ function applyEvent(w, ev, now) {
     if (ev.type === 'road.upsert') Object.assign(e, { name: ev.name || e.name || 'Road works', a: ev.a || e.a, b: ev.b || e.b, w: ev.w || e.w || 8, resurface: !!ev.resurface, demo: !!ev.demo });
     stamp(e, ROAD, ev, now); up.push(e);
   } else if (ev.type === 'road.remove') { const id = 'road:' + ev.id; if (w.ents[id]) { delete w.ents[id]; rm.push(id); } }
+  // zone jobs (2026-10-16): work areas without a lot, e.g. 'campus ground floor' rebuild. rect in the campus frame (x right, z out of the
+  // building, origin = lobby entrance centre), floor 'G'..'5'. Same stage list + progress model as buildings.
+  else if (ev.type === 'zone.upsert' || ev.type === 'zone.progress') {
+    const id = 'zone:' + ev.id; let e = w.ents[id];
+    if (!e) { if (ev.type !== 'zone.upsert') return { up, rm }; e = w.ents[id] = { id, kind: 'zone', si: 0, p: 0, since: now }; }
+    if (ev.type === 'zone.upsert') Object.assign(e, { name: ev.name || e.name || 'Work zone', rect: ev.rect || e.rect, floor: ev.floor || e.floor || 'G', arch: !!ev.arch, demo: !!ev.demo });
+    stamp(e, BUILD, ev, now); up.push(e);
+  } else if (ev.type === 'zone.remove') { const id = 'zone:' + ev.id; if (w.ents[id]) { delete w.ents[id]; rm.push(id); } }
   // agent poses decided by the CT119 world server (schema v1 extension): zone-local x/z, heading, activity, optional walk target + speed
   else if (ev.type === 'agent.pose') { for (const p of ev.poses || []) { const id = 'agent:' + p.id; const e = w.ents[id] || (w.ents[id] = { id, kind: 'agent', si: 0, p: 0, at: now, since: now });
       for (const k of ['to', 'v', 'lot']) delete e[k]; Object.assign(e, p, { id, kind: 'agent', at: now }); up.push(e); } }

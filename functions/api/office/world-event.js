@@ -18,7 +18,7 @@ export function clean(e) {
     o.lot = num(e.lot, 1, 80); if (!o.lot || !Number.isInteger(o.lot)) return null;
     if (t === 'lot.lease') { o.public = e.public === true; o.tenant = o.public ? words(e.tenant, 28) : '';
       const s = e.style || {}; o.style = { floors: Math.round(num(s.floors, 1, 4) || 2), color: COLORS.includes(s.color) ? s.color : 'sandstone', kind: KINDS.includes(s.kind) ? s.kind : 'shop' };
-      o.parts = {}; for (const [k, v] of Object.entries(e.parts || {}).slice(0, 12)) if (BUILD.includes(k) && part(v)) o.parts[k] = part(v); }
+      o.arch = e.arch === true; o.job = words(e.job, 40); o.parts = {}; for (const [k, v] of Object.entries(e.parts || {}).slice(0, 12)) if (BUILD.includes(k) && part(v)) o.parts[k] = part(v); }
     if (t !== 'lot.release') { if (e.stage != null) { if (!BUILD.includes(e.stage)) return null; o.stage = e.stage; } prog(); }
     return o;
   }
@@ -26,6 +26,13 @@ export function clean(e) {
     o.id = String(e.id || '').replace(/[^a-z0-9-]/gi, '').slice(0, 32); if (!o.id) return null;
     if (t === 'road.upsert') { o.name = words(e.name, 40) || 'Road works'; o.a = pt(e.a); o.b = pt(e.b); o.w = num(e.w, 3, 16) || 8; o.resurface = e.resurface === true; if (!o.a || !o.b) return null; }
     if (t !== 'road.remove') { if (e.stage != null) { if (!ROAD.includes(e.stage)) return null; o.stage = e.stage; } prog(); }
+    return o;
+  }
+  if (['zone.upsert', 'zone.progress', 'zone.remove'].includes(t)) {   // work zones without a lot (campus frame rect, floor G..5)
+    o.id = String(e.id || '').replace(/[^a-z0-9-]/gi, '').slice(0, 32); if (!o.id) return null;
+    if (t === 'zone.upsert') { o.name = words(e.name, 40) || 'Work zone'; o.floor = /^[G1-5]$/.test(e.floor || 'G') ? (e.floor || 'G') : 'G'; o.arch = e.arch === true;
+      const r = Array.isArray(e.rect) && e.rect.length === 4 && e.rect.every(v => Number.isFinite(Number(v)) && Math.abs(v) < 400) ? e.rect.map(Number) : null; if (!r) return null; o.rect = r; }
+    if (t !== 'zone.remove') { if (e.stage != null) { if (!BUILD.includes(e.stage)) return null; o.stage = e.stage; } prog(); }
     return o;
   }
   if (t === 'agent.pose') {   // schema v1 extension (incoming/world-server/schema.ts): numbers + enums only, <=200 poses

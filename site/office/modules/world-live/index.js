@@ -87,6 +87,8 @@ export default {
       sign: merge([part(B(0.15, 2.0, 0.15), DK, -1.15, 1.0, 0), part(B(0.15, 2.0, 0.15), DK, 1.15, 1.0, 0), part(B(2.6, 1.42, 0.08), DK, 0, 1.75, -0.03)]),
       monument: merge([part(B(3.4, 0.5, 0.9), '#6b655b', 0, 0.25, 0), part(B(3.0, 1.4, 0.6), '#d9d2c4', 0, 1.2, 0)]),
       body: merge([part(B(0.36, 0.16, 0.22), '#2d3340', 0, 0.9, 0), part(B(0.42, 0.52, 0.25), '#ff7a1a', 0, 1.22, 0), part(B(0.43, 0.05, 0.26), '#e8e8e8', 0, 1.12, 0), part(B(0.43, 0.05, 0.26), '#e8e8e8', 0, 1.3, 0), part(B(0.12, 0.08, 0.12), '#c99a78', 0, 1.51, 0), part(B(0.2, 0.22, 0.21), '#c99a78', 0, 1.65, 0), part(C(0.13, 0.14, 0.09, 10), '#f2c230', 0, 1.8, 0), part(C(0.17, 0.17, 0.02, 10), '#f2c230', 0, 1.755, 0.02)]),
+      abody: merge([part(B(0.36, 0.16, 0.22), '#3a3f4a', 0, 0.9, 0), part(B(0.42, 0.52, 0.25), '#24324a', 0, 1.22, 0), part(B(0.2, 0.3, 0.02), '#e8e3d6', 0, 1.28, 0.13), part(B(0.12, 0.08, 0.12), '#b98b6c', 0, 1.51, 0), part(B(0.2, 0.22, 0.21), '#b98b6c', 0, 1.65, 0), part(C(0.13, 0.14, 0.09, 10), '#f4f4f0', 0, 1.8, 0), part(C(0.17, 0.17, 0.02, 10), '#f4f4f0', 0, 1.755, 0.02)]),
+      aarm: merge([part(B(0.12, 0.5, 0.13), '#24324a', 0, -0.25, 0), part(B(0.1, 0.12, 0.1), '#b98b6c', 0, -0.56, 0), part(B(0.02, 0.22, 0.3), '#1b1d22', 0.06, -0.6, 0.1)]),
       leg: merge([part(B(0.15, 0.78, 0.16), '#2d3340', 0, -0.39, 0), part(B(0.16, 0.1, 0.26), '#3b2a1d', 0, -0.83, 0.04)]),
       arm: merge([part(B(0.12, 0.5, 0.13), '#ff7a1a', 0, -0.25, 0), part(B(0.1, 0.12, 0.1), '#c99a78', 0, -0.56, 0)]),
       cone: merge([part(C(0.04, 0.17, 0.55, 8), '#ff6a1a', 0, 0.3, 0), part(C(0.1, 0.13, 0.08, 8), '#f4f4f4', 0, 0.3, 0), part(B(0.36, 0.04, 0.36), '#1a1a1a', 0, 0.02, 0)]),
@@ -96,10 +98,11 @@ export default {
   },
 
   /* ---------------- crews: every worker in the world = 5 instanced meshes ---------------- */
-  crew() {
-    if (this.workers) return this.workers; const T = this.T, { geo, mat } = this.res(), MAX = 48;
+  crew(kind) {
+    if (kind === 'arch') { if (this.archPool) return this.archPool; } else if (this.workers) return this.workers;
+    const T = this.T, { geo, mat } = this.res(), MAX = kind === 'arch' ? 12 : 48, G = kind === 'arch' ? { body: geo.abody, leg: geo.leg, arm: geo.aarm } : { body: geo.body, leg: geo.leg, arm: geo.arm };
     const mk = (g, n) => { const m = new T.InstancedMesh(g, mat.vc, n); m.count = 0; m.frustumCulled = false; m.userData.noCollide = 1; m.userData.keep = 1; this.ctx.scene.add(m); return m; };
-    const W = { body: mk(geo.body, MAX), legs: mk(geo.leg, MAX * 2), arms: mk(geo.arm, MAX * 2), list: [], MAX };
+    const W = { body: mk(G.body, MAX), legs: mk(G.leg, MAX * 2), arms: mk(G.arm, MAX * 2), list: [], MAX };
     const M = new T.Matrix4(), Q = new T.Quaternion(), V = new T.Vector3(), S = new T.Vector3(1, 1, 1), E = new T.Euler(), P = new T.Matrix4(), base = new T.Matrix4();
     W.draw = (t) => { let n = 0;
       for (const w of W.list) { if (!w.on || n >= MAX) continue;
@@ -113,6 +116,7 @@ export default {
         for (const [i, sx, a] of [[0, -0.27, al], [1, 0.27, ar]]) { P.compose(V.set(sx, 1.44, 0), Q.setFromEuler(E.set(a, 0, i ? -rz : rz)), S); M.multiplyMatrices(base, P); W.arms.setMatrixAt(n * 2 + i, M); }
         n++; }
       W.body.count = n; W.legs.count = W.arms.count = n * 2; W.body.instanceMatrix.needsUpdate = W.legs.instanceMatrix.needsUpdate = W.arms.instanceMatrix.needsUpdate = true; };
+    if (kind === 'arch') return (this.archPool = W);
     return (this.workers = W);
   },
   // crew AI: walk between the stage's work points, work a few seconds at each
@@ -277,28 +281,87 @@ export default {
     return S;
   },
 
+  /* ---------------- work zones (no lot): e.g. the campus ground-floor rebuild. Taped corners, survey kit, materials, rolling scaffold ---------------- */
+  makeZone(e) {
+    const T = this.T, ctx = this.ctx, town = ctx.town, R = this.res(), { geo, mat } = R; if (!town || !Array.isArray(e.rect)) return null;
+    const [x0, z0, x1, z1] = e.rect, cx = (x0 + x1) / 2, cz = (z0 + z1) / 2, w = Math.abs(x1 - x0), d = Math.abs(z1 - z0);
+    const g = new T.Group(); g.name = 'world:' + e.id; g.position.set(town.X0 + cx, (e.floor && e.floor !== 'G') ? 0 : 0, town.Z0 + cz); ctx.scene.add(g);
+    const S = { e, g, w, d, r: Math.hypot(w, d) / 2, el: {}, crew: [] }, hw = w / 2 - 0.6, hd = d / 2 - 0.6;
+    const cones = [[-hw, -hd], [hw, -hd], [-hw, hd], [hw, hd]].map(([x, z]) => new T.Matrix4().makeTranslation(x, 0.02, z));
+    S.el.cones = new T.InstancedMesh(geo.cone, mat.vc, 4); cones.forEach((m, i) => S.el.cones.setMatrixAt(i, m)); g.add(S.el.cones);
+    const stakes = [[-hw + 1, -hd + 1], [hw - 1, -hd + 1], [hw - 1, hd - 1], [-hw + 1, hd - 1], [0, -hd + 1], [0, hd - 1]];
+    S.el.stakes = new T.InstancedMesh(geo.stake, mat.vc, stakes.length); stakes.forEach(([x, z], i) => S.el.stakes.setMatrixAt(i, new T.Matrix4().makeTranslation(x, 0, z))); S.el.stakes.count = 0; g.add(S.el.stakes); S.stakeN = stakes.length;
+    S.el.tripod = new T.Mesh(geo.tripod, mat.vc); S.el.tripod.position.set(-hw + 2, 0, hd - 2.2); g.add(S.el.tripod);
+    S.el.pallet = new T.Group(); for (let i = 0; i < 6; i++) { const b = new T.Mesh(R.boxB, i % 2 ? mat.plank : mat.concrete); b.scale.set(1.1, 0.28, 0.8); b.position.set((i % 2) * 0.05, (i / 2 | 0) * 0.3 + 0.12, 0); S.el.pallet.add(b); } S.el.pallet.position.set(hw - 1.4, 0, hd - 1.6); g.add(S.el.pallet);
+    S.el.tower = new T.Group(); { const H = 3.2; for (const [x, z] of [[-0.6, -0.4], [0.6, -0.4], [-0.6, 0.4], [0.6, 0.4]]) { const p = new T.Mesh(R.boxB, mat.scaffold); p.scale.set(0.05, H, 0.05); p.position.set(x, 0, z); S.el.tower.add(p); }
+      for (const y of [1.1, 2.2, 3.15]) { const k = new T.Mesh(R.boxB, mat.plank); k.scale.set(1.3, 0.05, 0.9); k.position.y = y; S.el.tower.add(k); } } g.add(S.el.tower);
+    S.board = this.board(g, -hw + 1.6, hd - 0.4, 0);
+    g.traverse(o => { o.userData.noCollide = 1; }); g.userData.keep = 1; g.userData.noFarCull = 1;
+    S.pts = Array.from({ length: 9 }, (_, i) => { const st = [[-hw + 2.4, 0, hd - 2.2, 'survey', Math.PI], ...stakes.map(([x, z]) => [x, 0, z + 0.4, 'work']), [hw - 1.4, 0, hd - 2.4, 'work', Math.PI], [0, 0, 0, 'work']]; return st; });
+    S.pts.forEach((p, i) => p.gen = 'z' + i);
+    return S;
+  },
+  drawZone(S, si, f, t, near, dt, crewN) {
+    const el = S.el, e = S.e, at = k => si === BUILD.indexOf(k);
+    el.cones.visible = si < 8; el.stakes.count = at('survey') ? Math.ceil(f * S.stakeN) : si <= 2 ? S.stakeN : 0; el.stakes.instanceMatrix.needsUpdate = true; el.tripod.visible = si <= 1;
+    el.pallet.visible = si >= 1 && si <= 5; el.tower.visible = si >= 3 && si <= 6; if (el.tower.visible && near) el.tower.position.set(Math.sin(t * 0.05) * (S.w / 2 - 3), 0, -S.d / 4);
+    S.board.grp.visible = si < 8; if (near && si < 8) S.board.draw(e.name.toUpperCase().slice(0, 26), e.arch ? 'Architecture team job · live' : 'Work zone · live', BL[si], (si + f) / 8, si, 8, 'Real progress from the team · ' + this.ago(e.since));
+    const n = near && si < 8 && si >= 1 ? Math.min(2, crewN) : 0; this.ensureCrew(S, n); for (let i = n; i < S.crew.length; i++) S.crew[i].on = false;
+    const pts = S.pts[0].slice(1); pts.gen = 'z' + si; this.crewStep(S.crew.slice(0, n), pts, dt, S.g.position, 0);
+  },
+  /* ---------------- architecture team in the field (CT119 agent.pose zone 'town'): walk out through the sliding doors to the job ---------------- */
+  architects(dt, t, onG) {
+    const ctx = this.ctx, town = ctx.town; if (!town || !this.agents) return;
+    const NAMES = { 'lead-arch': 'Máni', 'arch-building': 'Vili', 'arch-landscape': 'Jörð', 'arch-qa': 'Vé' }, figs = (this.figs ||= new Map());
+    const out = [...this.agents.values()].filter(a => a.zone === 'town' && a.act !== 'away');
+    // the job they are working: an unfinished architecture job (site or zone), else the lot the server named
+    const jobs = [...this.ents.values()].filter(e => e.arch && this.target(e) < 1).sort((a, b) => (b.at || 0) - (a.at || 0)); const job = jobs[0];
+    const door = [town.X0, town.Z0 + 2.2], doorIn = [town.X0, town.Z0 - 1.8], curb = [town.X0, town.AVE - town.RW / 2 - 1.6];
+    const pool = this.crew('arch'); let k = 0;
+    for (const a of out) {
+      let F = figs.get(a.id); if (!F) { F = { id: a.id, x: door[0], y: 0, z: door[1], yaw: 0, phase: Math.random() * 6, mode: 'walk', on: true, path: [], key: '' }; figs.set(a.id, F); pool.list.push(F); }
+      F.leaving = false; F.on = onG; let tx, tz, mode = 'work', face = null, inside = false;
+      if (job) { const S = this.sites.get(job.id); if (S && S.e.kind === 'zone') { const p = S.pts[0][k % S.pts[0].length]; tx = S.g.position.x + p[0]; tz = S.g.position.z + p[2]; mode = p[3]; face = p[4]; inside = true; }
+        else if (S && S.pts) { const p = S.pts[0][k % S.pts[0].length], th = S.g.rotation.y, c = Math.cos(th), sn = Math.sin(th); tx = S.g.position.x + p[0] * c + p[2] * sn; tz = S.g.position.z - p[0] * sn + p[2] * c; mode = p[3]; face = p[4] != null ? th + p[4] : null; } }
+      if (tx == null) { const L = town.lots[(a.lot || 9) - 1] || town.lots[8]; tx = L.cx - 4 + k * 2.2; tz = L.cz + L.face * (L.d / 2 - 1); mode = k === 0 ? 'survey' : 'work'; }
+      const key = [tx.toFixed(1), tz.toFixed(1)].join(','); if (key !== F.key) { F.key = key; F.path = inside ? [door, doorIn, [tx, tz]] : (F.z < town.Z0 + 1 ? [doorIn, door, curb, [tx, tz]] : [curb, [tx, tz]]); if (Math.hypot(F.x - tx, F.z - tz) < 6) F.path = [[tx, tz]]; F.arrive = mode; F.face = face; }
+      k++;
+    }
+    for (const [id, F] of figs) if (!out.find(a => a.id === id) && !F.leaving && !(F.arrivedAt && performance.now() - F.arrivedAt < 60000) && !(F.path.length && !F.arrivedAt)) { F.leaving = true; F.path = F.z < town.Z0 ? [door, doorIn] : [curb, door, doorIn]; F.arrive = 'gone'; F.key = ''; }
+    for (const [id, F] of figs) {
+      const wp = F.path[0];
+      if (wp) { const dx = wp[0] - F.x, dz = wp[1] - F.z, d = Math.hypot(dx, dz); if (d < 0.2) { F.path.shift(); if (!F.path.length && F.arrive !== 'gone') F.arrivedAt = performance.now(); } else { let rem = d; for (let i = 1; i < F.path.length; i++) rem += Math.hypot(F.path[i][0] - F.path[i - 1][0], F.path[i][1] - F.path[i - 1][1]); const st = Math.min(d, dt * (rem > 15 ? 2.6 : 1.35)); F.x += dx / d * st; F.z += dz / d * st; F.yaw = Math.atan2(dx, dz); F.mode = 'walk'; } }
+      else if (F.arrive === 'gone') { F.on = false; pool.list = pool.list.filter(x => x !== F); figs.delete(id); F.tag?.parent?.remove(F.tag); continue; }
+      else { F.mode = F.arrive || 'work'; if (F.face != null) F.yaw = F.face; }
+      if (!F.tag && ctx.label) { F.tag = ctx.label(NAMES[id.replace(/^agent:/, '')] || 'Architect', 'Architecture team'); F.tag.userData.noCollide = 1; ctx.scene.add(F.tag); }
+      if (F.tag) { F.tag.position.set(F.x, 2.15, F.z); const dd = Math.hypot(F.x - ctx.cam.position.x, F.z - ctx.cam.position.z); F.tag.visible = onG && dd < 28; F.tag.quaternion.copy(ctx.cam.quaternion); }
+    }
+    pool.draw(t);
+  },
+
   drop(id) { const S = this.sites.get(id); if (!S) return; S.g.parent?.remove(S.g); S.g.traverse(o => { if (o.isInstancedMesh) o.dispose?.(); }); for (const w of S.crew) w.on = false; if (this.workers) this.workers.list = this.workers.list.filter(w => !S.crew.includes(w)); this.sites.delete(id); },
 
   /* ---------------- per frame ---------------- */
   onFrame(dt, t) {
     const ctx = this.ctx; if (!window.__ewsOffice) return;
-    if (!this.hooked) { this.hooked = true; window.__ewsOffice.world = () => ({ mode: this.stats.mode, msgs: this.stats.msgs, agents: this.agents.size, glbs: this.stats.glbs || 0, ents: [...this.ents.values()].map(e => ({ id: e.id, kind: e.kind, stage: (e.kind === 'road' ? ROAD : BUILD)[e.si], p: e.p, target: +this.target(e).toFixed(3), shown: +(this.vis.get(e.id)?.D ?? 0).toFixed(3), demo: !!e.demo })), workers: this.workers ? this.workers.list.filter(w => w.on).length : 0 });
+    if (!this.hooked) { this.hooked = true; window.__ewsOffice.world = () => ({ mode: this.stats.mode, msgs: this.stats.msgs, agents: this.agents.size, field: this.figs ? [...this.figs.values()].map(F => ({ id: F.id, x: +F.x.toFixed(1), z: +F.z.toFixed(1), mode: F.mode, leaving: !!F.leaving })) : [], glbs: this.stats.glbs || 0, ents: [...this.ents.values()].map(e => ({ id: e.id, kind: e.kind, stage: (e.kind === 'road' ? ROAD : BUILD)[e.si], p: e.p, target: +this.target(e).toFixed(3), shown: +(this.vis.get(e.id)?.D ?? 0).toFixed(3), demo: !!e.demo })), workers: this.workers ? this.workers.list.filter(w => w.on).length : 0 });
       window.__ewsOffice.watchBuild = id => this.watch(id); window.__ewsOffice.demoBuild = o => this.demo(o); }
     if (!ctx.town || !ctx.exterior) return;
     const ext = ctx.exterior.root, onG = !ctx.curFloor || ctx.curFloor === 'G', show = onG && ext.visible, cam = ctx.cam, cp = cam.position;
     const tier = ctx.tier ?? 1, crewN = [2, 3, 4][tier] ?? 3, view = [85, 110, 125][tier] ?? 110, night = (ctx.dayNight?.el ?? 30) < -2;
     for (const [id, e] of this.ents) {
-      let S = this.sites.get(id); if (!S) { S = e.kind === 'road' ? this.makeRoad(e) : this.makeSite(e); if (!S) continue; S.g.userData.noFarCull = 1; S.g.userData.keep = 1; S.g.traverse(o => { o.userData.noCollide = 1; }); this.sites.set(id, S); }
+      let S = this.sites.get(id); if (!S) { S = e.kind === 'road' ? this.makeRoad(e) : e.kind === 'zone' ? this.makeZone(e) : this.makeSite(e); if (!S) continue; S.g.userData.noFarCull = 1; S.g.userData.keep = 1; S.g.traverse(o => { o.userData.noCollide = 1; }); this.sites.set(id, S); }
       S.e = e; const v = this.vis.get(id); const tgt = this.target(e); if (v.D == null) v.D = tgt;
       v.D += (tgt - v.D) * Math.min(1, dt * 1.8); if (Math.abs(tgt - v.D) < 1e-4) v.D = tgt;     // ease toward the real (or pipeline-estimated) progress
       const N = (e.kind === 'road' ? ROAD : BUILD).length - 1, x = v.D * N, si = Math.min(N, Math.floor(x + 1e-6)), f = si >= N ? 1 : x - si;
       if (si !== v.stage) { if (v.stage >= 0 || v.fresh) this.toast(e, si); v.stage = si; }
-      const dx = S.g.position.x - cp.x, dz = S.g.position.z - cp.z, dist = Math.hypot(dx, dz) - (e.kind === 'road' ? S.L / 2 : 0);
-      S.g.visible = show && dist < view; if (!S.g.visible) { for (const w of S.crew) w.on = false; continue; }
+      const dx = S.g.position.x - cp.x, dz = S.g.position.z - cp.z, dist = Math.hypot(dx, dz) - (e.kind === 'road' ? S.L / 2 : e.kind === 'zone' ? S.r : 0);
+      S.g.visible = e.kind === 'zone' ? (ctx.curFloor || 'G') === (e.floor || 'G') && dist < 45 : show && dist < view; if (!S.g.visible) { for (const w of S.crew) w.on = false; continue; }
       const near = dist < 90;
-      if (e.kind === 'road') this.drawRoad(S, si, f, t, near, dt, crewN); else this.drawSite(S, si, f, t, near, dt, crewN, night);
+      if (e.kind === 'zone') this.drawZone(S, si, f, t, dist < 40, dt, crewN); else if (e.kind === 'road') this.drawRoad(S, si, f, t, near, dt, crewN); else this.drawSite(S, si, f, t, near, dt, crewN, night);
     }
     if (this.workers) this.workers.draw(t);
+    this.architects(dt, t, onG);
     this.flushToast(dt);
   },
   ensureCrew(S, n) { const W = this.crew(); while (S.crew.length < n && W.list.length < W.MAX) { const w = { x: S.g.position.x + (Math.random() - 0.5) * 4, y: 0, z: S.g.position.z + (Math.random() - 0.5) * 4, yaw: 0, phase: Math.random() * 6, i: (Math.random() * 5) | 0, mode: 'walk', on: false }; S.crew.push(w); W.list.push(w); } },
@@ -366,8 +429,8 @@ export default {
 
   /* ---------------- stage toasts (small, top-centre, 4 s; screen-reader announced) ---------------- */
   toast(e, si) {
-    const where = e.kind === 'road' ? e.name : 'Lot ' + String(e.lot).padStart(2, '0') + ((e.public && e.tenant) ? ' · ' + e.tenant : '');
-    const what = e.kind === 'road' ? (si >= 5 ? 'open to traffic' : (e.resurface ? RLR : RL)[si] + ' started') : si === 0 ? 'leased · surveyors on site' : si >= 8 ? 'now open' : BL[si] + ' started';
+    const where = e.kind === 'road' || e.kind === 'zone' ? e.name : 'Lot ' + String(e.lot).padStart(2, '0') + ((e.public && e.tenant) ? ' · ' + e.tenant : '');
+    const what = e.kind === 'zone' ? (si >= 8 ? 'done' : si === 0 ? 'architects surveying' : BL[si] + ' started') : e.kind === 'road' ? (si >= 5 ? 'open to traffic' : (e.resurface ? RLR : RL)[si] + ' started') : si === 0 ? 'leased · surveyors on site' : si >= 8 ? 'now open' : BL[si] + ' started';
     this.toastQ.push(where + ': ' + what); if (this.toastQ.length > 3) this.toastQ.shift();
   },
   flushToast(dt) {
