@@ -26,19 +26,28 @@ export default {
     ctx.entrance = { x, w: X1 - X0 };
 
     /* ---- room walls (to the ceiling), wood wainscot + brass skirting on the inside faces ---- */
-    const wallX = (wx, z1, z2, inner) => { const l = z2 - z1, c = (z1 + z2) / 2; box(0.2, H, l, wallM, X(wx), H / 2, Z(c)); const o = box(0.03, 1.1, l, wood, X(wx + inner * 0.115), 0.55, Z(c)); o.userData.noCollide = 1; box(0.04, 0.08, l, trim, X(wx + inner * 0.13), 1.12, Z(c)).userData.noCollide = 1; };
-    const wallZ = (wz, x1, x2, inner) => { const l = x2 - x1, c = (x1 + x2) / 2; box(l, H, 0.2, wallM, X(c), H / 2, Z(wz)); const o = box(l, 1.1, 0.03, wood, X(c), 0.55, Z(wz + inner * 0.115)); o.userData.noCollide = 1; box(l, 0.08, 0.04, trim, X(c), 1.12, Z(wz + inner * 0.13)).userData.noCollide = 1; };
+    /* warm wood-plank cladding, floor to ceiling, on every inside face of the lobby walls (layout v2: the mock-up's rooms are
+       wood-lined, not plaster). One canvas texture (1 m = 7 planks with grooves), UVs scaled per wall, one shared material -> batched. */
+    const cladM = (() => { const c = document.createElement('canvas'); c.width = 448; c.height = 512; const g = c.getContext('2d');
+      const tones = ['#7a5434', '#8a603b', '#6f4b2e', '#94683f', '#805837', '#74502f', '#8c633c'];
+      for (let i = 0; i < 7; i++) { const x0 = i * 64; g.fillStyle = tones[i]; g.fillRect(x0, 0, 64, 512); g.globalAlpha = 0.18; g.fillStyle = '#3e2614';
+        for (let k = 0; k < 9; k++) g.fillRect(x0 + 6 + (k * 13 + i * 7) % 50, (k * 113 + i * 59) % 512, 1.5, 60 + (k * 37) % 120); g.globalAlpha = 1; g.fillStyle = '#2a1a0e'; g.fillRect(x0, 0, 3, 512); }
+      const t = new T.CanvasTexture(c); t.colorSpace = T.SRGBColorSpace; t.wrapS = t.wrapT = T.RepeatWrapping; t.anisotropy = 4;
+      return ctx.M.standard ? new T.MeshStandardMaterial({ map: t, roughness: 0.75 }) : new T.MeshLambertMaterial({ map: t }); })();
+    const clad = (len, h, px, py, pz, ry) => { const g = new T.PlaneGeometry(len, h), uv = g.attributes.uv; for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) * len, uv.getY(i) * h / 2.2);
+      const o = new T.Mesh(g, cladM); o.position.set(px, py, pz); o.rotation.y = ry; o.userData.noCollide = 1; ctx.scene.add(o); return o; };
+    const wallX = (wx, z1, z2, inner) => { const l = z2 - z1, c = (z1 + z2) / 2; box(0.2, H, l, wallM, X(wx), H / 2, Z(c)); clad(l, H, X(wx + inner * 0.102), H / 2, Z(c), inner > 0 ? Math.PI / 2 : -Math.PI / 2); const o = box(0.03, 1.1, l, wood, X(wx + inner * 0.115), 0.55, Z(c)); o.userData.noCollide = 1; box(0.04, 0.08, l, trim, X(wx + inner * 0.13), 1.12, Z(c)).userData.noCollide = 1; };
+    const wallZ = (wz, x1, x2, inner) => { const l = x2 - x1, c = (x1 + x2) / 2; box(l, H, 0.2, wallM, X(c), H / 2, Z(wz)); clad(l, H, X(c), H / 2, Z(wz + inner * 0.102), inner > 0 ? 0 : Math.PI); const o = box(l, 1.1, 0.03, wood, X(c), 0.55, Z(wz + inner * 0.115)); o.userData.noCollide = 1; box(l, 0.08, 0.04, trim, X(c), 1.12, Z(wz + inner * 0.13)).userData.noCollide = 1; };
     const lintelX = (wx, z1, z2) => { box(0.2, H - 2.6, z2 - z1, wallM, X(wx), 2.6 + (H - 2.6) / 2, Z((z1 + z2) / 2)); for (const zz of [z1, z2]) box(0.26, 2.6, 0.06, trim, X(wx), 1.3, Z(zz)); box(0.26, 0.06, z2 - z1 + 0.06, trim, X(wx), 2.6, Z((z1 + z2) / 2)); };
     const lintelZ = (wz, x1, x2) => { box(x2 - x1, H - 2.6, 0.2, wallM, X((x1 + x2) / 2), 2.6 + (H - 2.6) / 2, Z(wz)); for (const xx of [x1, x2]) box(0.06, 2.6, 0.26, trim, X(xx), 1.3, Z(wz)); box(x2 - x1 + 0.06, 0.06, 0.26, trim, X((x1 + x2) / 2), 2.6, Z(wz)); };
-    // left wall: doorway to the arcade hall (z -4.4..-2.4)
-    wallX(X0, ZB, -4.4, 1); wallX(X0, -2.4, ZF, 1); lintelX(X0, -4.4, -2.4);
+    // left wall: solid (the Arcade moves out of the campus to its own lot, Joshua 2026-10-16: its doorway is closed)
+    wallX(X0, ZB, ZF, 1);
     // right wall: doorway to the services / devlog hall between the coders and the store (z 0.7..2.4)
     wallX(X1, ZB, 0.7, -1); wallX(X1, 2.4, ZF, -1); lintelX(X1, 0.7, 2.4);
     // back wall: logo wall in the middle (receptionist builds it, x -3.2..3.2); doorways to the stairs (left) and elevator / main hall (right)
     wallZ(ZB, X0, -4.8, 1); wallZ(ZB, 4.8, X1, 1); lintelZ(ZB, -4.8, -3.2); lintelZ(ZB, 3.2, 4.8);
     const plate = (lines, w, h, px, py, pz, ry, opt = {}) => { const p = ctx.panel(ctx.textCanvas(lines, { w: 768, h: Math.round(768 * h / w), size: opt.size || 64, body: opt.body || 0 }), w, h, X(px), py, Z(pz), ry); p.userData.plate = lines[0]; return p; };
     plate(['Stairs', 'Main hall'], 1.4, 0.42, -4.0, 3.2, ZB + 0.12, 0, { body: 40 });
-    plate(['Arcade', 'Games hall'], 1.4, 0.42, X0 + 0.12, 3.2, -3.4, Math.PI / 2, { body: 40 });
     plate(['Services', 'Devlog · Odin'], 1.4, 0.42, X1 - 0.12, 3.2, 1.55, -Math.PI / 2, { body: 40 });
 
     /* ---- overhead: wood-slat canopies + halo ring pendants ---- */
