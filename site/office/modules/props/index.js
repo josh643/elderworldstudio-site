@@ -5,7 +5,8 @@ import { GLTFLoader } from '../../vendor/jsm/loaders/GLTFLoader.js?v=169';
 import { DRACOLoader } from '../../vendor/jsm/loaders/DRACOLoader.js?v=169';
 import { KTX2Loader } from '../../vendor/jsm/loaders/KTX2Loader.js?v=169';
 const PLACE = [
-  ['Sofa_01', -5.5, 6.5, Math.PI / 2], ['modern_arm_chair_01', -5.2, 3.6, Math.PI / 2 + 0.3], ['modern_arm_chair_01', 5.2, 3.6, -Math.PI / 2 - 0.3],
+  /* lobby v2 Collaboration Hub: three sofas round the coffee table (-6.4, 2.2) + an arm chair on the open side (lobby/index.js builds simple sofas on tier 0) */
+  ['Sofa_01', -6.4, 0.25, 0], ['Sofa_01', -8.75, 2.2, Math.PI / 2], ['Sofa_01', -6.4, 4.15, Math.PI], ['modern_arm_chair_01', -4.2, 1.3, -1.13],
   
   ['drawer_cabinet', 2.4, -2.6, Math.PI], ['desk_lamp_arm_01', 1.4, -0.95, Math.PI],
 ];

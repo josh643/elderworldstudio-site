@@ -1,21 +1,144 @@
-// Lobby (Fólkvangr): brand banner + logo + about plaque + signposts. Content from site.json (brand).
+// Lobby (Fólkvangr), ground floor v2 (approved isometric layout, Joshua 2026-10-16): one walled room, 20 x 15 m.
+//   front: full glass wall with the sliding doors (engine builds it over ctx.entrance) + planters either side of the doors
+//   centre: red carpet from the doors straight to Freyja's curved desk; wood-slat logo wall behind her (receptionist module)
+//   left: Collaboration Hub (sofas round a coffee table, area rug, whiteboard, hanging ring planter)
+//   back right: Coders (two rows of three desks; lobby-stations seats the coding agents there)
+//   front right: Hermod's Merch Store (checkout screen + counter, glass display cases from merch-display, wall shelves)
+//   overhead: halo ring pendants, wood-slat ceiling canopies over the hub and the coders. Plants in the corners (unique species).
+// No red-carpet kiosks (removed by Joshua; their content is Freyja's quick options). Everything static is plain boxes /
+// cylinders on shared materials, so the engine's batcher folds it into a handful of draw calls (cheap-device safe).
+const X0 = -10, X1 = 10, ZB = -5.2, ZF = 10, H = 4;   // room extents (anchor-relative), wall height = ceiling
 export default {
   setup(ctx, cfg, [x, z]) {
-    const { site, box, M, mat, panel, textCanvas, kit } = ctx;
-    /* red carpet runner from the brand wall to Freyja's desk; kiosks line both sides (wayfinding) */
-    box(2.6, 0.04, 9.8, ctx.rug ? ctx.rug(0x8a3040) : M(0x5a1f2c), x, 0.02, z + 4.5); box(2.8, 0.02, 10, mat.trim || M(0xb08d3c), x, 0.01, z + 4.5);
+    const { THREE: T, box, M, mat, kit } = ctx, wood = mat.wood, trim = mat.trim, wallM = mat.wall, fab = mat.fabric || mat.dark;
+    const S = (c, r = 0.7, mt = 0) => (ctx.M.standard ? new T.MeshStandardMaterial({ color: c, roughness: r, metalness: mt }) : new T.MeshLambertMaterial({ color: c }));
+    const leafA = S(0x3f7a3a, 0.8), leafB = S(0x2f6630, 0.8), leafC = S(0x5a8f45, 0.8), leaves = [leafA, leafB, leafC];
+    const LG = [new T.IcosahedronGeometry(0.13, 0), new T.IcosahedronGeometry(0.18, 0), new T.IcosahedronGeometry(0.1, 0)];
+    const put = (geo, m, px, py, pz, ry = 0) => { const o = new T.Mesh(geo, m); o.position.set(px, py, pz); o.rotation.y = ry; ctx.scene.add(o); return o; };
+    let seed = 7; const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+    const leaf = (px, py, pz, s = 1) => { const o = put(LG[Math.floor(rnd() * 3)], leaves[Math.floor(rnd() * 3)], px, py, pz, rnd() * 6); o.scale.setScalar(s * (0.8 + rnd() * 0.5)); o.rotation.x = rnd() * 3; o.userData.noCollide = 1; return o; };
+    const X = v => x + v, Z = v => z + v;
+
+    /* ---- red carpet: doors -> Freyja's desk (brass edging) ---- */
+    box(2.6, 0.04, 9.8, ctx.rug ? ctx.rug(0x8a3040) : M(0x5a1f2c), x, 0.02, z + 4.5); box(2.8, 0.02, 10, trim, x, 0.01, z + 4.5);
     ctx.lobbyAt = { x, z };
-    // back wall feature: framed logo mounted on the wall, brand banner, then the directory (wayfinding adds tiles via ctx.directory)
-    /* main entrance (floor_g + approved glass exterior): the engine opens the front shell wall over ctx.entrance and builds a
-       full-height glass wall with two-panel sliding doors centred on the red carpet (core/engine.js). Nothing stands on the
-       glass line: no column, plants or bench within 1 m of it. */
-    ctx.entrance = { x, w: 11 };
-    for (const sx of [-4.2, 4.2]) ctx.kit.plant(ctx, x + sx, z + 7.6, 1.1);
-    ctx.directoryAt = { x: x - 4.6, y: 1.2, z: z + 6.2, ry: Math.PI / 2 };   /* Classic plaque on a stand by the left wall, off the glass line */
-    // pillars only in room corners, flush to the walls (the east side opens onto the services hall, so none there)
-    for (const pz of [-3.6, 9.4]) box(0.5, 4.2, 0.5, mat.stone, x - 7.7, 2.1, z + pz);
-    /* the offering wall display moved onto the carpet kiosks (one section each) */
-    ctx.extend(x - 8, z - 4, x + 8, z + 10);
+    /* glass front across the whole lobby (engine: glass panes + mullions + sliding doors centred on the carpet) */
+    ctx.entrance = { x, w: X1 - X0 };
+
+    /* ---- room walls (to the ceiling), wood wainscot + brass skirting on the inside faces ---- */
+    const wallX = (wx, z1, z2, inner) => { const l = z2 - z1, c = (z1 + z2) / 2; box(0.2, H, l, wallM, X(wx), H / 2, Z(c)); const o = box(0.03, 1.1, l, wood, X(wx + inner * 0.115), 0.55, Z(c)); o.userData.noCollide = 1; box(0.04, 0.08, l, trim, X(wx + inner * 0.13), 1.12, Z(c)).userData.noCollide = 1; };
+    const wallZ = (wz, x1, x2, inner) => { const l = x2 - x1, c = (x1 + x2) / 2; box(l, H, 0.2, wallM, X(c), H / 2, Z(wz)); const o = box(l, 1.1, 0.03, wood, X(c), 0.55, Z(wz + inner * 0.115)); o.userData.noCollide = 1; box(l, 0.08, 0.04, trim, X(c), 1.12, Z(wz + inner * 0.13)).userData.noCollide = 1; };
+    const lintelX = (wx, z1, z2) => { box(0.2, H - 2.6, z2 - z1, wallM, X(wx), 2.6 + (H - 2.6) / 2, Z((z1 + z2) / 2)); for (const zz of [z1, z2]) box(0.26, 2.6, 0.06, trim, X(wx), 1.3, Z(zz)); box(0.26, 0.06, z2 - z1 + 0.06, trim, X(wx), 2.6, Z((z1 + z2) / 2)); };
+    const lintelZ = (wz, x1, x2) => { box(x2 - x1, H - 2.6, 0.2, wallM, X((x1 + x2) / 2), 2.6 + (H - 2.6) / 2, Z(wz)); for (const xx of [x1, x2]) box(0.06, 2.6, 0.26, trim, X(xx), 1.3, Z(wz)); box(x2 - x1 + 0.06, 0.06, 0.26, trim, X((x1 + x2) / 2), 2.6, Z(wz)); };
+    // left wall: doorway to the arcade hall (z -4.4..-2.4)
+    wallX(X0, ZB, -4.4, 1); wallX(X0, -2.4, ZF, 1); lintelX(X0, -4.4, -2.4);
+    // right wall: doorway to the services / devlog hall between the coders and the store (z 0.7..2.4)
+    wallX(X1, ZB, 0.7, -1); wallX(X1, 2.4, ZF, -1); lintelX(X1, 0.7, 2.4);
+    // back wall: logo wall in the middle (receptionist builds it, x -3.2..3.2); doorways to the stairs (left) and elevator / main hall (right)
+    wallZ(ZB, X0, -4.8, 1); wallZ(ZB, 4.8, X1, 1); lintelZ(ZB, -4.8, -3.2); lintelZ(ZB, 3.2, 4.8);
+    const plate = (lines, w, h, px, py, pz, ry, opt = {}) => { const p = ctx.panel(ctx.textCanvas(lines, { w: 768, h: Math.round(768 * h / w), size: opt.size || 64, body: opt.body || 0 }), w, h, X(px), py, Z(pz), ry); p.userData.plate = lines[0]; return p; };
+    plate(['Stairs', 'Main hall'], 1.4, 0.42, -4.0, 3.2, ZB + 0.12, 0, { body: 40 });
+    plate(['Arcade', 'Games hall'], 1.4, 0.42, X0 + 0.12, 3.2, -3.4, Math.PI / 2, { body: 40 });
+    plate(['Services', 'Devlog · Odin'], 1.4, 0.42, X1 - 0.12, 3.2, 1.55, -Math.PI / 2, { body: 40 });
+
+    /* ---- overhead: wood-slat canopies + halo ring pendants ---- */
+    const canopy = (x1, x2, z1, z2) => { const y = 3.55; for (let sx = x1 + 0.1; sx < x2; sx += 0.2) box(0.07, 0.09, z2 - z1, wood, X(sx), y, Z((z1 + z2) / 2)).userData.noCollide = 1;
+      for (const zz of [z1, z2]) box(x2 - x1, 0.12, 0.08, wood, X((x1 + x2) / 2), y + 0.1, Z(zz)).userData.noCollide = 1;
+      for (const [cx, cz] of [[x1 + 0.3, z1], [x2 - 0.3, z1], [x1 + 0.3, z2], [x2 - 0.3, z2]]) box(0.015, H - y, 0.015, mat.dark, X(cx), (H + y) / 2, Z(cz)).userData.noCollide = 1; };
+    canopy(-9.7, -3.3, -1.0, 5.4); canopy(4.7, 9.8, -4.95, 0.5);
+    const ringM = new T.MeshBasicMaterial({ color: 0xffe6b8, toneMapped: false }); ringM.userData = {};
+    const halo = (px, pz, r, y = 3.15) => { const g = new T.Mesh(new T.TorusGeometry(r, 0.045, 8, 56).rotateX(Math.PI / 2), ringM); g.position.set(X(px), y, Z(pz)); g.userData.noCollide = 1; ctx.scene.add(g);
+      box(r * 2 + 0.06, 0.03, 0.03, trim, X(px), y + 0.04, Z(pz)).userData.noCollide = 1;
+      for (let k = 0; k < 3; k++) { const a = k * 2.094; box(0.008, H - y, 0.008, mat.dark, X(px + Math.cos(a) * r), (H + y) / 2, Z(pz + Math.sin(a) * r)).userData.noCollide = 1; } return g; };
+    halo(-5.8, -2.8, 1.0); halo(7.25, -2.2, 1.15, 3.2);
+
+    /* ---- Collaboration Hub (left) ---- */
+    const HX = -6.4, HZ = 2.2;
+    box(5.6, 0.03, 4.8, ctx.rug ? ctx.rug(0x6b6358) : M(0x4a443c), X(HX), 0.03, Z(HZ)); box(5.7, 0.02, 4.9, trim, X(HX), 0.02, Z(HZ));
+    // round coffee table: wood top, brass ring, pedestal
+    { const top = put(new T.CylinderGeometry(0.62, 0.62, 0.05, 32), wood, X(HX), 0.44, Z(HZ)); top.name = 'hub table';
+      put(new T.CylinderGeometry(0.635, 0.635, 0.02, 32), trim, X(HX), 0.41, Z(HZ)); put(new T.CylinderGeometry(0.1, 0.14, 0.38, 16), mat.dark, X(HX), 0.2, Z(HZ)); put(new T.CylinderGeometry(0.34, 0.36, 0.03, 24), mat.dark, X(HX), 0.015, Z(HZ));
+      put(new T.CylinderGeometry(0.05, 0.045, 0.1, 14), S(0xf0ece4, 0.35), X(HX + 0.2), 0.515, Z(HZ - 0.1)); put(new T.BoxGeometry(0.3, 0.03, 0.22), S(0x1d2a44, 0.7), X(HX - 0.18), 0.48, Z(HZ + 0.12), 0.4); }
+    // sofas: GLB Sofa_01 x3 + an arm chair on tiers 1-2 (props module, see PLACE); tier 0 gets these simple sofas instead
+    const sofas = [[HX, HZ - 1.95, 0, 2.2], [HX - 2.35, HZ, Math.PI / 2, 2.2], [HX, HZ + 1.95, Math.PI, 2.2]];
+    ctx.hubSofas = sofas.map(([sx, sz, ry]) => [X(sx), Z(sz), ry]);
+    if (ctx.tier === 0) for (const [sx, sz, ry, w] of sofas) { const g = new T.Group(); g.position.set(X(sx), 0, Z(sz)); g.rotation.y = ry; ctx.scene.add(g);
+      box(w, 0.42, 0.85, fab, 0, 0.21, 0, g); box(w, 0.5, 0.2, fab, 0, 0.62, -0.33, g); for (const s of [-1, 1]) box(0.2, 0.6, 0.85, fab, s * (w / 2 - 0.1), 0.3, 0, g); }
+    // wall-mounted whiteboard (aluminium frame + marker tray) on the left wall
+    { const c = document.createElement('canvas'); c.width = 1024; c.height = 576; const g = c.getContext('2d'); g.fillStyle = '#f5f7f9'; g.fillRect(0, 0, 1024, 576);
+      g.fillStyle = '#1d2a44'; g.font = '700 54px Inter, system-ui, sans-serif'; g.fillText('Collaboration Hub', 40, 80); g.fillStyle = '#c9ced6'; g.fillRect(40, 100, 944, 4);
+      g.strokeStyle = '#2b5fa8'; g.lineWidth = 6; for (const [bx, by, t] of [[60, 160, 'Idea'], [380, 160, 'Build'], [700, 160, 'Ship']]) { g.strokeRect(bx, by, 260, 110); g.fillStyle = '#2b5fa8'; g.font = '600 40px Inter, sans-serif'; g.fillText(t, bx + 70, by + 70); }
+      g.beginPath(); g.moveTo(320, 215); g.lineTo(380, 215); g.moveTo(640, 215); g.lineTo(700, 215); g.stroke();
+      const notes = [['#ffe27a', 'Elderverse town lots'], ['#9fe0b5', 'Merch replicas'], ['#ffb3c1', 'Devlog clips'], ['#a9d1ff', 'Voice chat']];
+      notes.forEach(([col, t], i) => { const nx = 60 + i * 235, ny = 330; g.fillStyle = col; g.fillRect(nx, ny, 210, 170); g.fillStyle = '#1d2a44'; g.font = '500 28px Inter, sans-serif'; let ln = '', y = ny + 50; for (const w of t.split(' ')) { if (g.measureText(ln + w).width > 180 && ln) { g.fillText(ln, nx + 14, y); y += 34; ln = ''; } ln += w + ' '; } g.fillText(ln, nx + 14, y); });
+      const tx = new T.CanvasTexture(c); tx.colorSpace = T.SRGBColorSpace; tx.anisotropy = 4;
+      const alu = S(0xb8bcc4, 0.35, 0.6), wz = -0.7, wx = X0 + 0.13;
+      box(0.03, 1.12, 2.0, alu, X(wx - 0.01), 1.5, Z(wz)).userData.noCollide = 1; box(0.07, 0.04, 1.6, alu, X(wx + 0.03), 0.92, Z(wz)).userData.noCollide = 1;
+      const wb = new T.Mesh(new T.PlaneGeometry(1.9, 1.02), new T.MeshBasicMaterial({ map: tx, toneMapped: false })); wb.position.set(X(wx + 0.01), 1.5, Z(wz)); wb.rotation.y = Math.PI / 2; wb.userData.label = 'Collaboration Hub whiteboard'; wb.userData.keep = 1; ctx.scene.add(wb); }
+    // hanging ring planter over the coffee table: brass hoop wrapped in trailing greenery, warm light ring inside, three cables
+    { const y = 3.0, r = 1.15; put(new T.TorusGeometry(r, 0.035, 8, 64).rotateX(Math.PI / 2), trim, X(HX), y, Z(HZ)).userData.noCollide = 1;
+      const lr = put(new T.TorusGeometry(r - 0.12, 0.03, 6, 56).rotateX(Math.PI / 2), ringM, X(HX), y - 0.04, Z(HZ)); lr.userData.noCollide = 1;
+      for (let k = 0; k < 3; k++) { const a = k * 2.094 + 0.5; box(0.008, H - y, 0.008, mat.dark, X(HX + Math.cos(a) * r), (H + y) / 2, Z(HZ + Math.sin(a) * r)).userData.noCollide = 1; }
+      for (let k = 0; k < 64; k++) { const a = k / 64 * Math.PI * 2 + rnd() * 0.08, rr = r + (rnd() - 0.5) * 0.16; leaf(X(HX + Math.cos(a) * rr), y + 0.04 + (rnd() - 0.3) * 0.16, Z(HZ + Math.sin(a) * rr), 1.05);
+        if (k % 4 === 0) for (let d = 1; d <= 2; d++) leaf(X(HX + Math.cos(a) * (r + 0.05)), y - 0.13 * d, Z(HZ + Math.sin(a) * (r + 0.05)), 0.7); } }
+    plate(['Collaboration Hub', 'Meet, plan and pair up'], 2.2, 0.55, HX, 2.95, 5.45, 0, { body: 34 });
+
+    /* ---- Coders (back right): two rows of three desks; lobby-stations seats the agents (Games coders) ---- */
+    ctx.lobbyStations = { coders: [], store: [[8.75 + x, 3.85 + z]] };
+    for (const dz of [-3.4, -0.9]) for (const dx of [5.6, 7.3, 9.0]) ctx.lobbyStations.coders.push([X(dx), Z(dz)]);
+    box(5.15, 0.03, 5.6, ctx.rug ? ctx.rug(0x5d6470) : M(0x3a3f48), X(7.3), 0.03, Z(-2.2));
+    // low planter partition between the coders and the carpet (gap at the back for the elevator doorway path)
+    { const px = 4.5, z1 = -3.2, z2 = 0.3; box(0.38, 0.62, z2 - z1, wood, X(px), 0.31, Z((z1 + z2) / 2)); box(0.42, 0.04, z2 - z1 + 0.04, trim, X(px), 0.64, Z((z1 + z2) / 2));
+      for (let zz = z1 + 0.15; zz < z2; zz += 0.16) { leaf(X(px + (rnd() - 0.5) * 0.2), 0.72 + rnd() * 0.12, Z(zz), 1.1); if (rnd() < 0.5) leaf(X(px + (rnd() - 0.5) * 0.2), 0.88 + rnd() * 0.12, Z(zz + 0.05), 0.9); } }
+    plate(['Coders', 'Building our games live'], 2.0, 0.5, 7.3, 2.95, 0.55, 0, { body: 34 });
+
+    /* ---- Hermod's Merch Store (front right) ---- */
+    const SX0 = 4.8, SZ0 = 2.6;
+    box(X1 - SX0 - 0.1, 0.03, ZF - SZ0 - 0.3, ctx.rug ? ctx.rug(0xb89a72) : M(0x8a7050), X((SX0 + X1) / 2), 0.03, Z((SZ0 + ZF - 0.3) / 2));
+    wallZ(SZ0, SX0, X1 - 0.1, 1);                                                             // back wall of the store (faces the store)
+    box(0.2, 1.1, 2.2, wood, X(SX0), 0.55, Z(SZ0 + 1.2)); box(0.26, 0.05, 2.24, trim, X(SX0), 1.12, Z(SZ0 + 1.2));   // low side wall by the checkout
+    // checkout screen (tall stand facing the carpet) + counter with a card reader
+    ctx.merchStore = { cases: [], sign: [X(SX0 - 0.06), 2.95, Z(6.6), -Math.PI / 2], spot: [[X(2.6), 1.6, Z(7.8)], [X(7.4), 1.2, Z(5.4)]] };
+    { const kx = X(5.45), kz = Z(3.4), ry = Math.atan2(X(0) - kx, Z(8) - kz), K = new T.Group(); K.position.set(kx, 0, kz); K.rotation.y = ry; ctx.scene.add(K);
+      box(0.5, 0.06, 0.4, mat.dark, 0, 0.03, 0, K); box(0.12, 1.1, 0.08, mat.dark, 0, 0.6, -0.05, K); box(0.9, 1.35, 0.06, mat.dark, 0, 1.75, 0, K);
+      const c = document.createElement('canvas'); c.width = 512; c.height = 768; const g = c.getContext('2d'); g.fillStyle = '#0b1626'; g.fillRect(0, 0, 512, 768); g.strokeStyle = '#d9b45a'; g.lineWidth = 8; g.strokeRect(10, 10, 492, 748);
+      g.fillStyle = '#f3ead7'; g.font = '700 70px Inter, system-ui, sans-serif'; g.textAlign = 'center'; g.fillText('CHECKOUT', 256, 120);
+      g.strokeStyle = '#9fe8ff'; g.lineWidth = 12; g.strokeRect(166, 240, 180, 170); g.beginPath(); g.arc(256, 240, 50, Math.PI, 0); g.stroke();
+      g.fillStyle = '#c9bfae'; g.font = '500 38px Inter, sans-serif'; g.fillText('Tees · Hoodies', 256, 510); g.fillText('Mugs · Stickers', 256, 560); g.fillStyle = '#d9b45a'; g.font = '600 36px Inter, sans-serif'; g.fillText(ctx.touch ? 'Tap to shop' : 'Click to shop', 256, 680);
+      const tx = new T.CanvasTexture(c); tx.colorSpace = T.SRGBColorSpace; const scr = new T.Mesh(new T.PlaneGeometry(0.82, 1.24), new T.MeshBasicMaterial({ map: tx, toneMapped: false })); scr.position.set(0, 1.75, 0.035); K.add(scr); scr.userData.label = 'Checkout';
+      ctx.onClick(scr, () => (ctx.use('lobbyInfo') || (() => {}))('merch')); }
+    { const cx = 6.45, cz = 4.35; box(2.1, 1.0, 0.62, wood, X(cx), 0.5, Z(cz)); box(2.16, 0.05, 0.68, trim, X(cx), 1.02, Z(cz)); box(2.12, 0.06, 0.02, trim, X(cx), 0.1, Z(cz + 0.32)).userData.noCollide = 1;
+      box(0.09, 0.02, 0.14, mat.dark, X(cx + 0.5), 1.055, Z(cz)); box(0.34, 0.24, 0.02, mat.dark, X(cx - 0.4), 1.17, Z(cz - 0.05)).rotation.x = -0.3; box(0.18, 0.04, 0.12, M(0xd9b45a), X(cx + 0.05), 1.065, Z(cz + 0.1)); }
+    // glass display cases (merch-display fills them with the products): 2 rows of 3
+    for (const cz of [5.9, 7.9]) for (const cx of [6.05, 7.4, 8.75]) ctx.merchStore.cases.push([X(cx), Z(cz)]);
+    // wall shelving on the right wall: uprights, four shelves, folded tees, mugs, sticker boxes
+    { const sx = X1 - 0.3, z1 = 4.9, z2 = 9.2; for (const zz of [z1, (z1 + z2) / 2, z2]) box(0.36, 2.2, 0.04, wood, X(sx), 1.1, Z(zz));
+      const tee = [0x15151a, 0x2a3550, 0x7a1f2b, 0x3c5a3a, 0xd9cdb8], mug = S(0xf0ece4, 0.35);
+      [0.45, 0.95, 1.45, 1.95].forEach((y, k) => { box(0.38, 0.03, z2 - z1, wood, X(sx), y, Z((z1 + z2) / 2));
+        for (let zz = z1 + 0.3; zz < z2 - 0.2; zz += 0.42) { if (k === 2) { put(new T.CylinderGeometry(0.05, 0.045, 0.11, 14), mug, X(sx), y + 0.07, Z(zz)); continue; }
+          const c = M(tee[(Math.round(zz * 3) + k) % tee.length]); for (let s = 0; s < 3; s++) box(0.3, 0.05, 0.3, c, X(sx), y + 0.04 + s * 0.052, Z(zz)); } }); }
+    // the store's clickable 'Merch Store' sign is placed by merch-display (ctx.merchStore.sign); Hermod's desk sits behind the counter (lobby-stations)
+
+    /* ---- entrance planters either side of the doors (1 m clear of the glass) ---- */
+    for (const s of [-1, 1]) { const px = s * 2.35, pz = 8.75; box(1.1, 0.5, 0.5, wood, X(px), 0.25, Z(pz)); box(1.14, 0.04, 0.54, trim, X(px), 0.52, Z(pz));
+      for (let k = 0; k < 18; k++) leaf(X(px + (rnd() - 0.5) * 0.95), 0.62 + rnd() * 0.3, Z(pz + (rnd() - 0.5) * 0.35), 1.2); }
+
+    /* ---- plants (every one a different species; core/plants.js hands out the next unused one) ---- */
+    for (const [px, pz, s] of [[-3.4, 6.4, 1.1], [4.2, 8.6, 1.1], [-9.3, -4.55, 1.15], [-9.3, 8.9, 1.1], [-3.75, -4.6, 0.9], [9.4, 0.15, 1.0], [5.25, 9.0, 0.9]]) kit.plant(ctx, X(px), Z(pz), s);
+    ctx.directoryAt = { x: X(X0 + 0.14), y: 1.5, z: Z(6.6), ry: Math.PI / 2 };   /* 'Switch to Classic' plaque on the left wall by the glass */
+
+    ctx.extend(X(X0), Z(ZB), X(X1), Z(ZF));
     ctx.spot('lobby', [x, 1.65, z + 8.6], [x, 1.45, z - 2], 'Lobby');   // spawn just inside the entrance, looking down the carpet at Freyja
+    ctx.spot('hub', [X(-2.6), 1.6, Z(6.8)], [X(HX), 1.0, Z(HZ)], 'Collaboration Hub');
+    ctx.spot('coders', [X(3.4), 1.6, Z(1.6)], [X(7.3), 1.0, Z(-2.4)], 'Coders');
+    this.ctx = ctx;
+  },
+  /* QA helper: __ewsOffice.iso(x, y, z, lookX, lookY, lookZ, cutY) = isometric-style cutaway camera (walls/ceiling above cutY
+     are clipped away); __ewsOffice.iso() = back to the walking camera. Debug only: nothing runs unless it is called. */
+  onFrame() {
+    const c = this.ctx, O = window.__ewsOffice; if (!c || !O) return;
+    if (!O.iso) O.iso = (...a) => { if (!a.length) { this.iso = null; c.renderer.clippingPlanes = []; return 'off'; } const [px, py, pz, lx, ly, lz, cut = 3.0] = a; this.iso = { p: [px, py, pz], l: [lx, ly, lz] };
+      c.renderer.clippingPlanes = [new c.THREE.Plane(new c.THREE.Vector3(0, -1, 0), cut)]; return 'on'; };
+    if (this.iso) { c.cam.position.set(...this.iso.p); c.cam.lookAt(...this.iso.l); if (c.scene.fog) { c.scene.fog.near = 200; c.scene.fog.far = 400; } }
   },
 };

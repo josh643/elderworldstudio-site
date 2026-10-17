@@ -88,6 +88,23 @@
    }
   },
   {
+   "id": "lobby-stations",
+   "src": "modules/lobby-stations/index.js",
+   "config": {
+    "coders": [
+     "games lead",
+     "game coder",
+     "coder",
+     "animation",
+     "animation polish",
+     "qa"
+    ],
+    "store": [
+     "store"
+    ]
+   }
+  },
+  {
    "id": "monitors",
    "src": "modules/monitors/index.js"
   },

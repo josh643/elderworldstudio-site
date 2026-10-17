@@ -6,7 +6,14 @@ import { setupFloors } from '../../core/floors.js?v=1';
 export default {
   setup(ctx, cfg, [x, z]) {
     const { box, mat, esc } = ctx, A = ctx.use('avatar');
-    const dk = box(4, 1.1, 1, mat.wood, x, 0.55, z + 1); box(4.2, 0.08, 1.2, mat.trim, x, 1.12, z + 1);
+    /* curved wood reception desk (layout v2): an arc of radius 3.1 m (outer) / 2.3 m (inner) bulging toward the doors, brass
+       top edge + kick band; Freyja stands inside the curve. One extrusion per part, all on shared materials (batched). */
+    const dk = (() => { const T = ctx.THREE, cx = x, cz = z - 1.6, A = 0.96;
+      const arc = (r1, r2, y, h, m) => { const sh = new T.Shape(); for (let i = 0; i <= 24; i++) { const a = -A + 2 * A * i / 24, px = cx + r1 * Math.sin(a), pz = cz + r1 * Math.cos(a); i ? sh.lineTo(px, -pz) : sh.moveTo(px, -pz); }
+        for (let i = 24; i >= 0; i--) { const a = -A + 2 * A * i / 24; sh.lineTo(cx + r2 * Math.sin(a), -(cz + r2 * Math.cos(a))); }
+        const g = new T.ExtrudeGeometry(sh, { depth: h, bevelEnabled: false, curveSegments: 4 }).rotateX(-Math.PI / 2); g.translate(0, y, 0); const o = new T.Mesh(g, m); ctx.scene.add(o); return o; };
+      const body = arc(3.1, 2.3, 0, 1.02, mat.wood); arc(3.16, 2.26, 1.02, 0.06, mat.trim).userData.noCollide = 1; arc(3.12, 3.09, 0.06, 0.06, mat.trim).userData.noCollide = 1; arc(3.12, 3.09, 0.92, 0.03, mat.trim).userData.noCollide = 1;
+      return body; })();
     const me = { id: 'receptionist', name: cfg.name || ctx.roster.receptionist?.name || 'Freyja', role: 'receptionist' };
     const f = A.make({ ...me, female: 1 }, 0x2f7d6a, () => chat()); f.position.set(x, 0, z); f.rotation.y = 0; f.userData.pose = 'host'; ctx.scene.add(f);
     const history = (() => { try { return JSON.parse(sessionStorage.getItem('ews-freyja') || '[]'); } catch { return []; } })();   /* chat survives reloads */
@@ -29,7 +36,7 @@ export default {
     const sent = (id, type) => { const team = TEAM[type] || 'client'; if (id) localStorage.setItem('ews-req', JSON.stringify([...reqs(), { id, team, t: Date.now() }].slice(-10)));
       V.playLine('form_sent', () => V.playLine('ticket_' + (['client', 'games', 'ops'].includes(team) ? team : 'client'))); speak(6000);
       const T = ctx.THREE, tk = new T.Mesh(new T.PlaneGeometry(0.16, 0.24), new T.MeshBasicMaterial({ color: 0xfaf6ea, side: T.DoubleSide })); tk.userData.noCollide = 1;
-      const from = new T.Vector3(x - 1.3, 1.2, z + 1.25), spot = ctx.teamSpot?.[team] || [x, z - 20], to = new T.Vector3(spot[0], 1.3, spot[1]);
+      const from = new T.Vector3(x - 1.3, 1.2, z + 0.8), spot = ctx.teamSpot?.[team] || [x, z - 20], to = new T.Vector3(spot[0], 1.3, spot[1]);
       tk.position.copy(from); ctx.scene.add(tk); tickets.push({ tk, from, to, t: -0.25 }); };
     const statusCard = () => { const L = reqs(); const c = ctx.card(`<h3>Your requests</h3><div class="st">${L.length ? '' : '<p>No requests from this device yet. Tap “Start a request” to begin.</p>'}</div><button class="ob" type="button">Refresh</button>`);
       const box = c.querySelector('.st'), LBL = { received: 'Received', 'in development': 'In development', review: 'In review', ready: 'Ready', unknown: 'Received' };
@@ -62,19 +69,28 @@ export default {
         catch { w.textContent = 'I can\u2019t reach my notes right now. Try the tour buttons below!'; } };
       fm.q.focus();
     };
-    ctx.onClick(dk, () => chat()); ctx.sign(`Ask ${me.name}`, `${ctx.verb} to chat`, x, 0.62, z + 1.52, 0, () => chat(), 1.6);
+    ctx.onClick(dk, () => chat()); box(1.7, 0.5, 0.04, mat.trim, x, 0.62, z + 1.52); ctx.sign(me.name, `Reception · ${ctx.verb} to chat`, x, 0.62, z + 1.55, 0, () => chat(), 1.6);
     /* digital demo kiosk on the desk: angled touchscreen facing the visitor */
-    { const T = ctx.THREE, K = new T.Group(); K.position.set(x - 1.3, 1.16, z + 1.25); ctx.scene.add(K);
+    { const T = ctx.THREE, K = new T.Group(); K.position.set(x - 1.3, 1.08, z + 0.8); ctx.scene.add(K);
       const st = new T.Mesh(new T.BoxGeometry(0.08, 0.16, 0.08), mat.rack); st.position.y = 0.08; K.add(st);
       const hd = new T.Mesh(new T.BoxGeometry(0.76, 0.5, 0.03), mat.dark); hd.position.set(0, 0.36, 0); hd.rotation.x = -0.35; K.add(hd);
       const sc = ctx.panel(ctx.textCanvas(['Instant sample', 'Tap: your site, kiosk or POS'], { w: 600, h: 400, size: 76, body: 50, bg: '#0b1626' }), 0.72, 0.46, 0, 0.36, 0.018, 0, K); sc.rotation.x = -0.35; sc.material.toneMapped = false; sc.userData.plate = 'Instant sample';
       [hd, sc].forEach(o => ctx.onClick(o, () => { V.playLine('form_type'); openKiosk(ctx, cfg.lead, sent); })); }
     /* lobby logo wall straight down the red carpet behind Freyja: wood panel, backlit brass tree crest, ELDER WORLD STUDIO. Walk around either side. */
-    { const T = ctx.THREE, wz = z - 3.2; box(6.4, 3.7, 0.25, mat.wood, x, 1.85, wz); box(6.6, 0.1, 0.3, mat.trim, x, 3.75, wz); box(6.6, 0.1, 0.3, mat.trim, x, 0.05, wz);
+    { const T = ctx.THREE, wz = z - 3.2; box(6.4, 3.7, 0.25, mat.wood, x, 1.85, wz); box(6.4, 0.3, 0.25, mat.wall, x, 3.85, wz); box(6.6, 0.1, 0.3, mat.trim, x, 0.05, wz);
+      /* wood-slat feature wall (layout v2): vertical slats over the panel, a dark backer behind the name, and a planter trough of
+         greenery along the top. Slats/backer/trough are plain boxes on shared materials (batched into the wood/dark draw calls). */
+      for (let sx = -3.13; sx <= 3.14; sx += 0.145) box(0.075, 3.5, 0.05, mat.wood, x + sx, 1.85, wz + 0.15).userData.noCollide = 1;
+      box(4.7, 0.8, 0.03, mat.dark, x, 2.3, wz + 0.19).userData.noCollide = 1; box(4.78, 0.04, 0.04, mat.trim, x, 2.72, wz + 0.19).userData.noCollide = 1; box(4.78, 0.04, 0.04, mat.trim, x, 1.88, wz + 0.19).userData.noCollide = 1;
+      { box(6.4, 0.22, 0.34, mat.dark, x, 3.66, wz + 0.25).userData.noCollide = 1; box(6.44, 0.03, 0.38, mat.trim, x, 3.78, wz + 0.25).userData.noCollide = 1;
+        const lm = [0x3f7a3a, 0x2f6630, 0x5a8f45].map(c => (ctx.M.standard ? new T.MeshStandardMaterial({ color: c, roughness: 0.8 }) : new T.MeshLambertMaterial({ color: c }))), lg = [new T.IcosahedronGeometry(0.15, 0), new T.IcosahedronGeometry(0.11, 0)];
+        let sd = 11; const r = () => ((sd = (sd * 16807) % 2147483647) / 2147483647);
+        for (let i = 0; i < 90; i++) { const lx = -3.1 + 6.2 * i / 89 + (r() - 0.5) * 0.1, trail = Math.abs(lx) > 1.0 && r() < 0.45; const n = trail ? 3 : 1;
+          for (let k = 0; k < n; k++) { const o = new T.Mesh(lg[(i + k) % 2], lm[Math.floor(r() * 3)]); o.position.set(x + lx + (r() - 0.5) * 0.08, 3.84 - k * 0.17 - r() * 0.06, wz + 0.3 + r() * 0.12); o.rotation.set(r() * 3, r() * 6, 0); o.scale.setScalar(0.85 + r() * 0.5); o.userData.noCollide = 1; ctx.scene.add(o); } } }
       const hc = document.createElement('canvas'); hc.width = hc.height = 256; { const g = hc.getContext('2d'), r = g.createRadialGradient(128, 128, 10, 128, 128, 128); r.addColorStop(0, 'rgba(255,214,140,.85)'); r.addColorStop(1, 'rgba(255,214,140,0)'); g.fillStyle = r; g.fillRect(0, 0, 256, 256); }
-      const ht = new T.CanvasTexture(hc); ht.colorSpace = T.SRGBColorSpace; const halo = new T.Mesh(new T.PlaneGeometry(3.4, 3.4), new T.MeshBasicMaterial({ map: ht, transparent: true, depthWrite: false, toneMapped: false })); halo.position.set(x, 3.2, wz + 0.135); halo.userData.dn = 'halo'; ctx.scene.add(halo);
-      const lg = ctx.panel(ctx.image(ctx.site.brand.logo || '/assets/img/logo.png'), 1.2, 1.2, x, 3.2, wz + 0.15, 0); lg.material.toneMapped = false; lg.userData.label = 'Elder World Studio logo';
-      const nm = ctx.panel(ctx.textCanvas(['ELDER WORLD STUDIO'], { w: 1600, h: 200, size: 104, bg: null, border: false, fg: '#e9c46a' }), 4.2, 0.6, x, 2.3, wz + 0.15, 0); nm.material.toneMapped = false; nm.userData.plate = 'ELDER WORLD STUDIO'; nm.visible = ctx.site.brand.wallText !== false; }
+      const ht = new T.CanvasTexture(hc); ht.colorSpace = T.SRGBColorSpace; const halo = new T.Mesh(new T.PlaneGeometry(3.4, 3.4), new T.MeshBasicMaterial({ map: ht, transparent: true, depthWrite: false, toneMapped: false })); halo.position.set(x, 3.05, wz + 0.2); halo.userData.dn = 'halo'; ctx.scene.add(halo);
+      const lg = ctx.panel(ctx.image(ctx.site.brand.logo || '/assets/img/logo.png'), 1.1, 1.1, x, 3.0, wz + 0.21, 0); lg.material.toneMapped = false; lg.userData.label = 'Elder World Studio logo';
+      const nm = ctx.panel(ctx.textCanvas(['ELDER WORLD STUDIO'], { w: 1600, h: 200, size: 104, bg: null, border: false, fg: '#e9c46a' }), 4.2, 0.6, x, 2.3, wz + 0.215, 0); nm.material.toneMapped = false; nm.userData.plate = 'ELDER WORLD STUDIO'; nm.visible = ctx.site.brand.wallText !== false; }
     /* central elevator + stairs core (the building spine) right behind the logo wall; reached by stepping around the wall
        through the RIGHT-side doorway. Same position on floors 2-5. Kept out of the entrance sightline (fully hidden by the wall). */
     { const T = ctx.THREE, cz = z - 3.2 - 2.5, W = 4.6, D = 3.0, stone = mat.stone || mat.wall, metal = mat.trim;
@@ -94,8 +110,8 @@ export default {
       box(0.04, 0.04, 2.9, metal, x - W / 2 - 1.38, 1.9, fz - 1.4).rotation.x = -0.57;
       const st = ctx.panel(ctx.textCanvas([ctx.t ? ctx.t('Stairs') : 'Stairs'], { w: 400, h: 140, size: 64 }), 0.8, 0.28, x - W / 2 - 0.75, 2.5, fz + 0.15, 0); st.userData.plate = 'Stairs';
       /* small elevator sign beside the right-side doorway, visible from the red carpet (faces the entrance) */
-      const sg = ctx.panel(ctx.textCanvas(['Elevator  ›', ctx.t ? ctx.t('Floors 2 to 5') : 'Floors 2 to 5'], { w: 512, h: 200, size: 66, body: 42 }), 0.9, 0.35, x + 3.65, 2.35, z - 3.2 + 0.16, 0); sg.material.toneMapped = false; sg.userData.plate = 'Elevator';
-      box(0.06, 2.3, 0.06, metal, x + 3.65, 1.15, z - 3.2 + 0.1); ctx.onClick(sg, call); }
+      const sg = ctx.panel(ctx.textCanvas(['Elevator  ›', ctx.t ? ctx.t('Floors 2 to 5') : 'Floors 2 to 5'], { w: 512, h: 200, size: 66, body: 42 }), 1.4, 0.55, x + 4.0, 3.2, z - 3.2 + 0.12, 0); sg.material.toneMapped = false; sg.userData.plate = 'Elevator';   /* on the lintel over the right-hand doorway (layout v2) */
+      ctx.onClick(sg, call); }
     ctx.provide('leadForm', leadForm);
     ctx.hudButton(`Talk to ${me.name}`, chat, true);
     // greeting: she turns to look at the visitor, waves and shows a speech bubble when they come within ~4 m
