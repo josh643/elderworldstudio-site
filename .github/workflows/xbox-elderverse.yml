@@ -1,0 +1,61 @@
+name: xbox-elderverse
+on:
+  workflow_dispatch:
+  push:
+    branches: ['agent/**']
+    tags: ['xbox-ev-v*']
+    paths: ['xbox/elderverse-shell/**', '.github/workflows/xbox-elderverse.yml']
+concurrency:
+  group: xbox-ev-${{ github.ref }}
+  cancel-in-progress: true
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: windows-2022
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: microsoft/setup-msbuild@v2
+      - name: Version
+        id: ver
+        shell: pwsh
+        run: |
+          if ($env:GITHUB_REF -like 'refs/tags/xbox-ev-v*') { $v = ($env:GITHUB_REF -replace 'refs/tags/xbox-ev-v','') + '.0' } else { $v = "0.1.$($env:GITHUB_RUN_NUMBER).0" }
+          $m = 'xbox/elderverse-shell/ElderverseShell/Package.appxmanifest'
+          (Get-Content $m -Raw) -replace 'Version="0\.1\.0\.0"', "Version=`"$v`"" | Set-Content $m -Encoding utf8
+          "version=$v" >> $env:GITHUB_OUTPUT
+          "sha7=$($env:GITHUB_SHA.Substring(0,7))" >> $env:GITHUB_OUTPUT
+      - name: Throwaway test-signing cert (never committed)
+        id: cert
+        shell: pwsh
+        run: |
+          $c = New-SelfSignedCertificate -Type Custom -Subject 'CN=Elder World Studio Inc' -KeyUsage DigitalSignature -FriendlyName 'EWS Xbox test' -CertStoreLocation 'Cert:\CurrentUser\My' -TextExtension @('2.5.29.37={text}1.3.6.1.5.5.7.3.3','2.5.29.19={text}') -NotAfter (Get-Date).AddDays(60)
+          $pw = [guid]::NewGuid().ToString('N')
+          echo "::add-mask::$pw"
+          Export-PfxCertificate -Cert $c -FilePath "$env:RUNNER_TEMP\ews.pfx" -Password (ConvertTo-SecureString $pw -AsPlainText -Force) | Out-Null
+          New-Item -ItemType Directory -Force out | Out-Null
+          Export-Certificate -Cert $c -FilePath out\ElderWorldStudio-test.cer | Out-Null
+          "thumb=$($c.Thumbprint)" >> $env:GITHUB_OUTPUT
+          "pw=$pw" >> $env:GITHUB_OUTPUT
+      - name: Build + package (Release x64, sideload)
+        shell: pwsh
+        run: |
+          msbuild xbox/elderverse-shell/ElderverseShell/ElderverseShell.csproj /restore /m /v:minimal `
+            /p:Configuration=Release /p:Platform=x64 /p:AppxBundle=Always /p:AppxBundlePlatforms=x64 `
+            /p:UapAppxPackageBuildMode=SideloadOnly /p:AppxPackageDir="$pwd\out\pkg\\" `
+            /p:PackageCertificateKeyFile="$env:RUNNER_TEMP\ews.pfx" /p:PackageCertificatePassword="${{ steps.cert.outputs.pw }}" `
+            /p:PackageCertificateThumbprint=${{ steps.cert.outputs.thumb }}
+      - name: Collect
+        shell: pwsh
+        run: |
+          Get-ChildItem -Recurse out | Select-Object FullName, Length | Format-Table -AutoSize | Out-String -Width 300
+          $files = Get-ChildItem -Recurse out -Include *.msixbundle,*.appxbundle,*.appx,*.msix,*.cer
+          $files | ForEach-Object { (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLower() + "  " + $_.FullName.Substring($pwd.Path.Length+1) } | Set-Content out\SHA256SUMS
+          @{version='${{ steps.ver.outputs.version }}'; sha=$env:GITHUB_SHA; ref=$env:GITHUB_REF; run_id=$env:GITHUB_RUN_ID} | ConvertTo-Json | Set-Content out\build.json
+          Remove-Item -Force "$env:RUNNER_TEMP\ews.pfx"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: elderverse-xbox-${{ steps.ver.outputs.version }}-${{ steps.ver.outputs.sha7 }}
+          path: out/
+          retention-days: 30
