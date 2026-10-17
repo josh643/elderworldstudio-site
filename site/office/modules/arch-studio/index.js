@@ -33,15 +33,19 @@ export default {
     this.spots = { plan: [SP(ptx - 0.5, ptz - 0.95, 0, 'inspect'), SP(ptx + 0.6, ptz - 0.95, 0, 'present'), SP(wbx + 0.9, wbz - 0.4, -Math.PI / 2, 'present'), SP(wbx + 0.9, wbz + 0.5, -Math.PI / 2, 'inspect')],
       model: [SP(mpx - 1.25, mpz, Math.PI / 2, 'inspect'), SP(mpx, mpz - 1.25, 0, 'point'), SP(mpx + 1.25, mpz, -Math.PI / 2, 'inspect'), SP(mpx - 0.6, mpz - 1.2, 0.4, 'inspect')] };
     this.ctx = ctx;
-    const reg = () => { if (window.__ewsOffice?.health) window.__ewsOffice.archStudio = () => ({ studio: ctx.archStudio, agents: out.map(o => ({ id: o.a.id, name: o.a.name, stage: o.av.userData.state?.stage || null, force: o.force || null, p: o.av.position.toArray().map(v => +v.toFixed(2)), clip: o.av.userData.cur, seat: o.av.userData.seat?.i ?? null })) }),
+    const reg = () => { if (window.__ewsOffice?.health) window.__ewsOffice.archStudio = () => ({ studio: ctx.archStudio, agents: out.map(o => ({ id: o.a.id, name: o.a.name, stage: o.av.userData.state?.stage || null, force: o.force || null, p: o.av.position.toArray().map(v => +v.toFixed(2)), clip: o.av.userData.cur, away: !!o.away, seat: o.av.userData.seat?.i ?? null })) }),
       window.__ewsOffice.archStage = (id, st) => { const o = out.find(q => q.a.id === id || q.a.name === id); if (!o) return false; o.force = st || null; return true; }; else setTimeout(reg, 500); }; reg();
   },
   onState(s) { if (!this.list) return; const W = new Map((s.work || []).map(w => [w.agent, w])); for (const o of this.list) o.av.userData.state = W.get(o.a.id) || {}; },
   onFrame() {
     if (!this.list) return; const t = performance.now() / 1000;
+    /* out in the town (world-live field figure, CT119 agent.pose zone 'town'): the studio avatar steps out of view so the
+       same person is never in two places; checked once a second */
+    if (!(this.fT > t)) { this.fT = t + 1; let f = []; try { f = window.__ewsOffice?.world?.().field || []; } catch {} this.field = new Set(f.filter(F => !F.leaving).map(F => String(F.id).replace(/^agent:/, ''))); }
     for (const o of this.list) { const u = o.av.userData, st = o.force || u.state?.stage || null, want = st ? STAND[st] || null : (o.idleUntil > t ? 'plan' : null);
       if (!st && !(o.idleUntil > t) && !(o.idleNext > t)) { o.idleNext = t + 40 + Math.random() * 50; if (Math.random() < 0.3) o.idleUntil = t + 12 + Math.random() * 10; }
-      const spot = want ? this.spots[want][o.i % 4] : u.home;
+      const away = this.field?.has(o.a.id); o.away = away; o.av.scale.setScalar(away ? 1e-4 : 1);
+      const spot = want && !away ? this.spots[want][o.i % 4] : u.home;
       if (u.target !== spot) u.target = spot;
       u.spotK = want && Math.hypot(o.av.position.x - spot.x, o.av.position.z - spot.z) < 0.06 ? spot.k : null; }
   },
