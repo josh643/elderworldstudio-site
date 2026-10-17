@@ -9,6 +9,7 @@ export const FLOORS = [
   { n: '3', name: 'Architecture, Design & Marketing', sub: 'Architecture studio · Design · Marketing', floor: 0x4a4f5a },
   { n: '4', name: 'Client Sites & Call Center', sub: 'Client Sites team · Call Center', floor: 0x3f4a44 },
   { n: '5', name: 'Ops & Leadership', sub: 'Ops room · Money & leadership', floor: 0x3a3a48 },
+  { n: 'B1', name: 'Command (staff only)', sub: 'Restricted: World Operations', restricted: true },
 ];
 export const CASUAL = ['Astro Dodge', 'Tile 2048', 'Brick Blitz', 'Color Gate', 'Crystal Merge', 'Gem Hopper', 'Neon Snake', 'Spiral Drop', 'Stack Tower', 'Void Flip'];
 const PAL = { 'Astro Dodge': 0x2f6fd6, 'Tile 2048': 0xd99a2b, 'Brick Blitz': 0xd6452f, 'Color Gate': 0x9b3fd6, 'Crystal Merge': 0x2fc4d6, 'Gem Hopper': 0x3fd67a, 'Neon Snake': 0x7ad62f, 'Spiral Drop': 0xd62f8e, 'Stack Tower': 0xd6c22f, 'Void Flip': 0x5a2fd6 };
@@ -18,12 +19,19 @@ export function setupFloors(ctx, core) {
   const { THREE, esc } = ctx, T = k => (ctx.t ? ctx.t(k) : k); const built = {}; let cur = 'G'; ctx.extraCols ||= [];
   const fade = document.createElement('div'); fade.style.cssText = 'position:fixed;inset:0;background:#05030a;opacity:0;pointer-events:none;transition:opacity .35s;z-index:50';
   document.body.append(fade);
-  const offX = n => (n === 'G' ? 0 : (+n - 1) * 400);
-  function go(n) {
+  const offX = n => (n === 'G' ? 0 : n === 'B1' ? -400 : (+n - 1) * 400);
+  // B1 is IP-locked server-side (functions/office/b1/_middleware.js + /api/office/b1/*): the room module and its data are only served to
+  // allowlisted IPs, so a visitor can't build or teleport there. They see the locked staff door message instead.
+  let b1Ok = null; const b1Check = async () => { if (b1Ok !== null) return b1Ok; try { const r = await fetch('/api/office/b1/access', { cache: 'no-store' }); b1Ok = r.ok; } catch { b1Ok = false; } return b1Ok; };
+  b1Check();
+  const b1Locked = () => ctx.card(`<h3>${esc(T('Restricted: World Operations'))}</h3><p>${esc(T('This level is for Elder World Studio staff only. Sorry, the door is locked.'))}</p>`);
+  async function go(n) {
     if (n === cur) { ctx.closeCard(); return; }
+    if (n === 'B1') { if (!(await b1Check())) { b1Locked(); return; }
+      if (!built.B1) { try { const m = await import('/office/b1/b1.js?v=1'); built.B1 = m.buildB1(ctx, core, offX('B1')); } catch { b1Ok = false; b1Locked(); return; } } }
     ctx.closeCard(); fade.style.opacity = 1;
     setTimeout(() => {
-      if (n !== 'G' && !built[n]) built[n] = buildFloor(ctx, core, FLOORS.find(f => f.n === n), offX(n), go);
+      if (n !== 'G' && n !== 'B1' && !built[n]) built[n] = buildFloor(ctx, core, FLOORS.find(f => f.n === n), offX(n), go);
       const ox = offX(n); ctx.teleport(core.x + ox, core.fz + 1.6, core.x + ox, core.fz + 8);
       cur = n; ctx.curFloor = n; ctx.curBounds = n === 'G' ? null : built[n].bounds; ctx.rebuildColliders(); ctx.daynight?.apply?.();
       ctx.announce?.(`${T('Floor')} ${n}: ${T(FLOORS.find(f => f.n === n).name)}`);
