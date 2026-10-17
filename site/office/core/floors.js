@@ -43,8 +43,25 @@ export function setupFloors(ctx, core) {
     const c = ctx.card(`<h3>${esc(T('Elevator'))}</h3><p>${esc(T('Choose a floor.'))}</p>${rows}`);
     c.querySelectorAll('[data-f]').forEach(b => b.addEventListener('click', () => go(b.dataset.f)));
   }
-  // session restore after a reload while upstairs: rebuild that floor
-  setTimeout(() => { const p = ctx.pos?.(); if (!p || p.x < 200) return; const n = String(Math.round(p.x / 400) + 1); if (FLOORS.some(f => f.n === n)) { built[n] = buildFloor(ctx, core, FLOORS.find(f => f.n === n), offX(n), go); cur = n; ctx.curFloor = n; ctx.curBounds = built[n].bounds; ctx.rebuildColliders(); } }, 1500);
+  /* session restore after a soft reload (Joshua 2026-10-17 00:28: an update left him outdoors on open grass). The old restore put the
+     saved x/z back on the GROUND floor and only rebuilt the upper floor 1.5 s later; in between the ground-floor clamp (exterior
+     bounds, |x| < 175) pushed a Floor 3/4 position (x = 800/1200) out onto the edge of the campus, so the late check saw x < 200 and
+     never rebuilt the floor. Now the engine calls restore(floor, at) synchronously before the first frame: the floor is built at
+     once (no fade), the player is placed at the saved spot if it is inside that floor's walkable bounds, otherwise at that floor's
+     elevator; B1 needs the access check, so the player waits at the ground-floor elevator and goes down only if allowed (denied ->
+     stays there, the nearest allowed spot). Anything unknown -> the lobby, never open terrain. */
+  const floorOfX = x => (x < -200 ? 'B1' : x > 200 ? String(Math.round(x / 400) + 1) : 'G');
+  const inB = (b, x, z) => { if (!b) return false; const [x0, x1, z0, z1] = Array.isArray(b) ? b : [b.x0, b.x1, b.z0, b.z1]; return x > x0 + 0.3 && x < x1 - 0.3 && z > z0 + 0.3 && z < z1 - 0.3; };
+  const place = (n, at) => { const ox = offX(n), b = n === 'G' ? null : built[n]?.bounds;
+    const lobbyOk = n === 'G' && at && Math.abs(at.x - (ctx.lobbyAt?.x ?? 0)) < 60 && at.z > core.fz - 12 && at.z < (ctx.town?.Z0 ?? 10) + 40;   /* G: the building + plaza/lawn/parking, not the far grass */
+    if (at && (n === 'G' ? lobbyOk : inB(b, at.x, at.z))) { ctx.player.teleport(at.x, at.z); return 'saved'; }
+    ctx.teleport(core.x + ox, core.fz + 1.6, core.x + ox, core.fz + 8); return 'elevator'; };
+  const settle = n => { cur = n; ctx.curFloor = n; ctx.curBounds = n === 'G' ? null : built[n].bounds; ctx.rebuildColliders(); ctx.daynight?.apply?.(); };
+  const restore = (n, at) => { n = n && (n === 'B1' || n === 'G' || FLOORS.some(f => f.n === n)) ? n : at ? floorOfX(at.x) : 'G';
+    if (n === 'B1') { place('G', null); (async () => { if (!(await b1Check())) return; try { if (!built.B1) { const m = await import('/office/b1/b1.js?v=2'); built.B1 = m.buildB1(ctx, core, offX('B1')); } settle('B1'); place('B1', at); } catch { b1Ok = false; } })(); return 'B1-pending'; }
+    if (n !== 'G' && !built[n]) { const F = FLOORS.find(f => f.n === n); if (!F) { place('G', null); return 'lobby'; } built[n] = buildFloor(ctx, core, F, offX(n), go); }
+    settle(n); return n + ':' + place(n, at); };
+  ctx.floorRestore = restore; ctx.floorOfX = floorOfX;
   const reg = () => { if (window.__ewsOffice?.health) window.__ewsOffice.floor = n => (n ? go(String(n)) : cur); else setTimeout(reg, 500); }; reg();
   return { panel, go, tick: dt => built[cur]?.onFrame?.(dt) };
 }

@@ -386,9 +386,18 @@ const PUBLIC = /(^|\.)elderworldstudio\.com$/.test(location.hostname) || /[?&]pu
     r.seatList = CH.seats.map(s => ({ i: s.i, label: s.label, kind: s.kind, owner: s.owner, holder: s.holder?.userData.a?.name || null, off: +s.c.off.toFixed(3) })); return r; }; window.__ewsOffice.walk = (x, z, ang, secs) => { pos.set(x, EYE, z); glide = null; yaw = ang; keys.w = 1; return new Promise(r => setTimeout(() => { keys.w = 0; r([pos.x, pos.z]); }, secs * 1000)); };
   /* seamless updates + kiosk health: the kiosk watcher asks the page; the page reloads only when nobody is using it */
   let lastFrameT = performance.now(), wantUpdate = false; for (const ev of ['mousemove', 'wheel', 'touchstart', 'input']) addEventListener(ev, () => lastInput = performance.now(), { passive: true, capture: true });
-  const busy = () => { const a = document.activeElement; return !!(document.querySelector('.office-card') || (a && (a.matches?.('input,textarea,select') || a.isContentEditable)) || glide); };
-  const saveState = () => { try { sessionStorage.setItem('ews-state', JSON.stringify({ p: pos.toArray(), yaw, pitch, t: Date.now() })); } catch {} };
-  try { const st = JSON.parse(sessionStorage.getItem('ews-state') || 'null'); if (st && Date.now() - st.t < 10 * 60e3) { pos.fromArray(st.p); pos.y = EYE; yaw = st.yaw; pitch = st.pitch; } sessionStorage.removeItem('ews-state'); } catch {}
+  const busy = () => { const a = document.activeElement; return !!(document.querySelector('.office-card,.ews-tab-bd') || (a && (a.matches?.('input,textarea,select') || a.isContentEditable)) || glide); };   /* card, tablet, typing or a tour */
+  /* reload state v2 (Joshua 00:28/00:29): floor + position + view + a plain open card, saved on every reload trigger (pagehide covers
+     soft reload, language switch, manual reload); restored by core/floors.js restore() before the first frame (see there) */
+  const saveState = () => { try { const c = card && !card.querySelector('input,textarea,select,form,button:not(.x)') ? card.innerHTML.replace(/^<button class="x"[^>]*>×<\/button>/, '') : null;
+    sessionStorage.setItem('ews-state', JSON.stringify({ v: 2, f: ctx.curFloor || 'G', p: pos.toArray(), yaw, pitch, freeY: !!window.__ewsFreeY, card: c, t: Date.now() })); } catch {} };
+  const restoreState = () => { let st = null; try { st = JSON.parse(sessionStorage.getItem('ews-state') || 'null'); sessionStorage.removeItem('ews-state'); } catch {}
+    if (!st || !(Date.now() - st.t < 10 * 60e3) || !Array.isArray(st.p) || !st.p.every(Number.isFinite)) return null;
+    const at = { x: st.p[0], z: st.p[2] }, f = st.f || ctx.floorOfX?.(at.x) || 'G';   /* v1 saves had no floor: infer it from x (floors sit 400 m apart) */
+    const r = ctx.floorRestore ? ctx.floorRestore(f, at) : (Math.abs(at.x) < 60 ? (ctx.player.teleport(at.x, at.z), 'G:saved') : 'none');
+    pos.y = EYE; if (Number.isFinite(st.yaw)) yaw = st.yaw; if (Number.isFinite(st.pitch)) pitch = st.pitch; if (st.card) try { cardOf(st.card); } catch {}
+    return (window.__ewsOffice.restored = { from: st, result: r }); };
+  restoreState();
   addEventListener('pagehide', saveState);
   /* Hot module swap (Joshua 2026-10-16 11:27 PM: updates must be seamless). A changed module that implements dispose() is imported in the
      background, set up next to the old one (its setup may resolve only once it is fully built), then swapped into the frame loop in one
@@ -403,8 +412,11 @@ const PUBLIC = /(^|\.)elderworldstudio\.com$/.test(location.hostname) || /[?&]pu
     (window.__ewsOffice.hotLog ||= []).push({ id, hash, at: Date.now() }); return 'swapped'; };
   /* Core/engine changes: soft reload only when nobody is using the page (60 s without input and no card/typing/tour), or the moment the
      visitor leaves the tab. Position + view are restored from sessionStorage, so it comes back exactly where it was. */
-  setInterval(() => { if (wantUpdate && ctx.idleMs() > 60e3 && !busy()) { saveState(); location.reload(); } }, 5000);
-  document.addEventListener('visibilitychange', () => { if (wantUpdate && document.hidden) { saveState(); location.reload(); } });
+  /* idle only: no input for 60 s and no card / tablet / typing / tour, checked every 5 s (also while the tab is hidden: a hidden tab
+     no longer reloads on the spot, it waits for the same idle rule) */
+  const idleNow = () => ctx.idleMs() > 60e3 && !busy();
+  setInterval(() => { if (wantUpdate && idleNow()) { saveState(); location.reload(); } }, 5000);
+  window.__ewsOffice.reloadState = { save: saveState, idleNow, peek: () => sessionStorage.getItem('ews-state') };
   Object.assign(window.__ewsOffice, { health: () => ({ stallMs: Math.round(performance.now() - lastFrameT), idleMs: Math.round(ctx.idleMs()), busy: busy() }), applyUpdateWhenIdle: () => { wantUpdate = true; return 'deferred'; } });
   const frame0 = frame; R.setAnimationLoop(t => { lastFrameT = performance.now(); frame0(t); }); return { goTo, close, ctx };   // setAnimationLoop also drives WebXR frames
 }

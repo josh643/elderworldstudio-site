@@ -5,7 +5,7 @@
 //     ctx.use('assets').watch(path, cb) are told the new versioned URL. No reload.
 //   - a module changed (manifest v2 'modules') -> ctx.hotSwap(id): imported + built in the background, swapped in one tick, old disposed;
 //     a failure keeps the old version (logged). Modules without dispose() fall back to the soft reload.
-//   - core code changed -> soft reload only when idle (60 s, no card/typing/tour) or when the visitor leaves the tab; position restored.
+//   - core code changed -> soft reload only when idle (60 s without input, no card/tablet/typing/tour; a hidden tab waits too); floor + position + view restored (core/floors.js restore).
 // Trigger: the world DO broadcasts {t:'release'} on every staging deploy (world-live passes it here), plus a slow 5-min safety poll.
 export default {
   setup(ctx, cfg) {
