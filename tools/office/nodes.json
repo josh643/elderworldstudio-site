@@ -1,0 +1,5 @@
+[{"name":"pve-720","kind":"Proxmox node","cpus":20,"online":true},
+ {"name":"pve-mini","kind":"Proxmox node","cpus":8,"online":true},
+ {"name":"pve-mini-3070","kind":"Proxmox node","cpus":6,"online":true},
+ {"name":"Gen8","kind":"HPE ProLiant","online":false},
+ {"name":"Gen9","kind":"HPE ProLiant","online":false}]

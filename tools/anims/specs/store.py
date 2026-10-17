@@ -1,0 +1,5 @@
+make_clip('Chest_Open','Chest_Open',breathe=False)
+make_clip('Consume','Consume',breathe=False)
+make_clip('PickUp_Table','PickUp_Table',breathe=False)
+make_clip('Interact','Interact',breathe=False)
+make_clip('Walk_Carry_Loop','Walk_Carry_Loop',breathe=False)

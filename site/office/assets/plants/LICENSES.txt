@@ -1,0 +1,4 @@
+All plant models: Poly Haven (https://polyhaven.com), CC0 1.0 Universal. One variant per species, decimated, Draco + WebP 512 textures.
+potted_plant_01 potted_plant_02 potted_plant_04 anthurium_botany_01 calathea_orbifolia_01 pachira_aquatica_01 fern_02 periwinkle_plant
+othonna_cerarioides cheiridopsis_succulent leipoldtia_schultzei searsia_lucida fir_sapling pine_sapling_small quiver_tree_01
+wild_rooibos_bush didelta_spinosa shrub_02

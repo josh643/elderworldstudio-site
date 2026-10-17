@@ -1,0 +1,16 @@
+/* entry choice screen (plain HTML, no 3D loaded) + switch link */
+.ews-choosing body{overflow:hidden}
+.ews-choice{position:fixed;inset:0;z-index:2147483000;display:grid;place-items:center;background:rgba(10,6,20,.94);color:#f3ead7;font:16px/1.4 Inter,system-ui,sans-serif;padding:16px}
+.ews-choice .box{max-width:640px;width:100%;text-align:center}
+.ews-choice img{display:block;margin:0 auto}
+.ews-choice h2{color:#f0cf7a;font:700 clamp(22px,4vw,32px) Cinzel,Georgia,serif;margin:12px 0 20px}
+.ews-choice .opts{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media (max-width:560px){.ews-choice .opts{grid-template-columns:1fr}}
+.ews-choice .opt{display:flex;flex-direction:column;gap:6px;align-items:center;padding:20px 16px;border-radius:14px;border:2px solid #5a4a2a;background:#1c1430;color:#f3ead7;cursor:pointer;font:inherit;min-height:120px}
+.ews-choice .opt b{font-size:20px;color:#f0cf7a}.ews-choice .opt span{font-size:14px;color:#d8cfbf}
+.ews-choice .opt em{font-style:normal;font-size:12px;font-weight:700;background:#d9b45a;color:#140c22;border-radius:99px;padding:2px 10px}
+.ews-choice .opt:hover,.ews-choice .opt:focus-visible{border-color:#f0cf7a;outline:3px solid #f0cf7a;outline-offset:2px}
+.ews-choice .rem,.ews-choice .lang{display:inline-flex;gap:8px;align-items:center;margin:18px 10px 0;font-size:15px}
+.ews-choice input{width:20px;height:20px}.ews-choice select{font:inherit;padding:4px 8px;border-radius:8px}
+.ews-switch{position:fixed;right:14px;bottom:14px;z-index:9999;background:#d9b45a;color:#140c22;font:700 14px Inter,system-ui,sans-serif;padding:10px 14px;border-radius:99px;text-decoration:none}
+.ews-switch:focus-visible{outline:3px solid #fff;outline-offset:2px}

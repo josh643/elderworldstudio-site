@@ -1,0 +1,2 @@
+{"_doc": "Office-only display overrides for names that collide in CT111 policy/agent-names.json. CT111 is NOT changed; flag collisions to ops.",
+ "design-ui": {"name": "Rán", "role": "UI designer", "was": "Eir (also client care)"}}

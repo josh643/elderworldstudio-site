@@ -1,0 +1,45 @@
+// Wayfinding: hanging 3D banners. In the lobby, an arc of banners (one per tour stop registered by other modules);
+// tap = in-place info overlay (never moves the camera). Every area gets a small "↩ Lobby" banner. Also the "Classic site" sign at the entrance.
+// Runs last in modules.json so it sees every registered stop. New area module = new banner, automatically.
+export default {
+  setup(ctx, cfg) {
+    const { THREE, box, mat } = ctx, stops = ctx.tours.filter(([k]) => k !== 'lobby'), n = stops.length, R = 4.2;
+    const hang = (x, y, z, ry, text, sub, fn, w = 2.2) => {
+      const g = new THREE.Group(); g.position.set(x, y, z); g.rotation.y = ry; ctx.scene.add(g);
+      box(w + 0.2, 0.05, 0.05, mat.trim, 0, w * 0.13 + 0.05, 0, g);                                    // rod
+      for (const s of [-1, 1]) box(0.012, 1.4, 0.012, mat.dark, s * w / 2.2, w * 0.13 + 0.75, 0, g);   // cords
+      const p = ctx.panel(ctx.textCanvas([text, sub || ''], { w: 768, h: 200, size: 66 }), w, w * 0.26, 0, 0, 0.01, 0, g); ctx.onClick(p, fn);
+      p.material.side = THREE.DoubleSide; return g;
+    };
+    /* lobby: the wall signs are replaced by freestanding kiosks lining both sides of the red carpet to Freyja (same design
+       family as her desk kiosk: dark navy screen, gold title, tap to open; slimmer pedestal, one simple section). Never auto-move. */
+    const LINE = { games: ['Games & Arcade', 'Star Wayfarer, Omnivael & more. Play the arcade here.'], services: ['Services', 'Elder POS registers and order kiosks'],
+      merch: ['Merch', 'Studio shirts, mugs & stickers'], teams: ['Teams', 'Watch our AI team work, live'], datacenter: ['Data Center', 'The servers that run the studio'],
+      devlog: ['Devlog', 'Our videos and build diaries'], callcenter: ['Call Center', 'AI phone agents that answer and book 24/7'], clients: ['Client Sites', 'Websites we build for businesses'],
+      custom: ['Custom Software & Automation', 'Tools, automations and 3D assets built to order'] };
+    const items = [{ k: null, t: site => [site.brand.name, site.brand.tagline] }, ...stops.map(([k, label]) => ({ k, label }))];
+    const L = ctx.lobbyAt || { x: 0, z: 0 }, side = Math.ceil(items.length / 2), z0 = L.z + 1.2, gap = side > 1 ? Math.min(2.2, 7.2 / (side - 1)) : 0;
+    const brass = mat.trim, screenBg = '#0b1626';
+    /* Joshua 2026-10-16: no red-carpet kiosks (not in the floor_g mock-up); the carpet runs clear from the door to Freyja.
+       Their content lives on as Freyja's quick options (ctx.use('lobbyInfo')(key)): same in-place overlays, no camera moves. */
+    const info = {};
+    items.forEach((it, i) => {
+      const [title, line] = it.k === null ? it.t(ctx.site) : (LINE[it.k] || [it.label, ctx.verb + ' for details']);
+      /* in-place overlay at the kiosk with the real content: no camera move, no wall anchor. Close / Esc leaves you where you stood. */
+      const E = ctx.esc, T = x => E(ctx.t(x)), S = ctx.site, li = (h, p) => `<li><b>${h}</b>${p ? ' · ' + p : ''}</li>`;
+      const BODY = {
+        services: () => `<ul>${(S.services || []).map(v => li(T(v.title), E(String(v.text).split(/(?<=[.!?])\s/)[0]))).join('')}</ul><button class="ob gold" type="button" data-lead>${T('Book a demo')}</button>`,
+        games: () => `<ul>${(S.games || []).map(g => li(E(g.title || g.name), E(g.tag || g.platform || ''))).join('')}</ul>`,
+        merch: () => `<ul>${(S.merch || []).map(m => li(E(m.title), E(m.price))).join('')}</ul>${ctx.btn({ href: '/merch/', label: ctx.t('Open the merch page') })}`,
+        /* public, role-based (PUBLIC-CONTENT-RULES: roles only, Freyja is the only named character) */
+        teams: () => `<ul>${[['Reception', 'Freyja greets visitors and takes requests'], ['Games', 'Designers, coders and QA building our PC and mobile games'], ['Design & Marketing', 'Artists, animators and marketing'], ['Client Sites', 'Websites, kiosks and POS screens for businesses'], ['Call Center', 'AI phone agents that answer and book'], ['Ops & Leadership', 'Keeps the studio running']].map(([h, p]) => li(T(h), T(p))).join('')}</ul>` };
+      const open = () => { const extra = it.k && BODY[it.k] ? BODY[it.k]() : (it.k ? '' : `<p>${T('Ask Freyja at the desk ahead.')}</p>`);
+        const c = ctx.card(`<h3>${T(title)}</h3><p>${T(line)}</p>${extra}`);
+        const ld = c?.querySelector?.('[data-lead]'); if (ld) ld.onclick = () => { ctx.closeCard?.(); (ctx.use('leadForm') || (() => {}))(); }; };
+      info[it.k || 'studio'] = open;
+    });
+    ctx.provide('lobbyInfo', Object.assign(k => (info[k] || info.studio)(), { keys: Object.keys(info) }));
+    const D = ctx.directoryAt || { x: 0, y: 1.85, z: 9.72, ry: Math.PI };
+    ctx.sign('Switch to Classic', 'Simple text version', D.x, D.y, D.z, D.ry, () => ctx.classic(), 1.2);
+  },
+};

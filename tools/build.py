@@ -70,6 +70,7 @@ def page(path, title, desc, body, canonical, current="", noindex=False):
   <nav aria-label="Footer"><a href="{P}games/index.html">Games</a><a href="{P}testers/index.html">Testers</a><a href="{P}services/index.html">Services</a><a href="{P}merch/index.html">Merch</a><a href="{P}contact/index.html">Contact</a><a href="{P}privacy-policy/index.html">Privacy Policy</a><a href="mailto:{EMAIL}">{EMAIL}</a></nav>
  </div>
 </footer>
+{'<script src="/office/boot.js?v=30" defer></script>' if path == "index.html" else ""}
 </body>
 </html>
 """
@@ -151,7 +152,7 @@ HOME = f"""
   </div>
   <div class="panel center">
    <h3>Need a Website or AI Tool?</h3>
-   <p>We also build websites, AI chat assistants, automations and custom software for small businesses. We start with a free demo.</p>
+   <p>We also build websites, AI chat assistants, automations and custom software for small businesses. We start with a demo.</p>
    <a class="btn btn-primary" href="{{P}}services/index.html">See Services</a>
   </div>
  </div>
@@ -170,7 +171,7 @@ CONTACT = f"""
   </div>
   <div class="panel">
    <h3>Websites, AI tools &amp; software</h3>
-   <p>Want us to build something for your business? Tell us about it on our <a class="link" href="{{P}}services/index.html#request">Services page</a> and we&rsquo;ll start with a free demo.</p>
+   <p>Want us to build something for your business? Tell us about it on our <a class="link" href="{{P}}services/index.html#request">Services page</a> and we&rsquo;ll start with a demo.</p>
   </div>
   <div class="panel">
    <h3>Privacy &amp; data requests</h3>
@@ -343,15 +344,15 @@ for p in ["privacy-policy/index.html", "privacy/index.html", "privacy-policy.htm
 SERVICES = f"""
 <div class="page"><div class="wrap">
  <div class="page-head"><h1>Services</h1><p class="meta">Websites, AI tools and custom software for small businesses &middot; based in Memphis, TN</p></div>
- <div class="panel" style="margin-bottom:24px"><h3 style="color:var(--accent)">Free demo first</h3>
-  <p>Tell us what you need. We build a quick, free demo of it for your business and share it by link. You only decide on anything after you&rsquo;ve seen it working. No pressure and no obligation.</p></div>
+ <div class="panel" style="margin-bottom:24px"><h3 style="color:var(--accent)">Demo first</h3>
+  <p>Tell us what you need. We build a quick demo of it for your business and share it by link. You only decide on anything after you&rsquo;ve seen it working. No pressure and no obligation.</p></div>
  <div class="grid contact-grid">
   <div class="panel"><h3>Websites</h3><p>New sites, refreshes and fixes: mobile-friendly pages, online booking, menus, quote forms and simple online stores.</p></div>
   <div class="panel"><h3>AI tools &amp; chat assistants</h3><p>A chat assistant on your site that answers questions from your hours, menu and prices 24/7, takes requests and emails real leads to you.</p><p><a class="link" href="https://ews-ai-assistant.pages.dev/" target="_blank" rel="noopener">Try a live demo &rarr;</a> <small>(sample businesses)</small></p></div>
   <div class="panel"><h3>Automation</h3><p>Stop retyping things. We connect forms, email, spreadsheets and the tools you already use so routine work happens on its own.</p></div>
   <div class="panel"><h3>Custom software &amp; dashboards</h3><p>Internal tools, client portals and dashboards that replace paper forms and messy spreadsheets.</p></div>
  </div>
- <h2 id="request" style="margin-top:40px">Request a free demo</h2>
+ <h2 id="request" style="margin-top:40px">Request a demo</h2>
  <div id="form-status" class="panel" hidden style="margin-bottom:16px"></div>
  <form class="panel lead-form" method="post" action="/api/lead">
   <label>Your name *<input name="name" required maxlength="100" autocomplete="name"></label>
@@ -365,7 +366,7 @@ SERVICES = f"""
   <div class="hp" aria-hidden="true"><label>Leave this empty<input name="website_url" tabindex="-1" autocomplete="off"></label></div>
   <input type="hidden" name="t" id="lead-t" value="">
   <div class="cf-turnstile" data-sitekey="0x4AAAAAAFS0QVr90yy4iuW9" data-theme="dark"></div>
-  <button class="btn btn-primary" type="submit">Request my free demo</button>
+  <button class="btn btn-primary" type="submit">Request my demo</button>
   <p class="meta">We reply by email, usually within one business day. We only use your details to answer your request (see our <a href="{{P}}privacy-policy/index.html">Privacy Policy</a>).</p>
  </form>
 </div></div>
@@ -381,7 +382,7 @@ SMSTERMS = f"""
   <p><strong>Program:</strong> Elder World Studio project updates. {STUDIO} sends text messages only to people who request a website, AI tool or software demo on our <a href="{{P}}services/index.html">Services page</a> and tick the optional SMS consent checkbox (messages about your service request; up to 4 msgs per request; Message and data rates may apply; Reply STOP to opt out and HELP for help).</p>
   <ul>
    <li><strong>Program description:</strong> one-to-one, non-marketing texts about a service request you submitted to Elder World Studio.</li>
-   <li><strong>What you get:</strong> messages about your request, such as confirming we received it, questions about your project, and scheduling your free demo. No marketing blasts.</li>
+   <li><strong>What you get:</strong> messages about your request, such as confirming we received it, questions about your project, and scheduling your demo. No marketing blasts.</li>
    <li><strong>Frequency:</strong> varies, up to 4 messages per request.</li>
    <li><strong>Cost:</strong> Msg &amp; data rates may apply.</li>
    <li><strong>Opt out:</strong> reply <strong>STOP</strong> at any time. You will get one confirmation and no further texts.</li>
@@ -396,7 +397,7 @@ SMSTERMS = f"""
 """
 page("sms-terms/index.html", f"SMS Terms | {STUDIO}", f"SMS terms for {STUDIO} project-update texts: opt-in, frequency, STOP and HELP, privacy.", SMSTERMS, "/sms-terms/", "sms")
 page("terms/index.html", f"Terms and Conditions (SMS) | {STUDIO}", f"SMS terms and conditions for {STUDIO} project-update texts.", SMSTERMS, "/sms-terms/", "sms")
-page("services/index.html", f"Services: Websites, AI Tools and Custom Software | {STUDIO}", f"{STUDIO} builds websites, AI chat assistants, automation and custom software for small businesses in Memphis and beyond. Start with a free demo.", SERVICES, "/services/", "services")
+page("services/index.html", f"Services: Websites, AI Tools and Custom Software | {STUDIO}", f"{STUDIO} builds websites, AI chat assistants, automation and custom software for small businesses in Memphis and beyond. Start with a demo.", SERVICES, "/services/", "services")
 
 
 # ---- Public Android testers (Google Play closed/open testing) ----
@@ -616,3 +617,4 @@ p404 = ROOT / "404.html"
 t = p404.read_text().replace('href="favicon.png', 'href="/favicon.png').replace('href="assets/', 'href="/assets/').replace('src="assets/', 'src="/assets/').replace('href="index.html', 'href="/index.html').replace('href="contact/', 'href="/contact/').replace('href="merch/', 'href="/merch/').replace('href="privacy-policy/index.html"', 'href="/privacy-policy/"').replace('href="mailto', 'href="mailto')
 p404.write_text(t)
 print("built", sum(1 for _ in ROOT.rglob("*.html")), "html files")
+import subprocess, sys; subprocess.run([sys.executable, str(pathlib.Path(__file__).with_name("office_data.py"))], check=True)

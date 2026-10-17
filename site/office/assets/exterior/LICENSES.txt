@@ -1,0 +1,4 @@
+Exterior vegetation: Poly Haven (https://polyhaven.com), CC0 1.0 Universal.
+Tree impostors (8-angle, baked offline in Blender Cycles from the 1k glTF models): jacaranda_tree, island_tree_02, tree_small_02,
+island_tree_01, fir_tree_01, quiver_tree_02. Shrubs (decimated, KTX2 ETC1S 512 + Draco): shrub_03, shrub_04.
+Everything else outside (ground, lake, hills, sky, facade, tower, dome, roads, lot pads, lamps) is procedural in core/exterior.js.

@@ -5,3 +5,4 @@ node_modules/
 .wrangler/
 dns-backup-*.json
 __pycache__/
+site/office/manifest.json

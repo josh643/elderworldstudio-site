@@ -1,0 +1,296 @@
+{
+  "version": 1,
+  "updated": "2026-10-12",
+  "format": "{name}, {role}",
+  "note": "Display only. Never rename systemd units, pause.d keys, task agent: fields, file paths, or GitHub roles. IDs stay as the map keys.",
+  "agents": {
+    "subceo": {
+      "name": "Odin",
+      "role": "Sub-CEO"
+    },
+    "lead-games": {
+      "name": "Freyr",
+      "role": "games lead"
+    },
+    "lead-client": {
+      "name": "Frigg",
+      "role": "client sites lead"
+    },
+    "lead-marketing": {
+      "name": "Bragi",
+      "role": "marketing lead"
+    },
+    "lead-money": {
+      "name": "Njord",
+      "role": "money lead"
+    },
+    "lead-ops": {
+      "name": "Heimdall",
+      "role": "ops lead"
+    },
+    "game-coder-1": {
+      "name": "Brokkr",
+      "role": "game coder"
+    },
+    "game-coder-2": {
+      "name": "Eitri",
+      "role": "game coder"
+    },
+    "game-coder-3": {
+      "name": "Sindri",
+      "role": "game coder"
+    },
+    "game-coder": {
+      "name": "Brokkr",
+      "role": "game coder"
+    },
+    "coder": {
+      "name": "V\u00f6lund",
+      "role": "coder"
+    },
+    "assets": {
+      "name": "Dvalin",
+      "role": "assets"
+    },
+    "assets-pass": {
+      "name": "Dvalin",
+      "role": "assets"
+    },
+    "animation": {
+      "name": "Loki",
+      "role": "animation"
+    },
+    "anim-polish": {
+      "name": "Lofn",
+      "role": "animation polish"
+    },
+    "qa": {
+      "name": "Forseti",
+      "role": "QA"
+    },
+    "store": {
+      "name": "Hermod",
+      "role": "store"
+    },
+    "store-pages": {
+      "name": "Nanna",
+      "role": "store pages"
+    },
+    "client-sites": {
+      "name": "Thor",
+      "role": "client sites"
+    },
+    "client-fast": {
+      "name": "Thor",
+      "role": "client sites"
+    },
+    "client-care": {
+      "name": "Eir",
+      "role": "client care"
+    },
+    "follow-up": {
+      "name": "Hl\u00edn",
+      "role": "follow-up"
+    },
+    "followup": {
+      "name": "Hl\u00edn",
+      "role": "follow-up"
+    },
+    "kiosk-polish": {
+      "name": "I\u00f0unn",
+      "role": "kiosk polish"
+    },
+    "social": {
+      "name": "Huginn",
+      "role": "social"
+    },
+    "social-agent": {
+      "name": "Huginn",
+      "role": "social"
+    },
+    "research": {
+      "name": "Muninn",
+      "role": "research"
+    },
+    "devlog": {
+      "name": "Saga",
+      "role": "devlog"
+    },
+    "stats": {
+      "name": "M\u00edmir",
+      "role": "stats"
+    },
+    "prospects": {
+      "name": "Ska\u00f0i",
+      "role": "prospects"
+    },
+    "cfo": {
+      "name": "Fulla",
+      "role": "CFO"
+    },
+    "cfo-auto-move": {
+      "name": "Fulla",
+      "role": "CFO auto-move"
+    },
+    "bookkeeper": {
+      "name": "V\u00e1r",
+      "role": "bookkeeper"
+    },
+    "compliance": {
+      "name": "T\u00fdr",
+      "role": "compliance"
+    },
+    "finance": {
+      "name": "Gefjon",
+      "role": "finance"
+    },
+    "guard": {
+      "name": "V\u00ed\u00f0arr",
+      "role": "guard"
+    },
+    "watchdog": {
+      "name": "Garmr",
+      "role": "watchdog"
+    },
+    "docs": {
+      "name": "Kvasir",
+      "role": "docs"
+    },
+    "support": {
+      "name": "Baldr",
+      "role": "support"
+    },
+    "inbox": {
+      "name": "Ratatoskr",
+      "role": "inbox"
+    },
+    "bugs": {
+      "name": "Vali",
+      "role": "bug triage"
+    },
+    "pipeline-audit": {
+      "name": "Norns",
+      "role": "pipeline audit"
+    },
+    "community": {
+      "name": "Gn\u00e1",
+      "role": "community"
+    },
+    "games-community": {
+      "name": "Gn\u00e1",
+      "role": "community"
+    },
+    "yt-comments": {
+      "name": "Gn\u00e1",
+      "role": "community"
+    },
+    "player-feedback": {
+      "name": "Sif",
+      "role": "player feedback"
+    },
+    "elderai-onboarding": {
+      "name": "Snotra",
+      "role": "ElderAI onboarding"
+    },
+    "reviews": {
+      "name": "Sj\u00f6fn",
+      "role": "reviews"
+    },
+    "jacob-leads": {
+      "name": "Ullr",
+      "role": "Jacob leads"
+    },
+    "jacob-promo": {
+      "name": "Dagr",
+      "role": "Jacob promo"
+    },
+    "jacob-seo": {
+      "name": "V\u00f6r",
+      "role": "Jacob SEO"
+    },
+    "prevent": {
+      "name": "Magni",
+      "role": "self-repair"
+    },
+    "heal": {
+      "name": "Magni",
+      "role": "self-repair"
+    },
+    "casestudy": {
+      "name": "\u00d3\u00f0r",
+      "role": "case study"
+    },
+    "lead-callcenter": {
+      "name": "Gn\u00e1",
+      "role": "call center lead"
+    },
+    "callcenter": {
+      "name": "Hnoss",
+      "role": "call center"
+    },
+    "callcenter-voice": {
+      "name": "Var",
+      "role": "phone answering"
+    },
+    "callcenter-sms": {
+      "name": "Syn",
+      "role": "texts"
+    },
+    "callcenter-email": {
+      "name": "Hnoss",
+      "role": "call center"
+    },
+    "callcenter-train": {
+      "name": "Snotra",
+      "role": "training data"
+    },
+    "lead-design": {
+      "name": "Saga",
+      "role": "design lead"
+    },
+    "design": {
+      "name": "Saga",
+      "role": "design lead"
+    },
+    "design-lead": {
+      "name": "Saga",
+      "role": "design lead"
+    },
+    "design-ui": {
+      "name": "Eir",
+      "role": "UI designer"
+    },
+    "design-brand": {
+      "name": "Fulla",
+      "role": "brand designer"
+    },
+    "design-qa": {
+      "name": "Vor",
+      "role": "design QA"
+    },
+    "receptionist": {
+      "name": "Freyja",
+      "role": "receptionist"
+    },
+    "lead-arch": {
+      "name": "M\u00e1ni",
+      "role": "architecture lead"
+    },
+    "arch-building": {
+      "name": "Vili",
+      "role": "building architect"
+    },
+    "arch-landscape": {
+      "name": "J\u00f6r\u00f0",
+      "role": "landscape & urban designer"
+    },
+    "arch-qa": {
+      "name": "V\u00e9",
+      "role": "layout QA"
+    },
+    "arch-survey": {
+      "name": "V\u00e9",
+      "role": "layout QA"
+    }
+  }
+}

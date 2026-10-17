@@ -1,0 +1,2 @@
+server_rack_42u.glb  — made by EWS (Blender script avatar-office/assets/blender/rack.py), lighting baked with Cycles on a RunPod RTX 3090. Textures: ambientCG CC0.
+Sofa_01, potted_plant_02, modern_arm_chair_01, drawer_cabinet, desk_lamp_arm_01 — Poly Haven (https://polyhaven.com), CC0. Converted to Draco + KTX2 (gltf-transform).
