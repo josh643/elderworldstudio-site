@@ -89,7 +89,9 @@ export function build(ctx, shell) {
           c += glow * exp(-max(y, 0.0) * 9.0) * mix(0.12, 0.16, uNight);
           float sd = dot(d, uSunDir), up = smoothstep(-0.12, 0.05, uSunDir.y);
           c += uSunC * (smoothstep(0.9993, 0.9997, sd) * 2.0 + pow(max(sd, 0.0), 32.0) * 0.4 + pow(max(sd, 0.0), 4.0) * 0.12) * up;
-          float md = dot(d, -uSunDir); c += vec3(0.85, 0.88, 1.0) * (smoothstep(0.9992, 0.9996, md) * 1.4 + pow(max(md, 0.0), 60.0) * 0.12) * uNight;
+          vec3 mD = normalize(vec3(-uSunDir.x, abs(uSunDir.y) * 0.8 + 0.25, -uSunDir.z)); float md = dot(d, mD);
+          { float disc = smoothstep(0.99955, 0.99968, md); vec3 tq = d - mD * md; float maria = vn(tq.xy * 2200.0) * 0.35 + vn(tq.yz * 4100.0) * 0.15;
+            c += vec3(0.92, 0.93, 0.98) * disc * (1.25 - maria) * uNight + vec3(0.55, 0.6, 0.75) * (pow(max(md, 0.0), 900.0) * 0.25 + pow(max(md, 0.0), 40.0) * 0.06) * uNight; }
           #ifdef CLOUDS
           if (y > 0.0) { vec2 p = d.xz / (y + 0.12) * 0.9 + vec2(uTime * 0.003, uTime * 0.001); float n = fbm(p);
             float cl = smoothstep(0.5, 0.82, n) * smoothstep(0.0, 0.3, y); float lit = clamp(0.55 + 0.45 * dot(normalize(vec3(d.x, 0.3, d.z)), uSunDir), 0.0, 1.0);
@@ -97,17 +99,22 @@ export function build(ctx, shell) {
             float gold = (1.0 - smoothstep(0.05, 0.45, uSunDir.y)) * smoothstep(-0.2, 0.0, uSunDir.y); cc = mix(cc, uSunC * vec3(1.1, 0.8, 0.66) + vec3(0.1, 0.04, 0.07), gold * (0.35 + 0.5 * lit));
             c = mix(c, cc, cl * mix(0.7, 0.45, uNight)); }
           #endif
+          if (uNight > 0.01 && y > 0.0) {   // Milky Way: a soft, dusty band across the sky (fbm, darker lanes), fades into the horizon haze
+            vec3 ax = normalize(vec3(0.35, 0.55, -0.76)); float b = dot(d, ax), band = exp(-b * b * 22.0);
+            vec2 q = vec2(atan(d.z, d.x) * 3.0, b * 9.0); float mw = fbm(q * 1.7) * 0.8 + fbm(q * 5.3 + 3.1) * 0.4, lane = smoothstep(0.42, 0.7, fbm(q * 2.6 + 7.0));
+            c += vec3(0.62, 0.64, 0.78) * band * mw * (1.0 - 0.6 * lane * band) * 0.075 * uNight * smoothstep(0.0, 0.25, y);
+            c += vec3(0.35, 0.38, 0.5) * 0.02 * uNight * smoothstep(0.0, 0.5, y) * fbm(d.xz * 6.0); }   // faint airglow noise
           c = mix(c, uHazeC, smoothstep(0.06, -0.04, y));
           c += (h2(gl_FragCoord.xy + fract(uTime)) - 0.5) / 160.0;                      // dither: no gradient banding
           gl_FragColor = vec4(c, 1.0);
           #include <colorspace_fragment>
         }` });
     const dome = new T.Mesh(sg, sm); dome.renderOrder = 12; dome.frustumCulled = false; sky.add(dome);
-    const N = tier > 0 ? 900 : 450, sp = new Float32Array(N * 3), sb = new Float32Array(N); for (let i = 0; i < N; i++) { const a = rnd() * Math.PI * 2, y = 0.06 + Math.pow(rnd(), 0.7) * 0.94, r = Math.sqrt(1 - y * y); sp.set([Math.cos(a) * r * 95, y * 95, Math.sin(a) * r * 95], i * 3); sb[i] = Math.pow(rnd(), 3); }
+    const N = tier > 0 ? 2200 : 1000, sp = new Float32Array(N * 3), sb = new Float32Array(N); for (let i = 0; i < N; i++) { const a = rnd() * Math.PI * 2, y = 0.06 + Math.pow(rnd(), 0.7) * 0.94, r = Math.sqrt(1 - y * y); sp.set([Math.cos(a) * r * 95, y * 95, Math.sin(a) * r * 95], i * 3); sb[i] = Math.pow(rnd(), 4.5); }
     const stg = new T.BufferGeometry(); stg.setAttribute('position', new T.BufferAttribute(sp, 3)); stg.setAttribute('aB', new T.BufferAttribute(sb, 1));
     const stars = new T.Points(stg, new T.ShaderMaterial({ uniforms: U, depthWrite: false, depthTest: true, blending: T.AdditiveBlending, fog: false,
-      vertexShader: 'attribute float aB; uniform float uTime; varying float vB; void main(){ vB = aB * (0.75 + 0.25 * sin(uTime * (1.0 + aB * 3.0) + position.x)); gl_PointSize = 1.0 + aB * 2.2; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); gl_Position.z = gl_Position.w * 0.9999995; }',
-      fragmentShader: 'uniform float uNight; varying float vB; void main(){ vec2 q = gl_PointCoord - 0.5; float a = smoothstep(0.5, 0.0, length(q)); gl_FragColor = vec4(vec3(1.0, 0.97, 0.9) * (0.25 + vB) * a * uNight, 1.0); }' }));
+      vertexShader: 'attribute float aB; uniform float uTime; varying float vB, vC; void main(){ vC = fract(position.x * 0.131 + position.z * 0.071); vB = aB * (0.75 + 0.25 * sin(uTime * (1.0 + aB * 3.0) + position.x)); gl_PointSize = 1.0 + aB * 2.6; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); gl_Position.z = gl_Position.w * 0.9999995; }',
+      fragmentShader: 'uniform float uNight; varying float vB, vC; void main(){ vec2 q = gl_PointCoord - 0.5; float a = smoothstep(0.5, 0.0, length(q)); gl_FragColor = vec4(mix(vec3(0.75, 0.82, 1.0), vec3(1.0, 0.9, 0.75), vC) * (0.12 + 1.1 * vB) * a * uNight, 1.0); }' }));
     stars.renderOrder = 12.5; stars.frustumCulled = false; sky.add(stars); sky.userData.stars = stars;
     // terrain hills: two ring bands of real height-field geometry (forest + meadow texture in the shader, sun/hemisphere lit, aerial perspective)
     const hm = new T.ShaderMaterial({ uniforms: U, fog: false, depthWrite: false, depthTest: true,

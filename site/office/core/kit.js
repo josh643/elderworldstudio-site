@@ -94,7 +94,7 @@ export function viewTex(ctx) {
 /* real window opening (when the 3D exterior is on): the pane marks the stencil where it is visible (nothing drawn in front of it);
    core/exterior.js then resets depth there and the sky, hills and grounds draw through it. No picture, no extra pass per window. */
 let HOLE = null;
-export function holeMat(ctx) { const T = ctx.THREE; return (HOLE ||= new T.MeshBasicMaterial({ colorWrite: false, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -4, stencilWrite: true, stencilRef: 1, stencilFunc: T.AlwaysStencilFunc, stencilZPass: T.ReplaceStencilOp })); }
+export function holeMat(ctx) { const T = ctx.THREE; return (HOLE ||= new T.MeshBasicMaterial({ colorWrite: false, depthWrite: false, side: T.DoubleSide, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -4, stencilWrite: true, stencilRef: 1, stencilFunc: T.AlwaysStencilFunc, stencilZPass: T.ReplaceStencilOp })); }
 export function windowPane(ctx, x, y, z, ry, w = 2.2, h = 1.5, parent) {
   const T = ctx.THREE, G = new T.Group(); G.position.set(x, y, z); G.rotation.y = ry; (parent || ctx.scene).add(G);
   const v = new T.Mesh(new T.PlaneGeometry(w, h), ctx.extOn ? holeMat(ctx) : new T.MeshBasicMaterial({ map: viewTex(ctx), toneMapped: false })); v.position.z = 0.005; G.add(v); v.userData.noCollide = 1;
