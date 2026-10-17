@@ -129,6 +129,21 @@
    }
   },
   {
+   "id": "live-update",
+   "src": "modules/live-update/index.js",
+   "config": {
+    "url": "/office/manifest.json",
+    "everyMs": 60000
+   }
+  },
+  {
+   "id": "world-live",
+   "src": "modules/world-live/index.js",
+   "config": {
+    "url": "/api/office/world"
+   }
+  },
+  {
    "id": "webxr",
    "src": "modules/webxr/index.js",
    "config": {

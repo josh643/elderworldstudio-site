@@ -381,7 +381,7 @@ const PUBLIC = /(^|\.)elderworldstudio\.com$/.test(location.hostname) || /[?&]pu
   const saveState = () => { try { sessionStorage.setItem('ews-state', JSON.stringify({ p: pos.toArray(), yaw, pitch, t: Date.now() })); } catch {} };
   try { const st = JSON.parse(sessionStorage.getItem('ews-state') || 'null'); if (st && Date.now() - st.t < 10 * 60e3) { pos.fromArray(st.p); pos.y = EYE; yaw = st.yaw; pitch = st.pitch; } sessionStorage.removeItem('ews-state'); } catch {}
   addEventListener('pagehide', saveState);
-  setInterval(() => { if (wantUpdate && ctx.idleMs() > 15 * 60e3 && !busy()) { saveState(); location.reload(); } }, 5000);
+  setInterval(() => { if (wantUpdate && ctx.idleMs() > 2 * 60e3 && !busy())   /* 2 min idle (Joshua 2026-10-16) */ { saveState(); location.reload(); } }, 5000);
   Object.assign(window.__ewsOffice, { health: () => ({ stallMs: Math.round(performance.now() - lastFrameT), idleMs: Math.round(ctx.idleMs()), busy: busy() }), applyUpdateWhenIdle: () => { wantUpdate = true; return 'deferred'; } });
   const frame0 = frame; R.setAnimationLoop(t => { lastFrameT = performance.now(); frame0(t); }); return { goTo, close, ctx };   // setAnimationLoop also drives WebXR frames
 }

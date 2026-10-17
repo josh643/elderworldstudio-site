@@ -6,6 +6,7 @@ set -euo pipefail
 export CLOUDFLARE_API_TOKEN="${CLOUDFLARE_API_TOKEN:-${CF_API_TOKEN:-}}" CLOUDFLARE_ACCOUNT_ID="${CLOUDFLARE_ACCOUNT_ID:-${CF_ACCOUNT_ID:-}}"
 cd "$(dirname "$0")/.."
 python3 tools/build.py
+python3 tools/office/manifest.py   # live-update manifest: asset hashes swap in place, code hash -> deferred idle reload
 rm -rf /tmp/ews-cf-deploy && mkdir -p /tmp/ews-cf-deploy
 tar -C site --exclude=.htaccess --exclude=.nojekyll -cf - . | tar -C /tmp/ews-cf-deploy -xf -
 # wrangler caches under the nearest node_modules; a root-owned /node_modules on the box breaks that, so keep a local one

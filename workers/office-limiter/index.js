@@ -1,3 +1,4 @@
+import { world, worldAlarm } from './world.js';
 // ews-office-limiter: one Durable Object per visitor key (IP). Atomic, strongly consistent counters, so per-visitor
 // limits hold no matter which Cloudflare isolate or colo serves the request. Used by Pages Functions via the
 // OFFICE_RL Durable Object binding. Also hosts a single "global" object for the daily $ budget.
@@ -5,6 +6,7 @@ export class Limiter {
   constructor(state) { this.state = state; }
   async fetch(req) {
     if (new URL(req.url).pathname.startsWith('/tts/')) return this.tts(req);
+    if (new URL(req.url).pathname.startsWith('/world/')) return world(this.state, req);
     const u = new URL(req.url), rules = JSON.parse(u.searchParams.get('rules') || '[]'), now = Date.now();
     let ok = true, retry = 0; const data = (await this.state.storage.get('w')) || {};
     for (const [name, limit, windowMs] of rules) {
@@ -37,4 +39,8 @@ Limiter.prototype.tts = async function (req) {
     return new Response(out, { headers: { 'content-type': 'audio/mpeg' } }); }
   return new Response('no', { status: 404 });
 };
+// Elderverse world (world.js): hibernatable sockets need no per-message work; the demo driver runs on the object's alarm.
+Limiter.prototype.webSocketMessage = function (ws, m) { if (m === 'ping') ws.send('{"t":"pong"}'); };
+Limiter.prototype.webSocketClose = function (ws) { try { ws.close(); } catch {} };
+Limiter.prototype.alarm = function () { return worldAlarm(this.state); };
 export default { fetch: () => new Response('ews-office-limiter', { status: 404 }) };
