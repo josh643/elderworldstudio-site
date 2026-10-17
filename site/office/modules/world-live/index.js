@@ -65,6 +65,7 @@ export default {
     for (const P of [this.workers, this.archPool, this.secPool]) if (P) for (const m of [P.body, P.legs, P.arms]) { m.parent?.remove(m); m.dispose?.(); }
     this.toastEl?.remove?.();
     if (this.post) this.post.parent?.remove(this.post); if (this.stand) this.stand.parent?.remove(this.stand);
+    const cols = this.ctx?.extraCols; if (cols && this.postCol) { const i = cols.indexOf(this.postCol); if (i >= 0) cols.splice(i, 1); } this.postCol = null; this.ctx?.rebuildColliders?.();
     for (const F of [...(this.figs?.values() || []), ...(this.cops?.values() || [])]) { F.tag?.parent?.remove(F.tag); if (F.av) { F.av.visible = false; F.av.parent?.remove(F.av); } }
   },
 
@@ -82,10 +83,49 @@ export default {
     const box = new T.BoxGeometry(1, 1, 1), boxB = new T.BoxGeometry(1, 1, 1).translate(0, 0.5, 0), plane = new T.PlaneGeometry(1, 1).rotateX(-Math.PI / 2), planeX0 = new T.PlaneGeometry(1, 1).rotateX(-Math.PI / 2).translate(0.5, 0, 0);
     // vertex-colour merge helper for machines + crews
     const tc = new T.Color();
-    const part = (geo, col, x, y, z, rx = 0, ry = 0, rz = 0) => { const g = geo.clone(); g.rotateX(rx); g.rotateY(ry); g.rotateZ(rz); g.translate(x, y, z); const n = g.attributes.position.count, c = new Float32Array(n * 3); tc.set(col); for (let i = 0; i < n; i++) c.set([tc.r, tc.g, tc.b], i * 3); g.setAttribute('color', new T.BufferAttribute(c, 3)); g.deleteAttribute('uv'); return g; };
+    const part = (geo, col, x, y, z, rx = 0, ry = 0, rz = 0) => { const g = geo.clone(); geo.dispose(); g.rotateX(rx); g.rotateY(ry); g.rotateZ(rz); g.translate(x, y, z); const n = g.attributes.position.count, c = new Float32Array(n * 3); tc.set(col); for (let i = 0; i < n; i++) c.set([tc.r, tc.g, tc.b], i * 3); g.setAttribute('color', new T.BufferAttribute(c, 3)); g.deleteAttribute('uv'); return g; };
     const B = (w, h, d) => new T.BoxGeometry(w, h, d), C = (r1, r2, h, s = 10) => new T.CylinderGeometry(r1, r2, h, s);
     const merge = list => mergeGeometries(list.map(g => g.index ? g.toNonIndexed() : g), false);
     const Y = '#e8b524', DK = '#2a2b30';
+    // Lightweight authored lattice members; each assembly stays one merged mesh / draw call.
+    const mastParts = [part(B(2.0, 0.008, 2.0), '#85878a', 0, 0.004, 0)];
+    for (const x of [-0.55, 0.55]) for (const z of [-0.55, 0.55]) mastParts.push(part(B(0.1, 1, 0.1), Y, x, 0.5, z));
+    const mastBays = 18;
+    for (let i = 1; i < mastBays; i++) {
+      const y = i / mastBays;
+      mastParts.push(part(B(1.18, 0.006, 0.075), i % 3 ? '#d99c20' : '#85878a', 0, y, -0.55), part(B(1.18, 0.006, 0.075), i % 3 ? '#d99c20' : '#85878a', 0, y, 0.55),
+        part(B(0.075, 0.006, 1.18), i % 3 ? '#d99c20' : '#85878a', -0.55, y, 0), part(B(0.075, 0.006, 1.18), i % 3 ? '#d99c20' : '#85878a', 0.55, y, 0));
+    }
+    for (let i = 0; i < mastBays; i++) {
+      const y = (i + 0.5) / mastBays, dy = 1 / mastBays, z = i % 2 ? 0.55 : -0.55, x = i % 2 ? 0.55 : -0.55;
+      const side = B(0.055, Math.hypot(1.1, dy), 0.055);
+      mastParts.push(part(side, '#d99c20', 0, y, z, 0, 0, Math.atan2(i % 2 ? -1.1 : 1.1, dy)));
+      const end = B(0.055, Math.hypot(1.1, dy), 0.055);
+      mastParts.push(part(end, '#d99c20', x, y, 0, Math.atan2(i % 2 ? -1.1 : 1.1, dy), 0, 0));
+    }
+    const jibParts = [];
+    // Main jib and short counter-jib: triangular steel trusses with visible top chords.
+    for (const x of [-0.48, 0.48]) for (const y of [-0.48, 0.48]) {
+      jibParts.push(part(B(0.09, 0.09, 18), Y, x, y, 8));
+      jibParts.push(part(B(0.09, 0.09, 7), '#a4a6a8', x, y, -4.5));
+    }
+    for (const z of [-6.5, -4.5, -2.5, -0.5, 1.5, 3.5, 5.5, 7.5, 9.5, 11.5, 13.5, 15.5, 17.5]) {
+      for (const y of [-0.48, 0.48]) jibParts.push(part(B(0.07, 0.07, 0.96), '#aeb0b2', 0, y, z));
+    }
+    for (const x of [-0.48, 0.48]) for (const [start, stop, step] of [[0.5, 18, 2], [-6.5, -0.5, 2]]) {
+      const len = Math.hypot(step, 0.96), a = Math.atan2(step, 0.96);
+      for (let z = start; z < stop; z += step) jibParts.push(part(B(0.065, len, 0.065), '#d99c20', x, 0, z + step / 2, a), part(B(0.065, len, 0.065), '#d99c20', x, 0, z + step / 2, -a));
+    }
+    for (const x of [-0.48, 0.48]) for (const z of [-5.5, -3.5, -1.5, 0.5, 2.5, 4.5, 6.5, 8.5, 10.5, 12.5, 14.5, 16.5])
+      jibParts.push(part(B(0.07, 0.07, 0.96), '#aeb0b2', x, 0, z));
+    jibParts.push(part(B(2.2, 0.08, 1.25), '#85878a', 0, -0.58, -5.4), part(B(2.2, 0.08, 1.25), '#85878a', 0, -0.46, -3.9),
+      part(B(1.1, 0.55, 0.85), '#e8b524', 0.78, 0.05, -1.65), part(B(0.75, 0.38, 0.08), '#91b7ca', 0.78, 0.08, -1.2),
+      part(B(0.08, 2.3, 0.08), '#e8b524', 0, 0.62, -3.7, 0.7), part(B(0.08, 2.3, 0.08), '#e8b524', 0, 0.62, -0.1, -0.7));
+    const hookParts = [part(C(0.18, 0.22, 0.28, 8), '#e8b524', 0, 0.08, 0), part(B(0.08, 0.3, 0.08), '#292a2d', 0, -0.18, 0),
+      part(B(0.07, 0.3, 0.07), '#292a2d', 0.07, -0.35, 0, 0, 0, -0.45), part(B(0.07, 0.3, 0.07), '#292a2d', -0.08, -0.35, 0, 0, 0, 0.55)];
+    const trolleyParts = [part(B(0.9, 0.14, 0.56), '#4a4d52', 0, -0.03, 0), part(B(0.62, 0.18, 0.38), Y, 0, 0.12, 0),
+      ...[-0.35, 0.35].flatMap(x => [part(C(0.12, 0.12, 0.12, 8), '#292a2d', x, -0.13, -0.18, Math.PI / 2), part(C(0.12, 0.12, 0.12, 8), '#292a2d', x, -0.13, 0.18, Math.PI / 2)])];
+    const beamParts = [part(B(3.6, 0.12, 0.3), '#b8432f', 0, 0.25, 0), part(B(3.6, 0.12, 0.3), '#b8432f', 0, -0.25, 0), part(B(3.6, 0.42, 0.09), '#bd533b', 0, 0, 0)];
     const geo = {
       excav: merge([part(B(2.6, 0.6, 3.4), DK, 0, 0.3, 0), part(B(2.4, 0.9, 2.4), Y, 0, 1.05, -0.2), part(B(1.1, 1.2, 1.1), Y, 0.6, 2.05, 0.3), part(B(1.0, 0.8, 0.05), '#33475a', 0.6, 2.2, 0.86), part(B(1.6, 0.6, 0.8), '#54504a', 0, 1.25, -1.6)]),
       boom: merge([part(B(0.4, 0.4, 3.2), Y, 0, 0, 1.6), part(B(0.35, 0.35, 2.2), Y, 0, -0.9, 3.2, -0.6), part(B(0.9, 0.6, 0.6), DK, 0, -1.9, 3.7)]),
@@ -95,10 +135,8 @@ export default {
       roller: merge([part(C(0.7, 0.7, 2.0, 14), '#5b5d63', 0, 0.7, 1.4, 0, 0, Math.PI / 2), part(C(0.7, 0.7, 2.0, 14), '#5b5d63', 0, 0.7, -1.4, 0, 0, Math.PI / 2), part(B(1.6, 0.8, 2.0), Y, 0, 1.3, 0), part(B(1.1, 1.0, 0.9), '#3b4c5c', 0, 2.15, -0.2), part(B(1.3, 0.08, 1.2), DK, 0, 2.7, -0.2)]),
       striper: merge([part(B(0.8, 0.6, 1.2), '#f0f0ea', 0, 0.5, 0), part(B(0.5, 0.4, 0.4), Y, 0, 0.95, -0.2), part(C(0.2, 0.2, 0.15, 8), '#1a1a1a', 0.35, 0.2, 0.4, 0, 0, Math.PI / 2), part(C(0.2, 0.2, 0.15, 8), '#1a1a1a', -0.35, 0.2, 0.4, 0, 0, Math.PI / 2)]),
       tripod: merge([part(B(0.04, 1.5, 0.04), Y, 0.25, 0.7, 0, 0, 0, 0.3), part(B(0.04, 1.5, 0.04), Y, -0.13, 0.7, 0.2, -0.25, 0, -0.15), part(B(0.04, 1.5, 0.04), Y, -0.13, 0.7, -0.2, 0.25, 0, -0.15), part(B(0.22, 0.28, 0.2), '#e7e3da', 0, 1.55, 0), part(B(0.08, 0.08, 0.3), DK, 0, 1.6, 0.18)]),
-      mast: merge([part(B(1.4, 1, 1.4), Y, 0, 0.5, 0), part(B(1.5, 0.04, 1.5), DK, 0, 0.25, 0), part(B(1.5, 0.04, 1.5), DK, 0, 0.75, 0), part(B(3.2, 0.06, 3.2), '#8c8c8c', 0, 0.03, 0)]),
-      jib: merge([part(B(1.2, 1.0, 22), Y, 0, 0, 8), part(B(1.2, 0.8, 7), Y, 0, 0, -4.5), part(B(2.2, 1.8, 2.4), '#9a9a96', 0, -0.6, -7.2), part(B(1.6, 1.6, 1.6), '#3b4c5c', 0.9, -1.2, 0.6), part(B(0.3, 3.2, 0.3), Y, 0, 1.9, 0), part(B(0.06, 0.06, 18), DK, 0, 3.4, 6, -0.17)]),
-      hook: merge([part(B(0.5, 0.6, 0.3), Y, 0, 0, 0), part(B(0.12, 0.35, 0.12), DK, 0, -0.45, 0)]),
-      sign: merge([part(B(0.15, 2.0, 0.15), DK, -1.15, 1.0, 0), part(B(0.15, 2.0, 0.15), DK, 1.15, 1.0, 0), part(B(2.6, 1.42, 0.08), DK, 0, 1.75, -0.03)]),
+      mast: merge(mastParts), jib: merge(jibParts), hook: merge(hookParts), trolley: merge(trolleyParts), load: merge(beamParts),
+      sign: merge([part(B(0.15, 2.0, 0.15), '#5a402b', -1.15, 1.0, 0), part(B(0.15, 2.0, 0.15), '#5a402b', 1.15, 1.0, 0), part(B(2.6, 1.42, 0.08), '#6b4e33', 0, 1.75, -0.03)]),
       monument: merge([part(B(3.4, 0.5, 0.9), '#6b655b', 0, 0.25, 0), part(B(3.0, 1.4, 0.6), '#d9d2c4', 0, 1.2, 0)]),
       body: merge([part(B(0.36, 0.16, 0.22), '#2d3340', 0, 0.9, 0), part(B(0.42, 0.52, 0.25), '#ff7a1a', 0, 1.22, 0), part(B(0.43, 0.05, 0.26), '#e8e8e8', 0, 1.12, 0), part(B(0.43, 0.05, 0.26), '#e8e8e8', 0, 1.3, 0), part(B(0.12, 0.08, 0.12), '#c99a78', 0, 1.51, 0), part(B(0.2, 0.22, 0.21), '#c99a78', 0, 1.65, 0), part(C(0.13, 0.14, 0.09, 10), '#f2c230', 0, 1.8, 0), part(C(0.17, 0.17, 0.02, 10), '#f2c230', 0, 1.755, 0.02)]),
       abody: merge([part(B(0.36, 0.16, 0.22), '#3a3f4a', 0, 0.9, 0), part(B(0.42, 0.52, 0.25), '#24324a', 0, 1.22, 0), part(B(0.2, 0.3, 0.02), '#e8e3d6', 0, 1.28, 0.13), part(B(0.12, 0.08, 0.12), '#b98b6c', 0, 1.51, 0), part(B(0.2, 0.22, 0.21), '#b98b6c', 0, 1.65, 0), part(C(0.13, 0.14, 0.09, 10), '#f4f4f0', 0, 1.8, 0), part(C(0.17, 0.17, 0.02, 10), '#f4f4f0', 0, 1.755, 0.02)]),
@@ -208,9 +246,9 @@ export default {
     S.el.scaf = inst(R.boxB, mat.scaffold, scM); S.el.plank = inst(R.boxB, mat.plank, plM); S.scafH = H;
     // tower crane at the rear corner
     S.el.crane = add(new T.Group()); S.el.crane.position.set(W / 2 + 4, 0, bz - Dp / 2 - 2); { const ch = F * FH + 12; const mast = new T.Mesh(geo.mast, mat.vc); mast.scale.y = ch; S.el.crane.add(mast);
-      const jib = new T.Group(); jib.position.y = ch; jib.add(new T.Mesh(geo.jib, mat.vc)); S.el.crane.add(jib); const trolley = new T.Group(); jib.add(trolley);
-      const cable = new T.Mesh(R.boxB, mat.cable); cable.scale.set(0.04, 1, 0.04); cable.rotation.x = Math.PI; trolley.add(cable); const hook = new T.Mesh(geo.hook, mat.vc); trolley.add(hook);
-      const load = new T.Mesh(R.box, mat.steel); load.scale.set(0.3, 0.3, 4); hook.add(load); load.position.y = -0.8; Object.assign(S, { craneH: ch, jib, trolley, cable, hook, load, mast }); }
+      const jib = new T.Group(); jib.position.y = ch; jib.add(new T.Mesh(geo.jib, mat.vc)); S.el.crane.add(jib); const trolley = new T.Group(); trolley.add(new T.Mesh(geo.trolley, mat.vc)); jib.add(trolley);
+      const cable = new T.Mesh(R.boxB, mat.cable); cable.scale.set(0.035, 1, 0.035); cable.position.y = 0.55; cable.rotation.x = Math.PI; trolley.add(cable); const hook = new T.Mesh(geo.hook, mat.vc); trolley.add(hook);
+      const load = new T.Mesh(geo.load, mat.vc); hook.add(load); load.position.y = -0.55; load.visible = false; Object.assign(S, { craneH: ch, jib, trolley, cable, hook, load, mast }); }
     // signage: fascia over the shop front + monument sign at the street, tenant name only when the lease is public
     const name = (e.public && e.tenant) ? e.tenant : 'Coming soon';
     S.signTex = this.textTex([name.toUpperCase(), 'ELDERVERSE TOWN · LOT ' + String(e.lot).padStart(2, '0')], 1024, 256, '#1e1b24', '#e9dcc0', '#d9b45a');
@@ -417,7 +455,7 @@ export default {
   patrols(dt, t, onG) {
     const ctx = this.ctx, town = ctx.town; if (!town || !this.agents) return; const T = this.T;
     if (!this.post) { const R = this.res(); this.post = new T.Mesh(R.geo.post, R.mat.vc); this.post.position.set(town.X0 + 4.6, 0, town.Z0 + 53.2 + 1.3); this.post.userData.noCollide = 1; this.post.userData.keep = 1; this.post.userData.noFarCull = 1; ctx.scene.add(this.post);
-      this.ctx.colliders?.push?.([town.X0 + 3.7, town.Z0 + 53.6, town.X0 + 5.5, town.Z0 + 55.4]); }
+      this.postCol = [town.X0 + 3.7, town.Z0 + 53.6, town.X0 + 5.5, town.Z0 + 55.4]; (ctx.extraCols ||= []).push(this.postCol); ctx.rebuildColliders?.(); }
     this.post.visible = onG && (ctx.exterior?.root?.visible ?? true);
     const NAMES = { 'sec-lead': 'Hœnir', 'sec-vuln': 'Geri', 'sec-harden': 'Sigyn', 'sec-pentest': 'Skírnir', 'sec-watch': 'Freki' }, now = Date.now(), cops = (this.cops ||= new Map()), pool = this.crew('sec');
     const av = ctx.use('avatar'), cam = ctx.cam.position, seen = new Set();
@@ -428,7 +466,7 @@ export default {
       const wx = town.X0 + px, wz = town.Z0 + pz;
       let F = cops.get(sid); if (!F) { F = { id: sid, x: wx, y: 0, z: wz, yaw: a.h || 0, phase: Math.random() * 6, ph: 0, mode: 'walk', on: true, tablet: true }; cops.set(sid, F); pool.list.push(F); }
       const dx = wx - F.x, dz = wz - F.z, d = Math.hypot(dx, dz);
-      if (d > 12) { F.x = wx; F.z = wz; } else if (d > 0.03) { const sp = Math.min(d / Math.max(dt, 1e-3), d > 1.5 ? 2.2 : 1.45), st = Math.min(d, sp * dt); F.x += dx / d * st; F.z += dz / d * st; F.yaw = Math.atan2(dx, dz); F.ph += st * 4.4; F.speed = st / Math.max(dt, 1e-3); }   // stride-synced: 4.4 rad per metre
+      if (d > 12) { F.x = wx; F.z = wz; ctx.collide?.(F, true); } else if (d > 0.03) { const sp = Math.min(d / Math.max(dt, 1e-3), d > 1.5 ? 2.2 : 1.45), st = Math.min(d, sp * dt), ox = F.x, oz = F.z; F.x += dx / d * st; F.z += dz / d * st; ctx.collide?.(F, true); const moved = Math.hypot(F.x - ox, F.z - oz); if (moved > 1e-3) F.yaw = Math.atan2(F.x - ox, F.z - oz); F.ph += moved * 4.4; F.speed = moved / Math.max(dt, 1e-3); }   // stride-synced: 4.4 rad per metre
       else F.speed = 0;
       const moving = (F.speed || 0) > 0.15; F.mode = moving ? 'walk' : 'idle'; if (!moving && a.act !== 'walk') F.yaw = sid === 'sec-lead' ? 0 : (a.h ?? F.yaw);
       F.on = onG && (ctx.exterior?.root?.visible ?? true);
@@ -451,7 +489,7 @@ export default {
     if (!this.hooked) { this.hooked = true; window.__ewsOffice.world = () => ({ layout: this.layout || null, float: Math.max(0, ...[this.workers, this.archPool, this.secPool].filter(Boolean).flatMap(P => P.list.filter(w => w.on && !w.rigged).map(w => (w.y > 0.05 && w.y > (w.top ?? 0.05) + 0.05) || (w.mode === 'walk' && w.y > 0.05 && Math.abs(w.y - (w.tgt?.[1] ?? 0)) > 0.05) ? w.y : 0))), crewOn: [this.workers, this.archPool, this.secPool].filter(Boolean).reduce((n, P) => n + P.list.filter(w => w.on).length, 0), mode: this.stats.mode, msgs: this.stats.msgs, agents: this.agents.size, patrol: this.cops ? [...this.cops.values()].map(F => ({ id: F.id, x: +F.x.toFixed(1), z: +F.z.toFixed(1), mode: F.mode, rig: !!F.rigged, on: F.on })) : [], field: this.figs ? [...this.figs.values()].map(F => ({ id: F.id, x: +F.x.toFixed(1), z: +F.z.toFixed(1), mode: F.mode, leaving: !!F.leaving })) : [], glbs: this.stats.glbs || 0, ents: [...this.ents.values()].map(e => ({ id: e.id, kind: e.kind, stage: (e.kind === 'road' ? ROAD : BUILD)[e.si], p: e.p, target: +this.target(e).toFixed(3), shown: +(this.vis.get(e.id)?.D ?? 0).toFixed(3), demo: !!e.demo })), workers: this.workers ? this.workers.list.filter(w => w.on).length : 0 });
       window.__ewsOffice.watchBuild = id => this.watch(id); window.__ewsOffice.signAt = id => { const S = this.sites.get(id); if (!S?.board) return null; const g = S.board.grp, p = g.getWorldPosition(new this.T.Vector3()), q = new this.T.Vector3(0, 0, 1).applyQuaternion(g.getWorldQuaternion(new this.T.Quaternion())); return { x: p.x, z: p.z, nx: q.x, nz: q.z }; }; window.__ewsOffice.demoBuild = o => this.demo(o); }
     if (!ctx.town || !ctx.exterior) return;
-    if (this.stand) this.stand.visible = !!(this.layout && this.layout.approved);   // no 'watch the town build' demo while construction is on hold
+    if (this.stand) { const showStand = !!(this.layout && this.layout.approved); if (this.stand.visible !== showStand) { this.stand.visible = showStand; ctx.rebuildColliders?.(); } }   // visible staging sign enters/leaves the walk collision set with its approval state
     const ext = ctx.exterior.root, onG = !ctx.curFloor || ctx.curFloor === 'G', show = onG && ext.visible, cam = ctx.cam, cp = cam.position;
     const tier = ctx.tier ?? 1, crewN = [2, 3, 4][tier] ?? 3, view = [85, 110, 125][tier] ?? 110, night = (ctx.dayNight?.el ?? 30) < -2;
     for (const [id, e] of this.ents) {
@@ -491,9 +529,19 @@ export default {
     const sc = (at('framing') && f > 0.6) || at('walls') || at('glazing') || (at('signage') && f < 0.35); el.scaf.count = sc ? el.scaf.userData.full.length : 0; el.plank.count = sc ? el.plank.userData.full.length : 0; el.scaf.instanceMatrix.needsUpdate = el.plank.instanceMatrix.needsUpdate = true;
     // crane: rises during foundation, works framing -> glazing, comes down during signage
     const cr = at('foundation') ? clamp((f - 0.4) / 0.5) : (from('framing') && si <= 5) ? 1 : at('signage') ? 1 - clamp(f / 0.4) : 0;
-    el.crane.visible = cr > 0.01; if (el.crane.visible) { S.mast.scale.y = S.craneH * cr; S.jib.position.y = S.craneH * cr; S.jib.visible = cr > 0.95;
-      if (near && S.jib.visible) { const busy = si >= 3 && si <= 5, a = busy ? -0.6 + Math.sin(t * 0.25) * 0.9 : -0.3; S.jib.rotation.y = a; const reach = 8 + Math.sin(t * 0.25 + 1) * 5; S.trolley.position.z = reach;
-        const drop = busy ? S.craneH * (0.55 + 0.35 * Math.max(0, Math.sin(t * 0.5))) : 3; S.cable.scale.y = drop; S.hook.position.y = -drop; S.load.visible = busy && at('framing'); } }
+    el.crane.visible = cr > 0.01; S.load.visible = false; if (el.crane.visible) { S.mast.scale.y = S.craneH * cr; S.jib.position.y = S.craneH * cr; S.jib.visible = cr > 0.95;
+      if (near && S.jib.visible) { const working = at('framing'), a = working ? -0.42 + Math.sin(t * 0.16) * 0.48 : -0.3; S.jib.rotation.y = a;
+        if (working) {
+          // A timed lift carries the next frame member across the slab, lowers it to the active floor, then clears before the next cycle.
+          const phase = ((t / 18 + f * 0.37) % 1 + 1) % 1, travel = sm(clamp((phase - 0.12) / 0.31)), lower = sm(clamp((phase - 0.46) / 0.23));
+          const endZ = Math.min(S.Dp + 2, 15.5), deckY = 0.45 + Math.min(F - 1, floorsUp) * FH + FH + 0.18;
+          S.trolley.position.set(0, 0, 1.5 + (endZ - 1.5) * travel);
+          const liftDrop = S.craneH * 0.24, placeDrop = Math.max(1.2, S.craneH + 0.05 - deckY), drop = liftDrop + (placeDrop - liftDrop) * lower;
+          S.cable.scale.y = drop; S.hook.position.y = 0.55 - drop; S.load.visible = phase >= 0.08 && phase < 0.77;
+          if (phase >= 0.68) S.load.position.y = -0.55 + 0.3 * sm(clamp((phase - 0.68) / 0.09)); else S.load.position.y = -0.55;
+        } else { S.trolley.position.set(0, 0, 2); S.cable.scale.y = Math.min(3, S.craneH * 0.12); S.hook.position.y = 0.55 - S.cable.scale.y; }
+      } }
+
     // signage: fascia slides up into place, monument rises
     el.fascia.visible = from('signage') && (si > 6 || f > 0.35); el.fascia.position.y = S.fasciaY - (at('signage') ? (1 - sm(clamp((f - 0.35) / 0.4))) * 1.2 : 0); el.fascia.material.emissiveIntensity = night ? 0.9 : 0.15;
     el.mon.visible = from('signage'); el.mon.scale.y = at('signage') ? Math.max(0.02, sm(f)) : 1;
@@ -568,10 +616,10 @@ export default {
   setupDemoStand() {
     if (!this.staging) return; const ctx = this.ctx, T = this.T, me = this;
     // a small sign on the main walk by the avenue: "Town builds · watch a demo build" (staging only; production never shows it)
-    const place = () => { const town = ctx.town; if (!town) return setTimeout(place, 1000); const X0 = 0, z = town.AVE - town.RW / 2 - 3.5;
-      const tex = this.textTex(['WATCH THE TOWN BUILD', 'Staging demo · tap to start'], 768, 200, '#16141b', '#e9dcc0', '#d9b45a');
-      const g = new T.Group(); g.position.set(X0 + 4.2, 0, z); g.rotation.y = Math.PI; const post = new T.Mesh(this.res().geo.sign, this.res().mat.vc); g.add(post); me.stand = g;
-      const face = new T.Mesh(new T.PlaneGeometry(2.5, 0.65), new T.MeshLambertMaterial({ map: tex, emissive: '#ffffff', emissiveMap: tex, emissiveIntensity: 0.35, side: T.DoubleSide })); face.position.set(0, 1.75, 0.05); g.add(face); g.userData.keep = 1; g.userData.noFarCull = 1; ctx.scene.add(g);
+    const place = () => { const town = ctx.town; if (!town) return setTimeout(place, 1000); const X0 = 0, z = town.AVE - town.RW / 2 - 1.5;
+      const tex = this.textTex(['WATCH THE TOWN BUILD', 'Staging demo · tap to start'], 768, 200, '#d9c9a8', '#27313a', '#a8432f');
+      const g = new T.Group(); g.position.set(X0 + 5.5, 0, z); g.rotation.y = Math.PI; const post = new T.Mesh(this.res().geo.sign, this.res().mat.vc); post.name = 'town-demo-sign'; g.add(post); me.stand = g;
+      const face = new T.Mesh(new T.PlaneGeometry(2.5, 0.65), new T.MeshLambertMaterial({ map: tex, emissive: '#ffffff', emissiveMap: tex, emissiveIntensity: 0.35, side: T.DoubleSide })); face.position.set(0, 1.48, 0.05); g.add(face); g.userData.keep = 1; g.userData.noFarCull = 1; ctx.scene.add(g); ctx.rebuildColliders?.();
       const open = () => { const c = ctx.card(`<h3>Watch the town build</h3><p>Staging demo: a test shop leases Lot 09 across the avenue, and the avenue in front of the campus gets resurfaced. Every stage builds live in front of you, with no reload.</p><p><button class="ob gold" data-a="go" type="button">Start demo build (4 min)</button> <button class="ob" data-a="look" type="button">Go watch</button> <button class="ob" data-a="clear" type="button">Clear demo</button></p><p class="wd-msg" style="opacity:.8"></p>`);
         const msg = c.querySelector('.wd-msg'); c.querySelector('[data-a=go]').onclick = async () => { msg.textContent = 'Starting…'; const j = await me.demo({}); msg.textContent = j.ok ? 'Lease signed. Surveyors are heading to Lot 09.' : (j.error || 'Could not start'); if (j.ok) setTimeout(() => { ctx.closeCard(); me.watch('lot:' + j.lot); }, 1200); };
         c.querySelector('[data-a=look]').onclick = () => { ctx.closeCard(); me.watch(); }; c.querySelector('[data-a=clear]').onclick = async () => { const j = await me.demo({ clear: true }); msg.textContent = j.ok ? 'Demo cleared.' : 'Could not clear'; }; };

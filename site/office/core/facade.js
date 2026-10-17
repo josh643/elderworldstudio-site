@@ -79,7 +79,7 @@ export function buildFacade(ctx, E) {
   vol(fx, fX, fz, Z0 - 31, 2 * FH, 5 * FH, { skip: 'f' }); plates(fx, fX, fz, Z0 - 31, 2 * FH, 5 * FH); B.box(fX - fx + 0.8, 0.5, Z0 - 31 - fz + 0.8, '#2c2d32', (fx + fX) / 2, 5 * FH + 0.25, (fz + Z0 - 31) / 2);
   // media wing (east): glazed 2-floor base + billboard wall above (massing, not enterable)
   const MW = [fX + 1.5, fX + 29, Z0 - 24, Z0 - 6]; vol(MW[0], MW[1], MW[2], MW[3], 0, 2 * FH); plates(MW[0], MW[1], MW[2], MW[3], 0, 2 * FH); col(MW[0] - 0.3, MW[2] - 0.3, MW[1] + 0.3, MW[3] + 0.3);
-  B.box(MW[1] - MW[0], 13.5, MW[3] - MW[2], '#1e1f24', (MW[0] + MW[1]) / 2, 2 * FH + 6.75, (MW[2] + MW[3]) / 2);
+  B.box(MW[1] - MW[0], 13.5, MW[3] - MW[2], '#857966', (MW[0] + MW[1]) / 2, 2 * FH + 6.75, (MW[2] + MW[3]) / 2);   // warm, grain-textured stone behind the marquee instead of a near-black blank shell
   // stone tower fin with the crest (front, full height); ground part only outside the building wall
   const S0 = TW[0] + 0.5, S1 = TW[1] - 0.5, TH = 8 * FH + 6, stone = canvas(256, 512, (g, w, h) => { g.fillStyle = '#2b2b30'; g.fillRect(0, 0, w, h); for (let y = 0; y < h; y += 64) for (let x = 0; x < w; x += 128) { g.fillStyle = `rgba(${40 + rnd() * 14 | 0},${40 + rnd() * 12 | 0},${46 + rnd() * 12 | 0},1)`; g.fillRect(x + 1, y + 1, 126, 62); }
       for (let i = 0; i < 2600; i++) { g.fillStyle = rnd() < 0.5 ? 'rgba(255,255,255,.05)' : 'rgba(0,0,0,.12)'; g.fillRect(rnd() * w, rnd() * h, 1 + rnd() * 2, 1 + rnd() * 2); } });
@@ -121,7 +121,7 @@ export function buildFacade(ctx, E) {
       ['SHAPING', 'WORLDS.', 'CREATING', 'LEGACIES.'].forEach((s, i) => g.fillText(s, 812, 150 + i * 82)); });
     bt.wrapS = bt.wrapT = T.ClampToEdgeWrapping; const bm = new T.MeshBasicMaterial({ map: bt, toneMapped: false, fog: false, color: 0xbbbbbb }); mats.billboard = bm;
     const pl = new T.Mesh(new T.PlaneGeometry(bw, bh), bm); pl.position.set((MW[0] + MW[1]) / 2, 2 * FH + 1 + bh / 2, MW[3] + 0.02); pl.userData.noCollide = 1; FG.add(pl);
-    const fr = Batch(); fr.box(bw + 0.8, bh + 0.8, 0.3, '#121317', (MW[0] + MW[1]) / 2, 2 * FH + 1 + bh / 2, MW[3] - 0.13); fr.mesh(mats.vc, FG); }
+    const fr = Batch(); fr.box(bw + 0.8, bh + 0.8, 0.3, '#514537', (MW[0] + MW[1]) / 2, 2 * FH + 1 + bh / 2, MW[3] - 0.13); fr.mesh(mats.vc, FG); }
   /* ---------- geodesic glass dome: icosphere top half, rib lines from barycentrics, sky reflection, warm glow at night ---------- */
   const dx = fx - 15, dz = Z0 - 1, DR = 16;
   { const ico = new T.IcosahedronGeometry(DR, 4), p = ico.attributes.position, P = [], Bc = [];
