@@ -25,7 +25,7 @@ export function buildFacade(ctx, E) {
         float hp = h1(vec2(pc, fl)); vec3 n = normalize(N + Tg * (hp - 0.5) * 0.05 + vec3(0.0, (h1(vec2(fl, pc)) - 0.5) * 0.04, 0.0));
         vec3 R = reflect(V, n); vec3 env = skyCol(R);
         float fres = 0.1 + 0.9 * pow(1.0 - max(dot(-V, n), 0.0), 5.0);
-        float on = step(0.32, h1(vec2(room, fl * 3.1))) * (0.5 + 0.5 * uLights); float warm = 0.75 + 0.5 * h1(vec2(room + 3.0, fl));
+        float on = max(step(0.32, h1(vec2(room, fl * 3.1))), step(fl, 0.5)) * (0.5 + 0.5 * uLights);   /* ground-floor podium rooms are always lit (they sit next to the lobby) */ float warm = 0.75 + 0.5 * h1(vec2(room + 3.0, fl));
         vec3 inside;
         #ifdef INTERIOR
         { vec3 d = vec3(dot(V, Tg), V.y, dot(V, -N)); float px = fract(u / RW) * RW, py = fy - 0.55; float H = FH - 0.55 - 0.35;

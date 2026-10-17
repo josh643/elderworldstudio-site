@@ -11,7 +11,7 @@ import { mergeGeometries } from '../vendor/jsm/utils/BufferGeometryUtils.js?v=16
 import { GLTFLoader } from '../vendor/jsm/loaders/GLTFLoader.js?v=169';
 import { DRACOLoader } from '../vendor/jsm/loaders/DRACOLoader.js?v=169';
 import { KTX2Loader } from '../vendor/jsm/loaders/KTX2Loader.js?v=169';
-import { buildFacade } from './facade.js?v=2';
+import { buildFacade } from './facade.js?v=3';
 
 const A = '/office/assets/exterior/';
 const SPECIES = [   // atlas row order (assets/exterior/trees_atlas.*): id, frame side S in model metres, model height H, target height range
@@ -145,7 +145,7 @@ export function build(ctx, shell) {
   { const q = new T.Mesh(new T.PlaneGeometry(2, 2), new T.ShaderMaterial({ colorWrite: false, depthWrite: true, depthTest: true, depthFunc: T.AlwaysDepth,
       stencilWrite: true, stencilRef: 1, stencilFunc: T.EqualStencilFunc, stencilFail: T.KeepStencilOp, stencilZFail: T.KeepStencilOp, stencilZPass: T.KeepStencilOp,
       vertexShader: 'void main(){ gl_Position = vec4(position.xy, 1.0, 1.0); }', fragmentShader: 'void main(){ gl_FragColor = vec4(0.0); }' }));
-    q.frustumCulled = false; q.renderOrder = 11; q.userData.noCollide = 1; q.userData.keep = 1; scene.add(q); }
+    q.frustumCulled = false; q.renderOrder = 11; q.userData.noCollide = 1; q.userData.keep = 1; q.userData.noFarCull = 1; scene.add(q); }
 
   /* ---------- ground: one lawn mesh with baked macro variation + AO near the building ---------- */
   { const W = BOUNDS[1] - BOUNDS[0] + 40, D = BOUNDS[3] - BOUNDS[2] + 40, g = new T.PlaneGeometry(W, D, 96, 110).rotateX(-Math.PI / 2); g.translate((BOUNDS[0] + BOUNDS[1]) / 2, 0, (BOUNDS[2] + BOUNDS[3]) / 2);

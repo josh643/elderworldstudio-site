@@ -97,7 +97,7 @@ let HOLE = null;
 export function holeMat(ctx) { const T = ctx.THREE; return (HOLE ||= new T.MeshBasicMaterial({ colorWrite: false, depthWrite: false, side: T.DoubleSide, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -4, stencilWrite: true, stencilRef: 1, stencilFunc: T.AlwaysStencilFunc, stencilZPass: T.ReplaceStencilOp })); }
 export function windowPane(ctx, x, y, z, ry, w = 2.2, h = 1.5, parent) {
   const T = ctx.THREE, G = new T.Group(); G.position.set(x, y, z); G.rotation.y = ry; (parent || ctx.scene).add(G);
-  const v = new T.Mesh(new T.PlaneGeometry(w, h), ctx.extOn ? holeMat(ctx) : new T.MeshBasicMaterial({ map: viewTex(ctx), toneMapped: false })); v.position.z = 0.005; G.add(v); v.userData.noCollide = 1;
+  const v = new T.Mesh(new T.PlaneGeometry(w, h), ctx.extOn ? holeMat(ctx) : new T.MeshBasicMaterial({ map: viewTex(ctx), toneMapped: false })); v.position.z = ctx.extOn ? 0.03 : 0.005;   /* opening sits flush with the frame face, in front of the wall surface */ G.add(v); v.userData.noCollide = 1;
   if (ctx.extOn) { v.renderOrder = 10; v.userData.windowHole = 1; v.userData.keep = 1; }   /* keep: never batched (it must draw after the walls) */
   const fr = ctx.mat.wood; ctx.box(w + 0.12, 0.08, 0.06, fr, 0, h / 2 + 0.04, 0.02, G); ctx.box(w + 0.12, 0.1, 0.12, fr, 0, -h / 2 - 0.05, 0.05, G);
   for (const sx of [-1, 1]) ctx.box(0.06, h, 0.06, fr, sx * (w / 2 + 0.03), 0, 0.02, G); ctx.box(0.04, h, 0.03, fr, 0, 0, 0.02, G); ctx.box(w, 0.04, 0.03, fr, 0, h * 0.18, 0.02, G);
