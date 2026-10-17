@@ -271,6 +271,26 @@
     "receptionist": {
       "name": "Freyja",
       "role": "receptionist"
+    },
+    "lead-arch": {
+      "name": "H\u0153nir",
+      "role": "architecture lead"
+    },
+    "arch-building": {
+      "name": "Vili",
+      "role": "building architect"
+    },
+    "arch-landscape": {
+      "name": "J\u00f6r\u00f0",
+      "role": "landscape & urban designer"
+    },
+    "arch-qa": {
+      "name": "V\u00e9",
+      "role": "layout QA"
+    },
+    "arch-survey": {
+      "name": "V\u00e9",
+      "role": "layout QA"
     }
   }
 }

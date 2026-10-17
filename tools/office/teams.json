@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "note": "Joshua 2026-10-12: NO NEW MOBILE GAMES \u2014 Games team polishes existing only. 2026-10-10 Joshua approved 5 teams. Lead = team_lead.py (luna). Stages build -> check -> fix -> release. Max 2 fix retries then Anna. Hard rules: money/prices/contracts/legal, production/live/public release, first contact -> Joshua. Case-study proof loops (2026-10-10): metrics/milestone/interest are low-priority idle work; never preempt running jobs. Mandatory QA gate on every team (2026-10-11): see qa_gate.",
+  "note": "Joshua 2026-10-12: NO NEW MOBILE GAMES — Games team polishes existing only. 2026-10-10 Joshua approved 5 teams. Lead = team_lead.py (luna). Stages build -> check -> fix -> release. Max 2 fix retries then Anna. Hard rules: money/prices/contracts/legal, production/live/public release, first contact -> Joshua. Case-study proof loops (2026-10-10): metrics/milestone/interest are low-priority idle work; never preempt running jobs. Mandatory QA gate on every team (2026-10-11): see qa_gate.",
   "max_fix_retries": 2,
   "teams": {
     "games": {
@@ -322,7 +322,7 @@
       "release_target": "Penpot project + exported PNG/SVG on agent/ branch; client-facing drafts only until Joshua/Anna approve; never main",
       "qa_gate": "design-qa VERDICT: PASS + ews-qa on penpot.py; money/legal/public brand -> Joshua card; else Anna",
       "rules": [
-        "modern/futuristic style only \u2014 no medieval/fantasy crests, runes, or ornate gothic marks (Joshua dislikes)",
+        "modern/futuristic style only — no medieval/fantasy crests, runes, or ornate gothic marks (Joshua dislikes)",
         "work in Penpot projects per product (EWS POS, Cap Bar kiosk, AgentOS, games store art)",
         "export PNG/SVG via penpot.py into the target repo through build->check->fix->release",
         "draft-only for client-facing until approved",
@@ -330,11 +330,29 @@
         "never spend money; never email clients unasked"
       ],
       "model": "luna"
+    },
+    "architecture": {
+      "name": "Architecture",
+      "lead": "lead-arch",
+      "floor": "3",
+      "members": {
+        "lead-arch": "llm",
+        "arch-building": "llm",
+        "arch-landscape": "llm",
+        "arch-qa": "llm"
+      },
+      "seats": {
+        "lead-arch": "f3-arch-lead-arch",
+        "arch-building": "f3-arch-arch-building",
+        "arch-landscape": "f3-arch-arch-landscape",
+        "arch-qa": "f3-arch-arch-qa"
+      },
+      "note": "2026-10-16 Architecture team. Floor 3 (Design) desks + assigned chairs: incoming/architecture/spec.json interiors floor 3. Hidden from ground-floor team halls until Floor 3 is built."
     }
   },
   "schedules": {
     "games-liveops": "weekly Sun 01:10 (one polish/update pipeline per live game: player-feedback + Play vitals/ratings + Unity stats)",
-    "games-trends": "weekly Mon 06:40 (research; ASO/install ideas for EXISTING games only \u2014 never reprioritize to start a new title while no_new_games)",
+    "games-trends": "weekly Mon 06:40 (research; ASO/install ideas for EXISTING games only — never reprioritize to start a new title while no_new_games)",
     "community": "daily 11:20 + 18:20 (reply drafts/replies on own channels; hostile/refund/legal/money -> Joshua)",
     "games-launchkit": "every tick (only after listing public)",
     "casestudy-metrics": "weekly Sun 04:50 idle-only (never preempt). Writes policy/casestudy/metrics.json",

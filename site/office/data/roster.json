@@ -286,6 +286,43 @@
      "lead": false
     }
    ]
+  },
+  {
+   "key": "architecture",
+   "name": "Architecture",
+   "members": [
+    {
+     "id": "lead-arch",
+     "name": "Hœnir",
+     "role": "architecture lead",
+     "lead": true
+    },
+    {
+     "id": "arch-building",
+     "name": "Vili",
+     "role": "building architect",
+     "lead": false
+    },
+    {
+     "id": "arch-landscape",
+     "name": "Jörð",
+     "role": "landscape & urban designer",
+     "lead": false
+    },
+    {
+     "id": "arch-qa",
+     "name": "Vé",
+     "role": "layout QA",
+     "lead": false
+    }
+   ],
+   "floor": "3",
+   "seats": {
+    "lead-arch": "f3-arch-lead-arch",
+    "arch-building": "f3-arch-arch-building",
+    "arch-landscape": "f3-arch-arch-landscape",
+    "arch-qa": "f3-arch-arch-qa"
+   }
   }
  ],
  "nodes": [

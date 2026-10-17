@@ -118,7 +118,10 @@ for tk, t in teams.items():
         n = names.get(i) or {"name": i.replace("-", " ").title(), "role": i.replace("-", " ")}
         if n["name"] in seen: continue          # shared agents sit at their first team's desks
         seen.add(n["name"]); mem.append({"id": i, "name": n["name"], "role": n["role"], "lead": i == t.get("lead")})
-    R.append({"key": tk, "name": t.get("name") or tk.title(), "members": mem})
+    row = {"key": tk, "name": t.get("name") or tk.title(), "members": mem}
+    if t.get("floor"): row["floor"] = t["floor"]            # 2026-10-16: upper-floor teams (architecture = Floor 3)
+    if t.get("seats"): row["seats"] = t["seats"]            # assigned chair id per agent (one chair each)
+    R.append(row)
 sub = names.get("subceo", {"name": "Odin", "role": "Sub-CEO"})
 rec = names.get("receptionist", {"name": "Freyja", "role": "receptionist"})
 roster = {"subceo": {"id": "subceo", "name": sub["name"], "role": sub["role"]},

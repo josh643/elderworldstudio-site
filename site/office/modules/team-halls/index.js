@@ -4,7 +4,7 @@ const COLS = [0x5b8def, 0xe0794a, 0x6cc48a, 0xc86ad9, 0xe2c35a, 0x4ac4c8, 0xe25a
 let G2 = null;
 export default {
   setup(ctx, cfg, [x0, z0]) {
-    const { THREE, box, M, roster } = ctx, A = ctx.use('avatar'), cols = cfg.cols || 3, W = cfg.w || 10, D = cfg.d || 9, teams = roster.teams;
+    const { THREE, box, M, roster } = ctx, A = ctx.use('avatar'), cols = cfg.cols || 3, W = cfg.w || 10, D = cfg.d || 9, teams = roster.teams.filter(t => !t.floor || t.floor === 'G');   /* 2026-10-16: upper-floor teams (architecture, Floor 3) are placed by their floor builder, not the ground halls */
     const totalW = cols * W, rooms = {}; this.rooms = rooms; this.A = A; this.ctx = ctx;
     teams.forEach((t, i) => {
       const cx = x0 - totalW / 2 + (i % cols) * W + W / 2, cz = z0 - Math.floor(i / cols) * D - D / 2, col = COLS[i % COLS.length];
