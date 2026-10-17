@@ -3,6 +3,8 @@
 import { openKiosk } from './kiosk-ui.js?v=3';
 import * as V from './voice.js?v=2';
 import { setupFloors } from '../../core/floors.js?v=2';
+import { filterChatText } from '../../data/chat-safety.js?v=1';
+import { mountChatSafetyControls } from '../../data/chat-safety-controls.js?v=1';
 export default {
   setup(ctx, cfg, [x, z]) {
     const { box, mat, esc } = ctx, A = ctx.use('avatar');
@@ -17,6 +19,10 @@ export default {
     const me = { id: 'receptionist', name: cfg.name || ctx.roster.receptionist?.name || 'Freyja', role: 'receptionist' };
     const f = A.make({ ...me, female: 1 }, 0x2f7d6a, () => chat()); f.position.set(x, 0, z); f.rotation.y = 0; f.userData.pose = 'host'; ctx.scene.add(f);
     const history = (() => { try { return JSON.parse(sessionStorage.getItem('ews-freyja') || '[]'); } catch { return []; } })();   /* chat survives reloads */
+    const safetyKey = 'ews-chat-safety';
+    const safetyState = () => { try { return JSON.parse(localStorage.getItem(safetyKey) || '{}'); } catch { return {}; } };
+    const setSafety = patch => { const next = { ...safetyState(), ...patch }; try { localStorage.setItem(safetyKey, JSON.stringify(next)); } catch {} return next; };
+    const reportIdentity = () => { try { let id = localStorage.getItem('ews-chat-id'); if (!id) { id = crypto.randomUUID(); localStorage.setItem('ews-chat-id', id); } return id; } catch { return 'anonymous-device'; } };
     addEventListener('pagehide', () => { try { sessionStorage.setItem('ews-freyja', JSON.stringify(history.slice(-20))); } catch {} });
     const leadForm = () => {
       const c = ctx.card(`<h3>Request a demo</h3><p>Tell us what you need. Our client team builds a quick demo for your business first.</p>
@@ -47,6 +53,8 @@ export default {
       c.querySelector('button').onclick = load; if (L.length) load(); };
     this.tickets = tickets; this.sent = sent;
     const chat = () => {
+      if (ctx.xbox && !ctx.xboxChatEnabled()) return;
+      if (safetyState().blockedFreyja) return;
       f.userData.talking = true; clearTimeout(f.userData.tt); f.userData.tt = setTimeout(() => { f.userData.talking = false; }, 30000);
       const c = ctx.card(`<h3>${esc(me.name)} · receptionist</h3><div class="office-chat"><div class="log" aria-live="polite"></div><form><input name="q" maxlength="400" placeholder="Ask about our games, services or the studio" aria-label="Message ${esc(me.name)}" autocomplete="off"><button class="ob gold" type="submit">Send</button></form><p style="font-size:12px;opacity:.7">${esc(me.name)} is an AI receptionist. Don't share passwords or payment details.</p></div>`);
       const log = c.querySelector('.log'), fm = c.querySelector('form');
@@ -59,16 +67,34 @@ export default {
         const LI = ctx.use('lobbyInfo'); if (LI) { const qr = document.createElement('div'); qr.className = 'row quick';
           for (const [k, t] of [['services', 'Services'], ['games', 'Games'], ['merch', 'Merch'], ['teams', 'Teams']]) if (LI.keys.includes(k)) { const q = document.createElement('button'); q.type = 'button'; q.className = 'ob'; q.textContent = ctx.t(t); q.onclick = () => LI(k); qr.append(q); }
           row.after(qr); } }
-      const add = (t, mine) => { const m = document.createElement('div'); m.className = 'm' + (mine ? ' me' : ''); m.textContent = t; log.append(m); log.scrollTop = 1e6; return m; };
+      const status = document.createElement('p'); status.className = 'chat-safety-status'; status.setAttribute('role', 'status');
+      const addActions = (m, t) => {
+        const holder = document.createElement('div');
+        mountChatSafetyControls(holder, { target: me, reporter: reportIdentity(), excerpt: filterChatText(t), muteKey: 'mutedFreyja', blockKey: 'blockedFreyja',
+          onStatus: message => { status.textContent = message; },
+          onMute: value => { setSafety({ mutedFreyja: value }); updateMute(); log.querySelectorAll('.m:not(.me)').forEach(row => { row.hidden = value; }); if (value) status.textContent = 'Freyja is muted on this device.'; },
+          onBlocked: () => { setSafety({ blockedFreyja: true }); ctx.closeCard(); } });
+        m.after(holder);
+      };
+      const add = (t, mine, actions = false) => {
+        const m = document.createElement('div'); m.className = 'm' + (mine ? ' me' : ''); m.textContent = filterChatText(t); m.hidden = !mine && !!safetyState().mutedFreyja; log.append(m);
+        if (!mine && actions) addActions(m, t);
+        log.scrollTop = 1e6; return m;
+      };
+      const muteToggle = document.createElement('button'); muteToggle.type = 'button'; muteToggle.className = 'ob'; muteToggle.style.minHeight = '48px';
+      const updateMute = () => { muteToggle.textContent = safetyState().mutedFreyja ? 'Unmute Freyja' : 'Mute Freyja'; };
+      muteToggle.onclick = () => { setSafety({ mutedFreyja: !safetyState().mutedFreyja }); updateMute(); log.querySelectorAll('.m:not(.me)').forEach(row => { row.hidden = safetyState().mutedFreyja; }); };
+      fm.before(muteToggle, status); updateMute();
       if (!history.length) { V.playLine('welcome'); speak(9500); } if (!history.length) history.push({ role: 'assistant', content: `Welcome to ${cfg.hall || 'Fólkvangr'}! I'm ${me.name}. I can tell you about Elder World Studio, show you our games, or book a demo for your business. What brings you in?` });
-      history.forEach(h => add(h.content, h.role === 'user'));
-      fm.onsubmit = async e => { e.preventDefault(); const q = fm.q.value.trim(); if (!q) return; fm.q.value = ''; add(q, true); history.push({ role: 'user', content: q }); const w = add('…');
-        try { const j = await (await fetch(cfg.chat || '/api/office/freyja', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ messages: history.slice(-8), lang: V.lang() }) })).json();
-          w.textContent = j.reply || 'Sorry, I lost my train of thought.'; V.playReply(j.tts, () => speak(Math.min(30000, 600 + w.textContent.length * 70)), j.ttsReady); if (j.action?.lead) { const k = document.createElement('button'); k.type = 'button'; k.className = 'ob gold'; k.textContent = ctx.t('Open the request kiosk'); k.onclick = () => { V.playLine('form_open'); openKiosk(ctx, cfg.lead, sent); }; w.after(k); } history.push({ role: 'assistant', content: w.textContent });
+      history.forEach(h => add(h.content, h.role === 'user', h.role === 'assistant'));
+      fm.onsubmit = async e => { e.preventDefault(); const q = filterChatText(fm.q.value.trim()); if (!q) return; fm.q.value = ''; add(q, true); history.push({ role: 'user', content: q }); const w = add('…');
+        try { const j = await (await fetch(cfg.chat || '/api/office/freyja', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ messages: history.slice(-8), lang: V.lang(), playerId: reportIdentity() }) })).json();
+          w.textContent = filterChatText(j.reply || 'Sorry, I lost my train of thought.'); if (safetyState().mutedFreyja) w.hidden = true; addActions(w, w.textContent); V.playReply(j.tts, () => speak(Math.min(30000, 600 + w.textContent.length * 70)), j.ttsReady); if (j.action?.lead) { const k = document.createElement('button'); k.type = 'button'; k.className = 'ob gold'; k.textContent = ctx.t('Open the request kiosk'); k.onclick = () => { V.playLine('form_open'); openKiosk(ctx, cfg.lead, sent); }; w.after(k); } history.push({ role: 'assistant', content: w.textContent });
           if (j.action?.tour) { const go = document.createElement('button'); go.type = 'button'; go.className = 'ob go'; go.textContent = ctx.t('Take me there'); go.onclick = () => ctx.goTo(j.action.tour); w.after(go); }   /* guided moves only on an explicit click */ if (j.action?.lead) setTimeout(leadForm, 900); }
         catch { w.textContent = 'I can\u2019t reach my notes right now. Try the tour buttons below!'; } };
       fm.q.focus();
     };
+    if (ctx.xbox) addEventListener('ews-xbox-privileges', () => { if (!ctx.xboxChatEnabled()) ctx.closeCard(); });
     ctx.onClick(dk, () => chat()); box(1.7, 0.5, 0.04, mat.trim, x, 0.62, z + 1.52); ctx.sign(me.name, `Reception · ${ctx.verb} to chat`, x, 0.62, z + 1.55, 0, () => chat(), 1.6);
     /* digital demo kiosk on the desk: angled touchscreen facing the visitor */
     { const T = ctx.THREE, K = new T.Group(); K.position.set(x - 1.3, 1.08, z + 0.8); ctx.scene.add(K);

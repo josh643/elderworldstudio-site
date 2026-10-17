@@ -2,6 +2,16 @@
 // (search engines, screen readers, no-WebGL, Save-Data, ?classic=1 or the "Classic site" button).
 (function () {
   var q = new URLSearchParams(location.search);
+  if (q.get('xbox') === '1') {
+    document.documentElement.classList.add('ews-xbox-mode');
+    var xbStyle = document.createElement('style');
+    xbStyle.textContent = 'html.ews-xbox-mode body > :not(.office-root):not(script):not(style){display:none!important}';
+    document.head.appendChild(xbStyle);
+    var hideClassic = function () { Array.prototype.forEach.call(document.body.children, function (el) {
+      if (el.tagName !== 'SCRIPT' && el.tagName !== 'STYLE') el.style.setProperty('display', 'none', 'important');
+    }); };
+    if (document.body) hideClassic(); else addEventListener('DOMContentLoaded', hideClassic, { once: true });
+  }
   (function () { var l = document.createElement('link'); l.rel = 'stylesheet'; l.href = '/office/choice.css?v=1'; document.head.appendChild(l); })();
   /* language: ?lang= > remembered > browser. English + Spanish ship now. */
   var L = (q.get('lang') || '').slice(0, 2); try { if (L) localStorage.setItem('ews-lang', L); else L = localStorage.getItem('ews-lang') || ''; } catch (e) {}
@@ -39,7 +49,7 @@
     if (/swiftshader|llvmpipe|software|basic render/i.test(rn) && !forced) return false;   // no real GPU: classic site
   } catch (e) { return false; }
 
- import('/office/office.js?v=30').then(function (m) { m.start({ overlay: true }); }).catch(function (e) { console.warn('office failed, classic site stays', e); }); };
+ import('/office/office.js?v=31').then(function (m) { m.start({ overlay: true }); }).catch(function (e) { console.warn('office failed, classic site stays', e); }); };
   if (!forced && pref !== '3d') { if (document.body) choice(); else addEventListener('DOMContentLoaded', choice); return; }
   var later = function () { setTimeout(function () { (window.requestIdleCallback || setTimeout)(go, { timeout: 1500 }); }, forced ? 0 : 400); };
   document.documentElement.classList.add('office-pending');

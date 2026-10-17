@@ -7,6 +7,7 @@
 //   POST /world/demo   {lot, secs}  staging-only simulated lease + build (alarm-driven); {clear:true} removes demo entities
 //   GET  /world/state  snapshot   ·   GET /world/ws  WebSocket (snap on connect, then {t:'delta'})
 // Never touches store or user data: this object only knows lots/roads/buildings.
+import { filterChatText } from '../../site/office/data/chat-safety.js';
 export const BUILD = ['survey', 'groundwork', 'foundation', 'framing', 'walls', 'glazing', 'signage', 'landscaping', 'open'];
 export const ROAD = ['survey', 'grading', 'base', 'paving', 'striping', 'open'];
 const clamp = (v, a = 0, b = 1) => Math.max(a, Math.min(b, Number(v) || 0));
@@ -94,6 +95,52 @@ function applyEvent0(w, ev, now) {
 
 export async function world(state, req) {
   const u = new URL(req.url), op = u.pathname.slice(7), st = state.storage, now = Date.now();
+  if (op.startsWith('chat/') && req.method === 'POST') {
+    const body = await req.json().catch(() => ({}));
+    const idOk = value => /^[A-Za-z0-9_-]{1,64}$/.test(String(value || ''));
+    if (op === 'chat/check') {
+      if (!idOk(body.player) || !idOk(body.target)) return Response.json({ ok: false, error: 'invalid participant' }, { status: 400 });
+      const blocked = !!(await st.get(`chat:block:${body.player}:${body.target}`) || await st.get(`chat:block:${body.target}:${body.player}`));
+      return Response.json({ ok: true, blocked });
+    }
+    if (!idOk(body.reporter) || !idOk(body.target?.id)) return Response.json({ ok: false, error: 'invalid participant' }, { status: 400 });
+    const reporter = String(body.reporter), target = { id: String(body.target.id), name: String(body.target.name || body.target.id).replace(/[<>\r\n]/g, '').slice(0, 60) };
+    if (op === 'chat/block') {
+      const record = { at: now, by: reporter, target: target.id, active: true };
+      await st.transaction(tx => Promise.all([
+        tx.put(`chat:block:${reporter}:${target.id}`, record),
+        tx.put(`chat:block:${target.id}:${reporter}`, record),
+      ]));
+      return Response.json({ ok: true, blockedBothWays: true });
+    }
+    if (op === 'chat/report') {
+      const rateKeys = [`chat:report-limit:reporter:${reporter}`];
+      const ip = req.headers.get('cf-connecting-ip');
+      if (ip) {
+        const digest = new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(ip)));
+        const fingerprint = [...digest].slice(0, 16).map(byte => byte.toString(16).padStart(2, '0')).join('');
+        rateKeys.push(`chat:report-limit:visitor:${fingerprint}`);
+      }
+      target.name = filterChatText(target.name);
+      const entry = { kind: 'chat-safety-report', status: 'needs-anna', at: now, reporter, target, excerpt: filterChatText(body.excerpt || '').slice(0, 240) };
+      const result = await st.transaction(async tx => {
+        const windows = await Promise.all(rateKeys.map(async key => {
+          const saved = await tx.get(key);
+          return { key, value: !saved || now >= saved.until ? { n: 0, until: now + 3600e3 } : saved };
+        }));
+        const exceeded = windows.find(item => item.value.n >= 3);
+        if (exceeded) return { limited: true, retryMs: exceeded.value.until - now };
+        const log = (await tx.get('chat:needs-anna')) || [];
+        await Promise.all([
+          ...windows.map(({ key, value }) => tx.put(key, { n: value.n + 1, until: value.until })),
+          tx.put('chat:needs-anna', [entry, ...log].slice(0, 200)),
+        ]);
+        return { ok: true };
+      });
+      if (result.limited) return Response.json({ ok: false, error: 'report limit reached', retryMs: result.retryMs }, { status: 429 });
+      return Response.json({ ok: true, status: entry.status });
+    }
+  }
   if (op === 'ws') {
     if (req.headers.get('upgrade') !== 'websocket') return new Response('expected websocket', { status: 426 });
     if (state.getWebSockets('world').length >= 2000) return new Response('busy', { status: 503 });

@@ -1,6 +1,7 @@
 import { enqueueTTS } from './_util.js';
 import { json, doLimit, visitor } from './_util.js';
 import site from '../../../site/office/data/site.json';
+import { filterChatText } from '../../../site/office/data/chat-safety.js';
 // POST /api/office/freyja {messages:[{role,content}]} -> {reply, action?:{tour?, lead?}}
 // Freyja, the receptionist at Fólkvangr. gpt-4o-mini, max 220 output tokens, 30 msgs/IP/day,
 // hard daily cost cap (OFFICE_FREYJA_CAP_USD, default $0.50) tracked in KV; over the cap or with no
@@ -33,9 +34,15 @@ function faq(q) {
 }
 async function inner({ request, env }) {
   let b; try { b = await request.json(); } catch { return json({ error: 'bad request' }, 400); }
-  const msgs = (Array.isArray(b.messages) ? b.messages : []).slice(-8).map(m => ({ role: m.role === 'assistant' ? 'assistant' : 'user', content: String(m.content || '').slice(0, 500) }));
+  const msgs = (Array.isArray(b.messages) ? b.messages : []).slice(-8).map(m => ({ role: m.role === 'assistant' ? 'assistant' : 'user', content: filterChatText(String(m.content || '').slice(0, 500)) }));
   const last = [...msgs].reverse().find(m => m.role === 'user')?.content || '';
   if (!last) return json({ error: 'empty' }, 400);
+  const playerId = /^[A-Za-z0-9_-]{8,64}$/.test(String(b.playerId || '')) ? String(b.playerId) : '';
+  if (playerId && env.OFFICE_RL) {
+    const doid = env.OFFICE_RL.idFromName('world:' + (env.OFFICE_MODE || 'prod'));
+    const check = await env.OFFICE_RL.get(doid).fetch('https://rl/world/chat/check', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ player: playerId, target: 'receptionist' }) });
+    if ((await check.json().catch(() => ({}))).blocked) return json({ error: 'chat unavailable' }, 403);
+  }
   const ip = visitor(request);
   const lim = await doLimit(env, 'ip:' + ip, [['min', 6, 60000], ['day', 30, 864e5]]);
   if (!lim.ok) return json({ reply: 'I\u2019m getting a lot of questions! Give me a minute. Meanwhile the tour buttons below still work, or request a demo with the form.', action: { lead: false }, limited: true, retryMs: lim.retryMs }, 429);
@@ -55,7 +62,7 @@ async function inner({ request, env }) {
     const u = j.usage || {}; const micro = Math.ceil((u.prompt_tokens || 0) * 0.15 + (u.completion_tokens || 0) * 0.6);
     await doLimit(env, 'global-budget', [], micro);
     let o = {}; try { o = JSON.parse(j.choices[0].message.content); } catch {}
-    const reply = String(o.reply || '').slice(0, 600) || faq(last).reply;
+    const reply = filterChatText(String(o.reply || '').slice(0, 600)) || faq(last).reply;
     return put({ reply, action: { tour: TOURS.includes(o.tour) ? o.tour : null, lead: !!o.lead }, mode: 'llm' });
   } catch { const f = faq(last); return json({ ...f, mode: 'faq' }); }
 }

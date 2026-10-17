@@ -82,12 +82,15 @@ def store_of(href):
     return "steam" if "steampowered" in href else "play" if "play.google" in href else "shop" if "fourthwall" in href else "link"
 
 home, games, svc, merch = parse("index.html"), parse("games/index.html"), parse("services/index.html"), parse("merch/index.html")
+try: RATINGS = json.loads((OUT / "theater-ratings.json").read_text())
+except (OSError, ValueError): RATINGS = {"maxXboxRating": "T", "childAllowList": [], "titles": {}}
 G = []
 for c in games.cards:
     btn = [b for b in c["buttons"] if b["href"].startswith("http")]
     status = "live" if c["section"] == "live" else "soon"
     G.append({"title": c["title"].strip(), "tag": c["tag"].strip(), "text": c["text"], "status": status, "tier": c["section"],
               "img": clean_path(norm_img(c["img"], "games/index.html")), "alt": c.get("alt", ""),
+              "rating": RATINGS.get("titles", {}).get(c["title"].strip(), "Unknown"),
               "buttons": [{"label": b["label"].strip(), "href": b["href"], "store": store_of(b["href"])} for b in btn]})
 S = [{"title": p["title"].strip(), "text": " ".join(x.strip() for x in p["text"] if x.strip()),
       "links": [l for l in p["links"] if l["href"].startswith("http")]} for p in svc.panels if p["title"].strip()]
@@ -99,7 +102,8 @@ for c in merch.cards:
 site = {"generated_from": ["index.html", "games/index.html", "services/index.html", "merch/index.html"],
         "brand": {"name": "Elder World Studio", "tagline": home.h1.strip() or "Forging Digital Realms", "about": re.sub(r"\s+", " ", home.hero_p).strip(),
                   "logo": "/assets/img/logo.png", "wallText": True},
-        "games": G, "services": S, "merch": M,
+        "games": G, "theaterRatings": {"maxXboxRating": RATINGS.get("maxXboxRating", "T"), "childAllowList": RATINGS.get("childAllowList", [])},
+        "services": S, "merch": M,
         "devlog": {"title": "Devlogs on YouTube", "href": "https://www.youtube.com/@ElderWorldStudio"},
         "links": {"services": "/services/", "contact": "/contact/", "games": "/games/", "merch": "/merch/", "classic": "/?classic=1"}}
 (OUT / "site.json").write_text(json.dumps(site, indent=1, ensure_ascii=False))
