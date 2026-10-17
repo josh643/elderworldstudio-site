@@ -52,6 +52,7 @@ def page(path, title, desc, body, canonical, current="", noindex=False):
 <meta property="og:image" content="{DOMAIN}/assets/img/brand/ews-og.png?v=4">
 <link rel="preload" href="{P}assets/fonts/michroma.woff" as="font" type="font/woff" crossorigin>
 <link rel="stylesheet" href="{P}assets/css/site.css?v=5">
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9120677014955697" crossorigin="anonymous"></script>
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
