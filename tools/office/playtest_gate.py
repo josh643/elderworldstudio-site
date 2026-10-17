@@ -29,6 +29,8 @@ LIVE = opt('--live', 'https://office-3d.elderworldstudio.pages.dev').rstrip('/')
 OUT = opt('--out', f'/workspace/shots/gate/{time.strftime("%Y%m%d-%H%M%S")}'); os.makedirs(OUT + '/live', exist_ok=True)
 GD = '/workspace/shots/gate'; DET_BL = f'{GD}/det-baseline.json'; LEDGER = f'{GD}/baseline.json'; DEBT = f'{GD}/debt.json'
 VISION = '--no-vision' not in A; BUDGET = 170; SAME_PX = 4.0
+# codes that name ONE specific object (there is one campus dome): already-known anywhere in the same zone = the same defect, even from another viewpoint
+UNIQUE_OBJ = {'dome_opaque'}
 FLOORS = ['G', '2', '3', '4', '5']
 # permanent regression walks: (floor, from x,z, to x,z, label, Joshua report) in the floor's local frame (x offset added per floor)
 REGRESS = [
@@ -167,7 +169,9 @@ async def main():
       unclear = []
       for f in JC.get('fails', []):
         k = f"{f['code']}@{f['view']}"; d = R['view_diff'].get(f['view'])
-        why = 'unchanged view vs live (px diff %s)' % d if d is not None and d < SAME_PX else 'also on live (this run)' if k in live_hits else 'ledger baseline.json' if k in ledger else None
+        zone = (C['views'].get(f['view']) or {}).get('zone'); known_zone = {kk.split('@')[0] for kk in list(live_hits) + list(ledger) if (C['views'].get(kk.split('@')[-1]) or L['views'].get(kk.split('@')[-1]) or {}).get('zone') == zone}
+        why = 'unchanged view vs live (px diff %s)' % d if d is not None and d < SAME_PX else 'also on live (this run)' if k in live_hits else 'ledger baseline.json' if k in ledger else \
+              f'same single object already known in {zone} (ledger/live)' if f['code'] in UNIQUE_OBJ and f['code'] in known_zone else None
         if why: R['debt'].append({'code': f['code'], 'where': f['where'], 'view': f['view'], 'why': why, 'file': f.get('file')}); continue
         unclear.append(f)
       if unclear:   # targeted second look at the LIVE shot, only for the codes in question
