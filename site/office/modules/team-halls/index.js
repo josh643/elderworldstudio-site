@@ -37,7 +37,7 @@ export default {
       t.members.forEach((a, j) => {
         const dx = cx + ((j % per) - (per - 1) / 2) * 1.8, dz = cz + (Math.floor(j / per) ? -2.2 : 0.4);
         const { monitor } = ctx.kit.desk(ctx, dx, dz);
-        const av = A.make(a, col, () => { const s = av.userData.state || {}; ctx.card(`<h3>${ctx.esc(a.name)}</h3><p>${ctx.esc(a.role)} · ${ctx.esc(t.name)}</p><p>${s.stage ? `Working · stage <b>${ctx.esc(s.stage)}</b> · ${Math.round((s.progress || 0) * 100)}%${s.blocked ? ' · <b>blocked</b>' : ''}` : 'Idle at the desk'}</p>`); });
+        const av = A.make(a, col, () => { const s = av.userData.state || {}; ctx.card(`<h3>${ctx.esc(a.name)}</h3><p>${ctx.esc(a.role)} · ${ctx.esc(t.name)}</p>${s.asset ? `<p>Asset desk · <b>${ctx.esc(s.asset.name)}</b> (${ctx.esc(s.asset.kind)}) · ${ctx.esc(s.asset.step)}${s.asset.left ? ` · ${s.asset.left} in queue` : ''}</p>` : ''}<p>${s.stage ? `Working · stage <b>${ctx.esc(s.stage)}</b> · ${Math.round((s.progress || 0) * 100)}%${s.blocked ? ' · <b>blocked</b>' : ''}` : 'Idle at the desk'}</p>`); });
         av.position.set(dx, 0, dz); av.rotation.y = Math.PI; Object.assign(av.userData, { home: new THREE.Vector3(dx, 0, dz), team: t.key, monitor }); ctx.scene.add(av);
       });
       ctx.spot('team-' + t.key, [cx, 2.2, cz + D / 2 + 1.5], [cx, 0.8, cz - 1]);

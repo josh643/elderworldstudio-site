@@ -25,6 +25,16 @@ export function redactTask(t) {
   if (s.length > 64) s = s.slice(0, 64).replace(/\s+\S*$/, '') + '…';
   return s.length >= 4 ? s : '';
 }
+// Asset desk (2026-10-16): the assets agent's desk screen shows the asset being built and its live step. Allowlisted,
+// plain words only; anything else is dropped.
+const ASTEPS = ['generating', 'checking', 'PASS', 'FAIL', 'HOLD'], AKINDS = ['Elderverse prop', 'Merch replica', 'Game asset', 'Polish'];
+function assetInfo(agent, a) {
+  if (agent !== 'assets' || !a || !ASTEPS.includes(a.step)) return {};
+  const name = String(a.name || '').replace(/[^A-Za-z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 40);
+  if (!name) return {};
+  const n = (v, hi) => Math.max(0, Math.min(hi, Math.floor(Number(v) || 0)));
+  return { asset: { name, kind: AKINDS.includes(a.kind) ? a.kind : 'Asset', step: a.step, try: Math.max(1, n(a.try, 5)), left: n(a.left, 999), more: n(a.more, 20) } };
+}
 const STAGES = ['waiting', 'plan', 'build', 'self-check', 'QA', 'review', 'ready', 'released'];
 export function sanitize(raw, names) {
   const out = { updated: String(raw.updated || new Date().toISOString()).slice(0, 40), work: [] };
@@ -34,7 +44,7 @@ export function sanitize(raw, names) {
     if (!agent || !names[agent] || seen.has(agent)) continue; seen.add(agent);
     const stage = STAGES.includes(w.stage) ? w.stage : null; if (!stage) continue;
     out.work.push({ agent, name: names[agent].name, role: names[agent].role, team: String(w.team || '').replace(/[^a-z0-9-]/gi, '').slice(0, 30),
-      stage, progress: Math.max(0, Math.min(1, Number(w.progress) || 0)), blocked: !!w.blocked, task: redactTask(w.task) });
+      stage, progress: Math.max(0, Math.min(1, Number(w.progress) || 0)), blocked: !!w.blocked, task: redactTask(w.task), ...assetInfo(agent, w.asset) });
   }
   out.last = {}; for (const [a, t] of Object.entries(raw.last || {}).slice(0, 200)) { if (names[a] && !seen.has(a)) { const r = redactTask(t); if (r) out.last[a] = r; } }
   if (raw.thumbs) out.thumbs = raw.thumbs;

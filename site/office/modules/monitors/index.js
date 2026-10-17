@@ -29,12 +29,20 @@ export default {
       g.fillStyle = 'rgba(20,28,44,.92)'; g.fillRect(0, 0, 256, 16); g.fillStyle = '#d9e2f2'; g.font = '600 10px Inter, system-ui, sans-serif'; g.fillText(a.name || '', 6, 12);
       if (!work) { g.fillStyle = '#9fb0cc'; g.font = '700 28px Inter, sans-serif'; g.fillText(ctx.t ? ctx.t('Idle') : 'Idle', 96, 70);
         const l = last[a.id]; if (l) { g.font = '11px Inter, sans-serif'; g.fillStyle = '#7f8ea8'; g.fillText(('Last: ' + l).slice(0, 44), 8, 110); } }
+      else if (s.asset) { const A = s.asset, live = A.step === 'generating' || A.step === 'checking';   /* asset desk (2026-10-16): asset name + live step */
+        const SL = { generating: ['Generating', '#d9b45a'], checking: ['Checking', '#6fb7ff'], PASS: ['PASS', '#5fd38a'], FAIL: ['FAIL', '#ff7a7a'], HOLD: ['On hold', '#c0a0ff'] }[A.step] || [A.step, '#d9b45a'];
+        const y1 = cell != null ? 112 : 46; g.fillStyle = '#ffffff'; g.font = '700 ' + (cell != null ? 15 : 20) + 'px Inter, sans-serif'; g.fillText(String(A.name).slice(0, 26), 8, y1);
+        if (cell == null) { g.font = '500 11px Inter, sans-serif'; g.fillStyle = '#8ea0c0'; g.fillText(A.kind + (A.more ? ' · +' + A.more + ' more building' : ''), 8, 64); }
+        g.font = '700 13px Inter, sans-serif'; g.fillStyle = SL[1]; const lab = SL[0] + (live ? ' · try ' + A.try : '') + (live ? '.'.repeat(1 + Math.floor(performance.now() / 500) % 3) : '');
+        g.fillText(lab, 8, cell != null ? 129 : 100); if (A.left && cell == null) { g.font = '500 11px Inter, sans-serif'; g.fillStyle = '#7f8ea8'; g.fillText(A.left + ' in queue', 190, 100); }
+        g.fillStyle = '#26324a'; g.fillRect(6, 136, 244, 4); g.fillStyle = SL[1]; g.fillRect(6, 136, 244 * (live ? (A.step === 'checking' ? 0.7 : 0.3) + 0.08 * Math.sin(performance.now() / 400) : 1), 4); }
       else { const title = String(s.task || ''), y0 = cell != null ? 112 : 40, maxL = cell != null ? 1 : 3; g.fillStyle = '#ffffff'; g.font = '700 14px Inter, sans-serif';
         let ln = '', y = y0, L = 0; for (const w of title.split(/\s+/)) { if (g.measureText(ln + w).width > 240 && ln) { g.fillText(ln.trim(), 8, y); y += 18; ln = ''; if (++L >= maxL) break; } ln += w + ' '; } if (L < maxL && ln.trim()) g.fillText(ln.trim(), 8, y);
         g.font = '600 12px Inter, sans-serif'; g.fillStyle = s.blocked ? '#ff8a8a' : '#d9b45a'; g.fillText((STG[s.stage] || s.stage) + (s.blocked ? ' · blocked' : '') + ' · ' + Math.round((s.progress || 0) * 100) + '%', 8, cell != null ? 129 : 112);
         g.fillStyle = '#26324a'; g.fillRect(6, 136, 244, 4); g.fillStyle = '#d9b45a'; g.fillRect(6, 136, 244 * Math.max(0.03, Math.min(1, s.progress || 0)), 4); }
       g.restore(); };
+    let assetIdx = -1; for (const [i, av] of owner) if (av.userData.a?.id === 'assets') assetIdx = i;   /* asset desk screen refreshes every 0.5 s */
     for (let i = 0; i < screens.length; i++) draw(i, 0); tex.needsUpdate = true;
-    let acc = 0, next = 0; this.onFrame = (dt, t) => { acc += dt; if (acc < 0.5) return; acc = 0; for (let k = 0; k < 4; k++) { draw(next, t); next = (next + 1) % screens.length; } tex.needsUpdate = true; };
+    let acc = 0, next = 0; this.onFrame = (dt, t) => { acc += dt; if (acc < 0.5) return; acc = 0; for (let k = 0; k < 4; k++) { draw(next, t); next = (next + 1) % screens.length; } if (assetIdx >= 0 && owner.get(assetIdx)?.userData.state?.asset) draw(assetIdx, t); tex.needsUpdate = true; };
   },
 };
