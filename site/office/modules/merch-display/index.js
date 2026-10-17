@@ -31,7 +31,7 @@ export default {
         box(0.8, 0.92, 0.8, mat.wood, x, 0.46, z); box(0.84, 0.04, 0.84, mat.trim, x, 0.94, z); box(0.82, 0.06, 0.82, mat.dark, x, 0.03, z);
         const top = new T.Mesh(new T.CylinderGeometry(0.28, 0.28, 0.03, 28), HOLO_BASE); top.position.set(x, 0.975, z); ctx.scene.add(top);
         const bd = new T.Mesh(new T.PlaneGeometry(0.72, 0.78), BACK); bd.position.set(x, 1.36, z - 0.36); ctx.scene.add(bd);
-        const gb = new T.Mesh(new T.BoxGeometry(0.78, 0.84, 0.78), glass); gb.position.set(x, 1.38, z); gb.renderOrder = 3; gb.userData.noCollide = 1; ctx.scene.add(gb);
+        const gb = new T.Mesh(new T.BoxGeometry(0.78, 0.84, 0.78), glass); gb.position.set(x, 1.38, z); gb.renderOrder = 3; gb.userData.noCollide = 1; gb.userData.batch = 1; ctx.scene.add(gb);
         for (const sx of [-0.385, 0.385]) for (const sz of [-0.385, 0.385]) box(0.018, 0.84, 0.018, mat.trim, x + sx, 1.38, z + sz).userData.noCollide = 1;
         box(0.8, 0.03, 0.8, mat.trim, x, 1.815, z).userData.noCollide = 1; box(0.6, 0.012, 0.05, warm, x, 1.795, z + 0.2).userData.noCollide = 1; }
       else { x = x0 + (i % 3) * 3; z = z0 - Math.floor(i / 3) * 3.2; S = 1.2; half = 0.6; y0 = 0.985; box(0.9, 0.9, 0.9, mat.wood, x, 0.45, z);
