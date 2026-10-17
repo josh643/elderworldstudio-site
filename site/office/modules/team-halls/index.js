@@ -23,8 +23,10 @@ export default {
           white: new T3.MeshStandardMaterial({ color: 0xeef2f6, roughness: 0.5 }), water: new T3.MeshStandardMaterial({ color: 0x8ec9ee, roughness: 0.1, metalness: 0.1 }), green: new T3.MeshStandardMaterial({ color: 0x2f6b3a, roughness: 0.8, flatShading: true }), clay: new T3.MeshStandardMaterial({ color: 0x8a5a3c, roughness: 0.8 }), grey: new T3.MeshStandardMaterial({ color: 0x3a3d44, roughness: 0.5 }) };
         /* live whiteboard: Now / Next / Done from the status feed (redacted task titles only); redrawn on each state change */
         const wc = document.createElement('canvas'); wc.width = 1024; wc.height = 560; const wtx = new THREE.CanvasTexture(wc); wtx.colorSpace = THREE.SRGBColorSpace;
-        for (const sx of [-0.95, 0.95]) add(G2.post, mt.rack, cx + sx, 0.95, bz);
-        const wb = new THREE.Mesh(new THREE.PlaneGeometry(1.8, 0.98), new THREE.MeshBasicMaterial({ map: wtx, toneMapped: false })); wb.position.set(cx, 1.35, bz + 0.03); ctx.scene.add(wb); wb.userData.label = t.name + ' whiteboard'; wb.userData.keep = 1;
+        /* whiteboard is WALL-MOUNTED with an aluminium frame + marker tray (the free-standing post version read as a stray pole, Joshua 2026-10-16) */
+        const wz = cz - D / 2 + 0.14, alu = G2.alu ||= new T3.MeshStandardMaterial({ color: 0xb8bcc4, roughness: 0.35, metalness: 0.6 });
+        add(new T3.BoxGeometry(1.92, 1.1, 0.03), alu, cx, 1.35, wz - 0.02); add(new T3.BoxGeometry(1.5, 0.04, 0.07), alu, cx, 0.79, wz + 0.03);
+        const wb = new THREE.Mesh(new THREE.PlaneGeometry(1.8, 0.98), new THREE.MeshBasicMaterial({ map: wtx, toneMapped: false })); wb.position.set(cx, 1.35, cz - D / 2 + 0.14); ctx.scene.add(wb); wb.userData.label = t.name + ' whiteboard'; wb.userData.keep = 1;
         (this.boards ||= {})[t.key] = { c: wc, tx: wtx, name: t.name, ids: new Set((t.members || []).map(m => m.id)) };
         add(G2.cyl, G2.white, cx + W / 2 - 0.6, 0.48, bz); add(G2.jug, G2.water, cx + W / 2 - 0.6, 1.14, bz);
         const pr = add(new T3.BoxGeometry(0.55, 0.35, 0.45), G2.grey, cx - W / 2 + 0.7, 0.92, bz); add(new T3.BoxGeometry(0.6, 0.74, 0.5), mt.wood, cx - W / 2 + 0.7, 0.37, bz);
@@ -58,13 +60,21 @@ export default {
         for (const w of L.slice(0, 5)) { const txt = String(w.task || '').trim(); if (!txt) continue; let ln = '', n = 0; for (const wd of txt.split(' ')) { if (g.measureText(ln + wd).width > 300 && ln) { g.fillText(ln, x, y); y += 28; ln = ''; if (++n >= 2) break; } ln += wd + ' '; } if (n < 2) { g.fillText(ln, x, y); y += 28; } y += 14; if (y > 530) break; } });
       b.tx.needsUpdate = true; }
   },
+  onFrame(dt) {
+    if (!this.A) return; const t = performance.now() / 1000;
+    for (const av of this.A.all) { const u = av.userData; if (!u.team || !u.home || (u.state && u.state.stage)) continue; const r = this.rooms[u.team]; if (!r) continue;
+      if (!u.wander || t > u.wander.until) { const pts = [r.qa, r.tray, u.home, u.home.clone().add(new this.ctx.THREE.Vector3(0, 0, 1.4))], p = pts[Math.floor(Math.random() * pts.length)];
+        u.wander = { until: t + 12 + Math.random() * 18 }; u.target = p; } }
+  },
   onState(s) {
     this.drawBoards(s);
     const agents = this.ctx.use('agents'), dais = this.ctx.use('dais'), gate = this.ctx.use('gate');
     for (const av of this.A.all) if (av.userData.team) { av.userData.state = {}; av.userData.target = av.userData.home; }
     for (const w of s.work || []) {
       const av = agents.get(w.agent); if (!av || !av.userData.team) continue; const u = av.userData, r = this.rooms[u.team]; u.state = w;
-      u.target = w.stage === 'QA' && r ? r.qa : w.stage === 'ready' && r ? r.tray : w.stage === 'review' && dais ? dais : w.stage === 'released' && gate ? gate : u.home;
+      /* quality checklist (Joshua 2026-10-16): an agent whose desk screen shows active work is SEATED at that desk facing it;
+         only a released task sends them to the gate. Agents with no work wander their room (see onFrame). */
+      u.target = w.stage === 'released' && gate ? gate : u.home; u.wander = null;
     }
   },
 };

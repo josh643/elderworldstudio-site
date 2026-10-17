@@ -105,6 +105,7 @@ export default {
       else if (u.pose === 'wave') k = u.talking ? 'talk' : (Math.sin(performance.now() / 4000 + u.phase) > 0.75 ? 'greet' : 'stand');
       else if (u.pose === 'host') k = u.greeting ? 'greet' : (u.talking || u.speaking) ? 'talk' : (packs ? 'host' : 'stand');
       else if (u.pose === 'talk') k = 'talk';
+      else if (u.team && u.home && s.stage && s.stage !== 'released' && Math.hypot(av.position.x - u.home.x, av.position.z - u.home.z) < 0.2) k = 'type';   /* active work = seated at the own desk, typing */
       else if (s.blocked && !(u.team && u.home)) k = 'blocked';   /* team agents stay seated at their desk when blocked */
       else if (s.stage === 'QA') { k = 'type'; if (u.target) av.rotation.y = Math.PI; }   /* seated at the QA station, facing its monitor */
       else if (s.stage === 'review') k = 'talk';
