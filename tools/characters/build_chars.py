@@ -32,6 +32,43 @@ keep = {arm, body0, eyes0, brow0}
 for o in list(bpy.data.objects):
     if o not in keep: bpy.data.objects.remove(o)
 for o in (body0, eyes0, brow0): o.name = 'src_' + o.name
+def close_seams(o, snap=0.012):
+    """The UBC body is several open pieces (head/neck, torso, hips, legs, feet) whose border loops nearly meet. Pushed
+    garments and per-piece decimation opened those borders into visible slits (the neckline lines and Freyja's hip
+    tear). Weld coincident verts, snap each remaining border vertex onto the nearest border vertex of ANOTHER piece
+    (both ways, averaged), then weld again, so the body is one closed skin before anything else touches it."""
+    bm = bmesh.new(); bm.from_mesh(o.data)
+    bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=1e-4)
+    for _ in range(2):
+        bm.verts.ensure_lookup_table()
+        comp = {}; cid = 0
+        for v in bm.verts:
+            if v in comp: continue
+            st = [v]; comp[v] = cid
+            while st:
+                x = st.pop()
+                for e in x.link_edges:
+                    y = e.other_vert(x)
+                    if y not in comp: comp[y] = cid; st.append(y)
+            cid += 1
+        bv = [v for v in bm.verts if v.is_boundary and v.co.z > 0.02]
+        from mathutils.kdtree import KDTree
+        kd = KDTree(len(bv)); [kd.insert(v.co, i) for i, v in enumerate(bv)]; kd.balance()
+        tgt = {}
+        for v in bv:
+            best = None
+            for co, i, d in kd.find_range(v.co, snap):
+                if comp[bv[i]] != comp[v] and (best is None or d < best[1]): best = (i, d)
+            if best: tgt[v] = (v.co + bv[best[0]].co) / 2
+        for v, c in tgt.items(): v.co = c
+        bmesh.ops.remove_doubles(bm, verts=list(tgt), dist=snap * 0.6)
+    nb = sum(1 for e in bm.edges if e.is_boundary and min(x.co.z for x in e.verts) > 0.02)
+    for e in bm.edges: e.smooth = True          # no sharp edges: the exporter would split normals there (light lines down the legs)
+    for f in bm.faces: f.smooth = True
+    bm.to_mesh(o.data); bm.free(); o.data.update(); print('SEAMS open border edges after close:', nb)
+    sel_only(o)
+    try: bpy.ops.mesh.customdata_custom_splitnormals_clear()
+    except Exception as ex: print('splitnormals', ex)
 REST = {b.name: (b.head_local.copy(), b.tail_local.copy()) for b in B}
 STATS = {}
 
@@ -120,6 +157,7 @@ def transfer_weights(o, src):
         for gi, w in gs: o.vertex_groups[gi].add([v.index], w / s, 'REPLACE')
     ensure_arm_mod(o)
 
+close_seams(body0)
 # ---------------------------------------------------------------- body
 def build_body(lod):
     o = dup(body0, f'body_L{lod}')
@@ -188,6 +226,15 @@ def build_body(lod):
     for p, z in zip(me.polygons, fz):
         if z in push:
             for v in p.vertices: pv[v] = max(pv.get(v, 0), push[z])
+    # garment edges roll onto the skin instead of standing 6 mm proud: a vertex shared with an unpushed (skin) face is held
+    # at 1.5 mm, so neckline / sleeve / ankle borders show no lip or sliver (close-up QA 2026-10-17)
+    bare = {v for p, z in zip(me.polygons, fz) if z not in push for v in p.vertices}
+    bk = {tuple(round(t, 4) for t in me.vertices[v].co) for v in bare}
+    from mathutils.kdtree import KDTree
+    kd = KDTree(len(bk)); [kd.insert(k, i) for i, k in enumerate(bk)]; kd.balance()
+    for v in list(pv):   # ramp from 1.5 mm at the border to full push 3 cm in: no near-vertical sliver faces at the cut
+        _, _, d = kd.find(me.vertices[v].co); d = 0 if d is None else d
+        pv[v] = min(pv[v], 0.0015 + (pv[v] - 0.0015) * min(1.0, d / 0.03))
     wn = welded_normals([v.co.copy() for v in me.vertices], [v.normal.copy() for v in me.vertices])
     pw = {}
     for v, d in pv.items(): k = tuple(round(t, 4) for t in me.vertices[v].co); pw[k] = max(pw.get(k, 0), d)
@@ -284,10 +331,11 @@ def body_section(src, z, band=0.015, pad=0.0):
 
 def build_hardhat(lod):
     top, ymin, ymax, hx = head_top(); seg = [14, 8][lod]
-    cy = (ymin + ymax) / 2 + 0.005; R = max(hx, (ymax - ymin) / 2) + 0.028; zb = top - 0.105
-    rings = [(zb, R + 0.045, R + 0.06, cy - 0.012), (zb + 0.012, R + 0.04, R + 0.055, cy - 0.012), (zb + 0.016, R, R + 0.012, cy)]
+    # sits on the crown above the brow line (close-up QA 2026-10-17: the first cut covered the eyes)
+    cy = (ymin + ymax) / 2 + 0.004; RX = hx + 0.022; RY = (ymax - ymin) / 2 + 0.016; zb = top - 0.072
+    rings = [(zb, RX + 0.026, RY + 0.034, cy - 0.01), (zb + 0.01, RX + 0.022, RY + 0.03, cy - 0.01), (zb + 0.014, RX, RY, cy)]
     for k in ([0.45, 0.75, 0.92] if lod == 0 else [0.7]):
-        a = math.asin(k); rings.append((zb + 0.016 + 0.118 * k, R * math.cos(a), (R + 0.012) * math.cos(a), cy))
+        a = math.asin(k); rings.append((zb + 0.014 + 0.09 * k, RX * math.cos(a), RY * math.cos(a), cy))
     o = ring_mesh(f'hardhat_L{lod}', rings, seg, closed_top=True, closed_bottom=False)
     # ridge on top (trim colour) is skipped on LOD1
     uv_to_rect(o, ATL['flat']); const_zone(o, Z['hat']); bind_head(o); return o

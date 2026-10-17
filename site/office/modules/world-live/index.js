@@ -122,7 +122,7 @@ export default {
     const mk = (g, n) => { const m = new T.InstancedMesh(g, mat.vc, n); m.count = 0; m.frustumCulled = false; m.userData.noCollide = 1; m.userData.keep = 1; this.ctx.scene.add(m); return m; };
     const W = { body: mk(G.body, MAX), legs: mk(G.leg, MAX * 2), arms: mk(G.arm, MAX * 2), list: [], MAX };
     const M = new T.Matrix4(), Q = new T.Quaternion(), V = new T.Vector3(), S = new T.Vector3(1, 1, 1), E = new T.Euler(), P = new T.Matrix4(), base = new T.Matrix4();
-    W.draw = (t) => { let n = 0;
+    W.draw = (t) => { let n = 0; this.ctx.use('crews')?.draw(W, kind, t);   /* shared-rig characters near, instanced pawns far (base-avatar crews); flagged workers skip the figures below */
       for (const w of W.list) { if (!w.on || w.rigged || n >= MAX) continue;
         const walk = w.mode === 'walk', ph = w.ph != null ? w.ph : t * 7 + w.phase, sw = walk ? Math.sin(ph) * 0.55 : 0, bob = walk ? Math.abs(Math.cos(ph)) * 0.04 : 0;
         base.compose(V.set(w.x, w.y + bob, w.z), Q.setFromEuler(E.set(0, w.yaw, 0)), S.set(1, 1, 1)); W.body.setMatrixAt(n, base);
