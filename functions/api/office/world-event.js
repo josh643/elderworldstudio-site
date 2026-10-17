@@ -65,5 +65,5 @@ export async function onRequestPost({ request, env }) {
   // leased lots: only a client/owner-authorized edit (separate secret LEASE_EDIT_KEY, never given to agents) may touch them; the DO enforces (403)
   const la = request.headers.get('x-ews-lease-auth') || ''; const leaseOk = !!env.LEASE_EDIT_KEY && la === `Bearer ${env.LEASE_EDIT_KEY}`;
   for (const e of evs) if (leaseOk) e.lease_ok = true; else delete e.lease_ok;
-  const r = await worldDO(env).fetch('https://rl/world/event', { method: 'POST', body: JSON.stringify(evs) }); return json(await r.json(), r.status);
+  const r = await worldDO(env).fetch('https://rl/world/event', { method: 'POST', body: JSON.stringify(evs) }); const o = await r.json(); o.fn = 'lease-v1'; return json(o, r.status);
 }

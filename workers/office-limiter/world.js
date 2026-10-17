@@ -91,9 +91,9 @@ export async function world(state, req) {
     let lay = false; for (const ev of evs) { const r = applyEvent(w, ev, now); if (r.layout) lay = true; r.up.forEach(e => up.set(e.id, e)); r.rm.forEach(id => { rm.add(id); up.delete(id); }); }
     if (lay) { if (!w.layout.approved) { await st.put('snap:' + now, { ...w, ents: { ...w.ents } }); await st.delete('demo'); await st.deleteAlarm(); }   // restorable snapshot + demo driver stopped
       w.seq++; await st.put('world', w); broadcast(state, { t: 'delta', seq: w.seq, now, layout: w.layout, up: [...up.values()], rm: [...rm] }); return Response.json({ ok: true, layout: w.layout, changed: up.size + rm.size, seq: w.seq }); }
-    if (!up.size && !rm.size) return Response.json({ ok: true, changed: 0, seq: w.seq });
+    if (!up.size && !rm.size) return Response.json({ ok: true, changed: 0, seq: w.seq, guard: 'lease-v1' });
     w.seq++; await st.put('world', w); broadcast(state, { t: 'delta', seq: w.seq, now, up: [...up.values()], rm: [...rm] });
-    return Response.json({ ok: true, changed: up.size + rm.size, seq: w.seq });
+    return Response.json({ ok: true, changed: up.size + rm.size, seq: w.seq, guard: 'lease-v1' });
   }
   // release notice (staging deploys): every connected visitor re-checks /office/manifest.json now and hot-swaps what changed
   if (op === 'release' && req.method === 'POST') { const j = await req.json().catch(() => ({})); const msg = { t: 'release', now, code: String(j.code || '').slice(0, 16), modules: Object.keys(j.modules || {}).slice(0, 64), assets: (j.assets | 0) };
