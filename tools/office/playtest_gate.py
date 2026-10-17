@@ -59,12 +59,46 @@ def jl(p, d):
   try: return json.load(open(p))
   except Exception: return d
 
+async def capture(pg, path):
+  """Copy the WebGL frame to a static page so Playwright does not capture a live GPU surface."""
+  paused = await pg.evaluate("window.__ewsOffice?.capturePause?.() === true")
+  shot = None
+  try:
+    data = await pg.evaluate("""() => {
+      const hooked = window.__ewsOffice?.captureSnapshot?.();
+      if (hooked) return hooked;
+      const canvas = [...document.querySelectorAll('canvas')].sort((a, b) => b.width * b.height - a.width * a.height)[0];
+      if (!canvas || !canvas.width || !canvas.height) return null;
+      const copy = document.createElement('canvas'); copy.width = canvas.width; copy.height = canvas.height;
+      copy.getContext('2d').drawImage(canvas, 0, 0); return copy.toDataURL('image/jpeg', 0.9);
+    }""")
+    if not data:
+      raise RuntimeError('office renderer canvas unavailable for static audit capture')
+    size = await pg.evaluate("({width: innerWidth, height: innerHeight})")
+    shot = await pg.context.new_page()
+    await shot.set_viewport_size(size)
+    await shot.set_content('<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><style>html,body{margin:0;width:100%;height:100%;overflow:hidden}img{display:block;width:100vw;height:100vh;object-fit:fill}</style><img id="frame" alt="">')
+    await shot.locator('#frame').evaluate('(img, src) => { img.src = src; }', data)
+    await shot.locator('#frame').evaluate('img => img.decode()')
+    await shot.screenshot(path=path, type='jpeg', quality=80)
+  finally:
+    if shot: await shot.close()
+    if paused: await pg.evaluate("window.__ewsOffice.captureResume()")
+
+CAPTURE_INIT = """(() => {
+  const getContext = HTMLCanvasElement.prototype.getContext;
+  HTMLCanvasElement.prototype.getContext = function(type, options) {
+    if (typeof type === 'string' && /^webgl2?$/.test(type)) options = {...(options || {}), preserveDrawingBuffer: true};
+    return getContext.call(this, type, options);
+  };
+})();"""
+
 async def walk(b, url, out, full):
   """One walkthrough. full=False -> screenshots + perf + errors only (live builds may predate the debug API)."""
   T0 = time.time(); W = {'url': url, 'det': [], 'floors': {}, 'regress': {}, 'views': {}, 'errs': []}
-  ctxb = await b.new_context(viewport={'width': 1280, 'height': 720}); pg = await ctxb.new_page()
+  ctxb = await b.new_context(viewport={'width': 1280, 'height': 720}); await ctxb.add_init_script(CAPTURE_INIT); pg = await ctxb.new_page()
   pg.on('pageerror', lambda e: W['errs'].append(str(e)[:200]))
-  await pg.goto(url + '/office/?time=13:00', wait_until='load', timeout=90000)
+  await pg.goto(url + '/office/?time=13:00&capture=1', wait_until='load', timeout=90000)
   await pg.wait_for_function("!!(window.__ewsOffice && __ewsOffice.pos && __ewsOffice.floor && __ewsOffice.look)", timeout=90000); await pg.wait_for_timeout(5000)
   W['api'] = await pg.evaluate("typeof __ewsOffice.wallAudit === 'function' && typeof __ewsOffice.tryMove === 'function'")
   full = full and W['api']
@@ -95,12 +129,12 @@ async def walk(b, url, out, full):
   for name, fl, args, lab in INDOOR:
     if time.time() - T0 > BUDGET - 60: W['skipped'] = W.get('skipped', []) + [name]; continue
     await pg.evaluate(f"__ewsOffice.floor('{fl}')"); await pg.wait_for_timeout(1500); await pg.evaluate(f"__ewsOffice.look({args})"); await pg.wait_for_timeout(1800)
-    await pg.screenshot(path=f'{out}/{name}.jpg', type='jpeg', quality=80); W['views'][name] = {'label': lab, 'zone': 'floor ' + fl}
+    await capture(pg, f'{out}/{name}.jpg'); W['views'][name] = {'label': lab, 'zone': 'floor ' + fl}
   await pg.evaluate("__ewsOffice.floor('G')"); await pg.wait_for_timeout(1500)
   for name, args, lab in OUTDOOR:
     if time.time() - T0 > BUDGET - 45: W['skipped'] = W.get('skipped', []) + [name]; continue
     await pg.evaluate(f"window.__ewsFreeY=0;__ewsOffice.look({args})"); await pg.wait_for_timeout(2000)
-    await pg.screenshot(path=f'{out}/{name}.jpg', type='jpeg', quality=80); W['views'][name] = {'label': lab, 'zone': 'exterior', 'out': True}
+    await capture(pg, f'{out}/{name}.jpg'); W['views'][name] = {'label': lab, 'zone': 'exterior', 'out': True}
   await pg.evaluate("__ewsOffice.look(0,6,0,-4)"); await pg.wait_for_timeout(1500)
   W['perf'] = await pg.evaluate("new Promise(r=>{let n=0;const t0=performance.now();const f=()=>{n++; if(performance.now()-t0<4000) requestAnimationFrame(f); else r({fps_swiftshader:+(n/4).toFixed(2), ...(__ewsOffice.info?__ewsOffice.info():{})})};requestAnimationFrame(f)})")
   json.dump(W['views'], open(f'{out}/views.json', 'w'), indent=1); W['secs'] = round(time.time() - T0, 1)
@@ -110,18 +144,18 @@ async def reshoot(url, names, out):
   """Fresh page, 20 s settle (greeting bubbles/toasts gone), re-shoot only the views with an unclear NEW vision hit."""
   async with async_playwright() as p:
     b = await p.chromium.launch(executable_path='/usr/bin/google-chrome', args=['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'])
-    pg = await (await b.new_context(viewport={'width': 1280, 'height': 720})).new_page()
-    await pg.goto(url + '/office/?time=13:00', wait_until='load', timeout=90000)
+    ctx = await b.new_context(viewport={'width': 1280, 'height': 720}); await ctx.add_init_script(CAPTURE_INIT); pg = await ctx.new_page()
+    await pg.goto(url + '/office/?time=13:00&capture=1', wait_until='load', timeout=90000)
     await pg.wait_for_function("!!(window.__ewsOffice && __ewsOffice.pos && __ewsOffice.floor && __ewsOffice.look)", timeout=90000); await pg.wait_for_timeout(20000)
     for name, fl, args, lab in INDOOR:
       if name not in names: continue
       await pg.evaluate(f"__ewsOffice.floor('{fl}')"); await pg.wait_for_timeout(1500); await pg.evaluate(f"__ewsOffice.look({args})"); await pg.wait_for_timeout(4000)
-      await pg.screenshot(path=f'{out}/{name}__cand.jpg', type='jpeg', quality=80)
+      await capture(pg, f'{out}/{name}__cand.jpg')
     await pg.evaluate("__ewsOffice.floor('G')"); await pg.wait_for_timeout(1500)
     for name, args, lab in OUTDOOR:
       if name not in names: continue
       await pg.evaluate(f"window.__ewsFreeY=0;__ewsOffice.look({args})"); await pg.wait_for_timeout(4000)
-      await pg.screenshot(path=f'{out}/{name}__cand.jpg', type='jpeg', quality=80)
+      await capture(pg, f'{out}/{name}__cand.jpg')
     await b.close()
 
 def judge(d, gid):
