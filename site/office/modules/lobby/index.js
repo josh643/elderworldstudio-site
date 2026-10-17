@@ -91,6 +91,44 @@ export default {
       for (let k = 0; k < 64; k++) { const a = k / 64 * Math.PI * 2 + rnd() * 0.08, rr = r + (rnd() - 0.5) * 0.16; leaf(X(HX + Math.cos(a) * rr), y + 0.04 + (rnd() - 0.3) * 0.16, Z(HZ + Math.sin(a) * rr), 1.05);
         if (k % 4 === 0) for (let d = 1; d <= 2; d++) leaf(X(HX + Math.cos(a) * (r + 0.05)), y - 0.13 * d, Z(HZ + Math.sin(a) * (r + 0.05)), 0.7); } }
     plate(['Collaboration Hub', 'Meet, plan and pair up'], 2.2, 0.55, HX, 2.95, 5.45, 0, { body: 34 });
+    /* bookcase on the back wall of the hub (Joshua 11:29 PM: the thin moving pole 'shelf' here was the live-construction rolling
+       scaffold, now gone indoors). Solid walnut carcass with real thickness: plinth on the floor, 0.04 m sides, 0.05 m top with
+       a crown, full back panel, four shelves; books in rows (a few leaning), bookends, a vase, a framed photo, a small potted
+       plant, a box file. All plain boxes/cylinders on shared materials, so static batching folds it into existing draw calls. */
+    { const BX = -6.6, BW = 1.8, BD = 0.38, BH = 2.05, bz = ZB + 0.13 + BD / 2, walnut = S(0x4a2f1f, 0.6), back = S(0x2c1d14, 0.8);
+      const bk = [S(0x7a2a2a), S(0x2a4a6a), S(0x3d5a3a), S(0xc9b07a), S(0x5a3a5e), S(0x1f2a36), S(0xb8642e)], paper = S(0xece4d2, 0.9), ceramic = S(0xd8d2c6, 0.35), terra = S(0xa8583a, 0.8);
+      box(BW - 0.06, 0.1, BD - 0.05, mat.dark, X(BX), 0.05, Z(bz + 0.02));                                  // recessed plinth on the floor
+      for (const sx of [-1, 1]) box(0.04, BH - 0.1, BD, walnut, X(BX + sx * (BW / 2 - 0.02)), 0.1 + (BH - 0.1) / 2, Z(bz));   // sides
+      box(BW + 0.04, 0.05, BD + 0.03, walnut, X(BX), BH + 0.025, Z(bz + 0.005)); box(BW + 0.08, 0.025, BD + 0.05, trim, X(BX), BH + 0.0625, Z(bz + 0.01));   // top + brass crown
+      box(BW - 0.08, BH - 0.1, 0.02, back, X(BX), 0.1 + (BH - 0.1) / 2, Z(bz - BD / 2 + 0.01));               // back panel
+      const shelfY = [0.1, 0.55, 0.98, 1.4, 1.78];
+      shelfY.forEach(y => box(BW - 0.08, 0.035, BD - 0.02, walnut, X(BX), y + 0.0175, Z(bz + 0.01)));
+      box(BW - 0.08, 0.02, 0.012, trim, X(BX), 0.98 + 0.0175, Z(bz + BD / 2 - 0.004));                      // brass lip on the middle shelf
+      const t0 = y => y + 0.035, inner = BW / 2 - 0.06, fz = Z(bz + 0.02);
+      const row = (y, xa, xb, maxH, lean) => { let px = xa, k = 0; while (px < xb - 0.03) { const w = 0.025 + rnd() * 0.035, h = maxH * (0.72 + rnd() * 0.28), d = 0.17 + rnd() * 0.08;
+          if (px + w > xb) break; const o = box(w, h, d, bk[Math.floor(rnd() * bk.length)], X(BX + px + w / 2), t0(y) + h / 2, fz);
+          if (lean && k === 0) { o.rotation.z = -0.22; o.position.x += 0.04; } px += w + 0.004; k++; } return px; };
+      const bookend = (px, y) => { box(0.012, 0.14, 0.12, trim, X(BX + px), t0(y) + 0.07, fz); box(0.08, 0.008, 0.12, trim, X(BX + px + 0.04), t0(y) + 0.004, fz); };
+      // shelf 1 (bottom): two box files + a stack of large books lying flat
+      for (const q of [0, 1]) box(0.09, 0.32, 0.26, q ? bk[5] : bk[1], X(BX - inner + 0.06 + q * 0.1), t0(0.1) + 0.16, fz);
+      for (let i = 0; i < 4; i++) box(0.34 - i * 0.02, 0.045, 0.24, bk[(i + 2) % bk.length], X(BX + 0.45), t0(0.1) + 0.0225 + i * 0.047, fz);
+      row(0.1, -0.1, 0.18, 0.36, false);
+      // shelf 2: a row of books with a bookend, a ceramic vase
+      row(0.55, -inner + 0.02, 0.1, 0.33, true); bookend(0.12, 0.55);
+      put(new T.CylinderGeometry(0.06, 0.08, 0.26, 16), ceramic, X(BX + 0.55), t0(0.55) + 0.13, fz);
+      put(new T.CylinderGeometry(0.035, 0.06, 0.06, 16), ceramic, X(BX + 0.55), t0(0.55) + 0.29, fz);
+      // shelf 3: framed photo (crest print) leaning, books
+      { const fr = box(0.3, 0.38, 0.025, mat.dark, X(BX - 0.5), t0(0.98) + 0.19, Z(bz - 0.06)); fr.rotation.x = -0.12; const pic = box(0.24, 0.31, 0.006, paper, X(BX - 0.5), t0(0.98) + 0.19, Z(bz - 0.045)); pic.rotation.x = -0.12; }
+      row(0.98, -0.25, inner - 0.02, 0.3, false);
+      // shelf 4: small potted plant + a few books + a brass object
+      put(new T.CylinderGeometry(0.09, 0.07, 0.15, 14), terra, X(BX - 0.55), t0(1.4) + 0.075, fz);
+      for (let k = 0; k < 9; k++) leaf(X(BX - 0.55 + (rnd() - 0.5) * 0.16), t0(1.4) + 0.2 + rnd() * 0.12, fz + (rnd() - 0.5) * 0.14, 0.6);
+      row(1.4, -0.2, 0.35, 0.28, true);
+      put(new T.SphereGeometry(0.07, 16, 12), trim, X(BX + 0.6), t0(1.4) + 0.07, fz);
+      // top shelf: books + stacked boxes
+      row(1.78, -inner + 0.02, 0.2, 0.2, false);
+      box(0.3, 0.12, 0.22, paper, X(BX + 0.5), t0(1.78) + 0.06, fz); box(0.24, 0.08, 0.18, bk[3], X(BX + 0.5), t0(1.78) + 0.16, fz);
+      (ctx.extraCols ||= []).push([X(BX - BW / 2 - 0.03), Z(bz - BD / 2), X(BX + BW / 2 + 0.03), Z(bz + BD / 2 + 0.03)]); }
 
     /* ---- Coders (back right): two rows of three desks; lobby-stations seats the agents (Games coders) ---- */
     ctx.lobbyStations = { coders: [], store: [[8.75 + x, 3.85 + z]] };
@@ -148,6 +186,12 @@ export default {
     const c = this.ctx, O = window.__ewsOffice; if (!c || !O) return;
     if (!O.iso) O.iso = (...a) => { if (!a.length) { this.iso = null; c.renderer.clippingPlanes = []; return 'off'; } const [px, py, pz, lx, ly, lz, cut = 3.0] = a; this.iso = { p: [px, py, pz], l: [lx, ly, lz] };
       c.renderer.clippingPlanes = [new c.THREE.Plane(new c.THREE.Vector3(0, -1, 0), cut)]; return 'on'; };
+    /* QA helper: __ewsOffice.meshesIn(x0, z0, x1, z1) = meshes whose world box overlaps that floor rect (name, owner chain, box);
+       __ewsOffice.movers(x0, z0, x1, z1, ms) resolves to the ones that moved/rotated/scaled within ms (default 1500) */
+    if (!O.movers) { const T = c.THREE, bb = new T.Box3(), path = o => { const a = []; for (let p = o; p && p !== c.scene && a.length < 5; p = p.parent) a.push(p.name || p.userData?.prop || p.userData?.label || p.type); return a.join('<'); };
+      const hit = (x0, z0, x1, z1) => { const out = []; c.scene.traverse(o => { if (!o.isMesh && !o.isInstancedMesh) return; bb.setFromObject(o); if (bb.isEmpty() || bb.max.x < x0 || bb.min.x > x1 || bb.max.z < z0 || bb.min.z > z1) return; const sz = bb.getSize(new T.Vector3()); if (sz.x > 6 || sz.z > 6) return; out.push(o); }); return out; };
+      O.meshesIn = (x0, z0, x1, z1) => hit(x0, z0, x1, z1).map(o => { bb.setFromObject(o); return { p: path(o), vis: o.visible, b: [...bb.min.toArray(), ...bb.max.toArray()].map(v => +v.toFixed(2)) }; });
+      O.movers = (x0, z0, x1, z1, ms = 1500) => { const L = hit(x0, z0, x1, z1).map(o => [o, o.matrixWorld.clone()]); return new Promise(r => setTimeout(() => r(L.filter(([o, m]) => !o.matrixWorld.equals(m)).map(([o]) => { bb.setFromObject(o); return { p: path(o), b: [...bb.min.toArray(), ...bb.max.toArray()].map(v => +v.toFixed(2)) }; })), ms)); }; }
     if (this.iso) { c.cam.position.set(...this.iso.p); c.cam.lookAt(...this.iso.l); if (c.scene.fog) { c.scene.fog.near = 200; c.scene.fog.far = 400; } }
   },
 };
