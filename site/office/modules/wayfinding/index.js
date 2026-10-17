@@ -13,7 +13,7 @@ export default {
     };
     /* lobby: the wall signs are replaced by freestanding kiosks lining both sides of the red carpet to Freyja (same design
        family as her desk kiosk: dark navy screen, gold title, tap to open; slimmer pedestal, one simple section). Never auto-move. */
-    const LINE = { games: ['Games & Arcade', 'Star Wayfarer, Omnivael & more. Play the arcade here.'], services: ['Services', 'Elder POS registers and order kiosks'],
+    const LINE = { games: ['Games', 'Star Wayfarer, Omnivael & more'], services: ['Services', 'Elder POS registers and order kiosks'],
       merch: ['Merch', 'Studio shirts, mugs & stickers'], teams: ['Teams', 'Watch our AI team work, live'], datacenter: ['Data Center', 'The servers that run the studio'],
       devlog: ['Devlog', 'Our videos and build diaries'], callcenter: ['Call Center', 'AI phone agents that answer and book 24/7'], clients: ['Client Sites', 'Websites we build for businesses'],
       custom: ['Custom Software & Automation', 'Tools, automations and 3D assets built to order'] };

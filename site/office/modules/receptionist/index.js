@@ -105,12 +105,9 @@ export default {
       const plate = ctx.panel(ctx.textCanvas([ctx.t ? ctx.t('Elevator') : 'Elevator', ctx.t ? ctx.t('Floors G to 5') : 'Floors G to 5'], { w: 640, h: 200, size: 64, body: 40 }), 1.3, 0.4, x, 3.25, fz + 0.14, 0); plate.userData.plate = 'Elevator';
       ctx.core = { x, fz, W, D }; this.floors = setupFloors(ctx, ctx.core); const call = () => this.floors.panel(); ctx.provide('floorPanel', call);
       [...doors, btn, plate].forEach(o => ctx.onClick(o, call));
-      /* stairs wrap the left side of the core: 10 risers climbing toward the back, brass handrail */
-      for (let k = 0; k < 10; k++) box(1.2, 0.18 * (k + 1), 0.28, stone, x - W / 2 - 0.75, 0.09 * (k + 1), fz - 0.2 - k * 0.28);
-      box(0.04, 0.04, 2.9, metal, x - W / 2 - 1.38, 1.9, fz - 1.4).rotation.x = -0.57;
-      const st = ctx.panel(ctx.textCanvas([ctx.t ? ctx.t('Stairs') : 'Stairs'], { w: 400, h: 140, size: 64 }), 0.8, 0.28, x - W / 2 - 0.75, 2.5, fz + 0.15, 0); st.userData.plate = 'Stairs';
+      /* the old stepped blocks beside the core (a flight that went nowhere) are gone: the real stairs are modules/stairs (Joshua 2026-10-16 11:51 PM) */
       /* small elevator sign beside the right-side doorway, visible from the red carpet (faces the entrance) */
-      const sg = ctx.panel(ctx.textCanvas(['Elevator  ›', ctx.t ? ctx.t('Floors 2 to 5') : 'Floors 2 to 5'], { w: 512, h: 200, size: 66, body: 42 }), 1.4, 0.55, x + 4.0, 3.2, z - 3.2 + 0.12, 0); sg.material.toneMapped = false; sg.userData.plate = 'Elevator';   /* on the lintel over the right-hand doorway (layout v2) */
+      const sg = ctx.panel(ctx.textCanvas([(ctx.t ? ctx.t('Elevator') : 'Elevator') + ' · ' + (ctx.t ? ctx.t('Stairs') : 'Stairs') + '  ›', ctx.t ? ctx.t('Floors 2 to 5') : 'Floors 2 to 5'], { w: 512, h: 200, size: 66, body: 42 }), 1.4, 0.55, x + 4.0, 3.2, z - 3.2 + 0.12, 0); sg.material.toneMapped = false; sg.userData.plate = 'Elevator';   /* on the lintel over the right-hand doorway (layout v2) */
       ctx.onClick(sg, call); }
     ctx.provide('leadForm', leadForm);
     ctx.hudButton(`Talk to ${me.name}`, chat, true);

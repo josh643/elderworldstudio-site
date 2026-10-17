@@ -32,17 +32,6 @@
    }
   },
   {
-   "id": "game-showrooms",
-   "src": "modules/game-showrooms/index.js",
-   "anchor": [
-    -12,
-    -2
-   ],
-   "config": {
-    "bay": 4
-   }
-  },
-  {
    "id": "services-wall",
    "src": "modules/services-wall/index.js",
    "anchor": [
@@ -113,6 +102,10 @@
   {
    "id": "main-hall",
    "src": "modules/main-hall/index.js"
+  },
+  {
+   "id": "stairs",
+   "src": "modules/stairs/index.js"
   },
   {
    "id": "monitors",

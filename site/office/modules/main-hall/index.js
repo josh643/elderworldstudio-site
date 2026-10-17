@@ -40,8 +40,22 @@ export default {
       const core = ctx.core || { x: 0, fz: -7.7, W: 4.6 }, up = ctx.upperTeams || {};
       lounge(-7.4, -9.6, Math.PI / 2); planter(-7.2, -5.6, 4.6); planter(7.2, -5.6, 4.6); planter(-4.6, -12.6, 2.2); halo(-7.4, -9.6);
       const fl = ['2 · Games', '3 · Architecture, Design & Marketing', '4 · Client Sites & Call Center', '5 · Ops & Leadership'];
-      board(-4.0, -6.6, 0, ['Our teams work upstairs', 'Elevator ↓ ' + fl.slice(0, 2).join('   '), fl.slice(2).join('   ')]);
-      board(4.0, -6.6, 0, ['Elevator', 'Floors 2 to 5 · tap the doors', 'Every team has its own floor']);
+      /* building directory (Joshua 11:51 PM: the old board crammed every floor into two wrapped lines): one row per floor,
+         number column + name, each row shrunk to fit its own width; two-sided, hung high enough to clear heads (bottom 2.3 m) */
+      const directory = (x, z, ry) => { const c = document.createElement('canvas'); c.width = 1024; c.height = 720; const g2 = c.getContext('2d'), Tt = k => (ctx.t ? ctx.t(k) : k);
+        const rows = [['G', Tt('Lobby · Reception · Merch')], ['2', Tt('Games')], ['3', Tt('Architecture, Design & Marketing')], ['4', Tt('Client Sites & Call Center')], ['5', Tt('Ops & Leadership')]];
+        const draw = () => { g2.fillStyle = '#140c22'; g2.fillRect(0, 0, 1024, 720); g2.strokeStyle = '#d9b45a'; g2.lineWidth = 8; g2.strokeRect(8, 8, 1008, 704);
+          g2.fillStyle = '#d9b45a'; g2.font = '700 64px Cinzel, Georgia, serif'; g2.textBaseline = 'middle'; g2.fillText(Tt('Directory'), 44, 70);
+          g2.fillStyle = '#f3ead7'; g2.font = '500 34px Inter, system-ui, sans-serif'; g2.fillText(Tt('Elevator and stairs to the right of the crest wall'), 44, 128);
+          rows.forEach(([n, name], i) => { const y = 212 + i * 96; g2.fillStyle = 'rgba(217,180,90,.25)'; g2.fillRect(44, y + 44, 936, 2);
+            g2.fillStyle = '#d9b45a'; g2.font = '700 60px Cinzel, Georgia, serif'; g2.fillText(n, 60, y); let s = 50; g2.font = `500 ${s}px Inter, system-ui, sans-serif`;
+            while (g2.measureText(name).width > 820 && s > 30) { s -= 2; g2.font = `500 ${s}px Inter, system-ui, sans-serif`; } g2.fillStyle = '#f3ead7'; g2.fillText(name, 150, y); }); };
+        draw(); const tx = new T.CanvasTexture(c); tx.colorSpace = T.SRGBColorSpace; tx.anisotropy = 4; tx.userData.text = 'Directory ' + rows.map(r => r.join(' ')).join(' '); document.fonts?.ready.then(() => { draw(); tx.needsUpdate = true; });
+        const gr = new T.Group(); gr.position.set(x, 2.95, z); gr.rotation.y = ry; ctx.scene.add(gr); const w = 1.8, h = w * 720 / 1024;
+        const p = ctx.panel(tx, w, h, 0, 0, 0.012, 0, gr); p.userData.plate = 'Directory'; p.material.toneMapped = false; ctx.panel(tx, w, h, 0, 0, -0.012, Math.PI, gr).material.toneMapped = false;
+        box(w + 0.04, h + 0.04, 0.02, mat.dark, 0, 0, 0, gr); box(w + 0.1, 0.05, 0.05, mat.trim, 0, h / 2 + 0.03, 0, gr); for (const sx of [-1, 1]) box(0.01, 4.05 - 2.95 - h / 2, 0.01, mat.dark, sx * w * 0.42, (4.05 - 2.95 + h / 2) / 2, 0, gr); return p; };
+      directory(-4.0, -6.9, 0);
+      board(4.0, -6.6, 0, ['Elevator · Stairs', 'Floors 2 to 5', 'Stairs: door on the right']);
       for (const n of ['2', '3', '4', '5']) { const cx = core.x + (+n - 1) * 400, fz = core.fz, rooms = up[n] || [];
         const L = rooms.filter(r => r.x < cx).map(r => r.name), R = rooms.filter(r => r.x > cx).map(r => r.name);
         rug(26.4, 2.0, cx, fz + 2.7, 0x7a2f3a);   // runner along the room fronts, crossing the elevator exit

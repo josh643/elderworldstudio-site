@@ -540,12 +540,15 @@ export default {
   /* ---------------- stage toasts (small, top-centre, 4 s; screen-reader announced) ---------------- */
   toast(e, si) {
     const where = e.kind === 'road' || e.kind === 'zone' ? e.name : 'Lot ' + String(e.lot).padStart(2, '0') + ((e.public && e.tenant) ? ' · ' + e.tenant : '');
-    const what = e.kind === 'zone' ? (si >= 8 ? 'done' : si === 0 ? 'architects surveying' : BL[si] + ' started') : e.kind === 'road' ? (si >= 5 ? 'open to traffic' : (e.resurface ? RLR : RL)[si] + ' started') : si === 0 ? 'leased · surveyors on site' : si >= 8 ? 'now open' : BL[si] + ' started';
-    this.toastQ.push(where + ': ' + what); if (this.toastQ.length > 3) this.toastQ.shift();
+    const what = e.kind === 'zone' ? (si >= 8 ? 'done' : si === 0 ? 'architects surveying' : BL[si] + ' started') : e.kind === 'road' ? (si >= 5 ? 'open to traffic' : (e.resurface ? RLR : RL)[si] + ' started') : si === 0 ? (e.leased === true ? 'leased · surveyors on site' : e.demo ? 'Staging demo' : 'Architects surveying') : si >= 8 ? 'now open' : BL[si] + ' started';   /* 'leased' ONLY for a real tenant lease (Joshua 2026-10-17 00:24) */
+    if (e.kind === 'site' && e.hold && si === 0 && !e.leased) return;   /* layout gate: a held survey site is not news */
+    const m = where + ': ' + what; this.toastSeen ||= new Set(); if (this.toastSeen.has(m) || this.toastQ.includes(m)) return; this.toastSeen.add(m);   /* never repeat a message */
+    this.toastQ.push(m); if (this.toastQ.length > 3) this.toastQ.shift();
   },
   flushToast(dt) {
     if (this.toastEl && (this.toastT -= dt) > 0) return; if (this.toastEl) { this.toastEl.remove(); this.toastEl = null; }
-    const m = this.toastQ.shift(); if (!m) return; const d = document.createElement('div'); d.className = 'office-world-toast'; d.setAttribute('role', 'status'); d.textContent = '🏗 ' + m;
+    if (!this.toastQ.length) return; const now = performance.now(); if (this.toastLast && now - this.toastLast < 10000) return; this.toastLast = now;   /* at most 1 toast every 10 s; queued ones are combined */
+    const q = this.toastQ.splice(0), m = q.length > 1 ? q[0] + ' (+' + (q.length - 1) + ' more)' : q[0]; const d = document.createElement('div'); d.className = 'office-world-toast'; d.setAttribute('role', 'status'); d.textContent = '🏗 ' + m;
     d.style.cssText = 'position:absolute;left:50%;top:14px;transform:translateX(-50%);z-index:8;font:600 14px Inter,system-ui,sans-serif;color:#f3ead7;background:#16141be6;border:1px solid #d9b45a;padding:7px 14px;border-radius:8px;pointer-events:none;white-space:nowrap';
     (this.ctx.root || document.body).append(d); this.toastEl = d; this.toastT = 4; this.ctx.announce?.(m);
   },

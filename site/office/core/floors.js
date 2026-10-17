@@ -5,7 +5,7 @@
 import { mergeGeometries } from '../vendor/jsm/utils/BufferGeometryUtils.js?v=169';
 export const FLOORS = [
   { n: 'G', name: 'Lobby', sub: 'Reception, merch store, studio' },
-  { n: '2', name: 'Games', sub: 'Games team · arcade', floor: 0x5a4632 },
+  { n: '2', name: 'Games', sub: 'Games team', floor: 0x5a4632 },
   { n: '3', name: 'Architecture, Design & Marketing', sub: 'Architecture studio · Design · Marketing', floor: 0x4a4f5a },
   { n: '4', name: 'Client Sites & Call Center', sub: 'Client Sites team · Call Center', floor: 0x3f4a44 },
   { n: '5', name: 'Ops & Leadership', sub: 'Ops room · Money & leadership', floor: 0x3a3a48 },
@@ -63,7 +63,10 @@ export function setupFloors(ctx, core) {
     settle(n); return n + ':' + place(n, at); };
   ctx.floorRestore = restore; ctx.floorOfX = floorOfX;
   const reg = () => { if (window.__ewsOffice?.health) window.__ewsOffice.floor = n => (n ? go(String(n)) : cur); else setTimeout(reg, 500); }; reg();
-  return { panel, go, tick: dt => built[cur]?.onFrame?.(dt) };
+  /* stairs (modules/stairs): build the floors next to the one you are on before you reach them, and switch frames with no fade */
+  const ensure = n => { if (n !== 'G' && !built[n] && FLOORS.some(f => f.n === n)) built[n] = buildFloor(ctx, core, FLOORS.find(f => f.n === n), offX(n), go); };
+  const hop = n => { ensure(n); cur = n; ctx.curFloor = n; ctx.curBounds = n === 'G' ? null : built[n].bounds; ctx.rebuildColliders(); ctx.daynight?.apply?.(); ctx.announce?.(`${T('Floor')} ${n}: ${T(FLOORS.find(f => f.n === n).name)}`); };
+  const api = { panel, go, ensure, hop, tick: dt => built[cur]?.onFrame?.(dt) }; ctx.floorsApi = api; return api;
 }
 
 function buildFloor(ctx, core, F, ox, go) {
@@ -77,11 +80,15 @@ function buildFloor(ctx, core, F, ox, go) {
   const B = (w, h, d, m, x, y, z, ry = 0, solid = false) => { put(new THREE.BoxGeometry(w, h, d), m, x, y, z, ry); if (solid) { const c = Math.abs(Math.cos(ry)), s = Math.abs(Math.sin(ry)), hw = (w * c + d * s) / 2, hd = (w * s + d * c) / 2; cols.push([x - hw, z - hd, x + hw, z + hd]); } };
   const C = (rt, rb, h, m, x, y, z, seg = 12) => put(new THREE.CylinderGeometry(rt, rb, h, seg), m, x, y, z);
   const mat = ctx.mat, wood = M(F.floor || 0x4a4040), wall = mat.wall, trim = mat.trim, dark = mat.dark, stone = mat.stone || mat.wall;
-  // slab, ceiling, light panels
-  B(X1 - X0, 0.2, Z1 - Z0, wood, cx, -0.1, (Z0 + Z1) / 2);
-  B(X1 - X0, 0.1, Z1 - Z0, new THREE.MeshBasicMaterial({ color: 0xd9d2c4 }), cx, 4.05, (Z0 + Z1) / 2);
+  // slab, ceiling, light panels; the stair shaft (modules/stairs) gets an opening in the slab and the ceiling
+  const SH = ctx.stairShaft, so = SH && SH.O(F.n), top = SH && SH.top === F.n;
+  const holed = (h, m, y, hole) => { if (!hole) { B(X1 - X0, h, Z1 - Z0, m, cx, y, (Z0 + Z1) / 2); return; } const hx0 = so.x + hole[0], hx1 = so.x + hole[2], hz1 = so.z + hole[1], hz0 = so.z + hole[3];
+    const R = (x0, z0, x1, z1) => { if (x1 - x0 > 0.01 && z1 - z0 > 0.01) B(x1 - x0, h, z1 - z0, m, (x0 + x1) / 2, y, (z0 + z1) / 2); };
+    R(X0, Z0, X1, hz0); R(X0, hz1, X1, Z1); R(X0, hz0, hx0, hz1); R(hx1, hz0, X1, hz1); };
+  holed(0.2, wood, -0.1, SH && SH.hole);
+  holed(0.1, new THREE.MeshBasicMaterial({ color: 0xd9d2c4 }), 4.05, SH && !top && SH.ceilHole);
   const lit = new THREE.MeshBasicMaterial({ color: 0xfff1dc, toneMapped: false });
-  for (let x = X0 + 4; x < X1 - 2; x += 6) for (let z = Z0 + 4; z < Z1 - 2; z += 6) put(new THREE.PlaneGeometry(1.6, 0.6), lit, x, 3.99, z, 0, Math.PI / 2);
+  for (let x = X0 + 4; x < X1 - 2; x += 6) for (let z = Z0 + 4; z < Z1 - 2; z += 6) if (!(so && x > so.x - 1 && x < so.x + SH.W + 1 && z < so.z + 0.5 && z > so.z - SH.D - 0.5)) put(new THREE.PlaneGeometry(1.6, 0.6), lit, x, 3.99, z, 0, Math.PI / 2);
   // perimeter: solid back wall; sides + front are window walls (sill, mullions, head) with the day/night lake view outside
   B(X1 - X0, 4, 0.25, wall, cx, 2, Z0, 0, true);
   const glass = new THREE.MeshBasicMaterial({ color: 0x9fc4d8, transparent: true, opacity: 0.3, depthWrite: false, side: THREE.DoubleSide });
@@ -105,8 +112,10 @@ function buildFloor(ctx, core, F, ox, go) {
   // floor directory sign facing the arrivals
   const sign = ctx.panel(ctx.textCanvas([`${F.n} · ${T(F.name)}`, T(F.sub)], { w: 1024, h: 220, size: 78, body: 44 }), 2.6, 0.56, cx, 3.35, fz + 0.15, 0); sign.material.toneMapped = false; sign.userData.plate = F.name;
   const res = { bounds: [X0, X1, Z0, Z1], group: g };
-  if (F.n === '2') buildArcade(ctx, { g, B, C, put, M, cx, fz, X0, X1, Z1, cols, res });
-  else if (!ctx.upperTeams?.[F.n]) buildSoon(ctx, { g, B, M, cx, fz, X0, X1, Z1, F });
+  /* 2026-10-17 (Joshua 12:10 AM): no arcade anywhere in the campus building. The Arcade lives on its own town lot (world lot 11,
+     'Elder Arcade'); buildArcade stays below only as the cabinet design reference for that lot. tools/office/removed_guard.py fails the
+     deploy if it is called again or game-showrooms returns to modules.json. */
+  if (!ctx.upperTeams?.[F.n]) buildSoon(ctx, { g, B, M, cx, fz, X0, X1, Z1, F });
   // merge statics per material
   for (const [m, list] of statics) { const geo = mergeGeometries(list, false); const mesh = new THREE.Mesh(geo, m); mesh.userData.noCollide = 1; mesh.userData.keep = 1; g.add(mesh); list.forEach(x => x.dispose()); }
   ctx.spot?.('floor' + F.n, [cx, 2.2, fz + 2], [cx, 1.2, fz + 10], `Floor ${F.n}`);

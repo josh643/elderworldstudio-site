@@ -79,5 +79,13 @@ export async function onRequestPost({ request, env }) {
   // leased lots: only a client/owner-authorized edit (separate secret LEASE_EDIT_KEY, never given to agents) may touch them; the DO enforces (403)
   const la = request.headers.get('x-ews-lease-auth') || ''; const leaseOk = !!env.LEASE_EDIT_KEY && la === `Bearer ${env.LEASE_EDIT_KEY}`;
   for (const e of evs) if (leaseOk) e.lease_ok = true; else delete e.lease_ok;
-  const r = await worldDO(env).fetch('https://rl/world/event', { method: 'POST', body: JSON.stringify(evs) }); const o = await r.json(); o.fn = 'lease-v1'; return json(o, r.status);
+  // layout gate (Joshua 2026-10-17 00:24): while the town layout is unapproved no agent may open NEW sites (they showed up as 'Lot 73: leased'
+  // toasts); the one allowed survey is the architecture job on lot 11. Existing sites keep their held stage-0 survey. Client/owner leases unaffected.
+  if (evs.some(e => e.type === 'lot.lease' && !e.lease_ok)) {
+    let st = null; try { st = await (await worldDO(env).fetch('https://rl/world/state')).json(); } catch {}
+    if (st && !(st.layout && st.layout.approved)) { const have = new Set((st.ents || []).map(x => x.id)), refused = [];
+      for (let i = evs.length - 1; i >= 0; i--) { const e = evs[i]; if (e.type !== 'lot.lease' || e.lease_ok || have.has('lot:' + e.lot) || (e.lot === 11 && e.arch === true)) continue; refused.push(e.lot); evs.splice(i, 1); }
+      if (refused.length) { console.log('world-event: refused new site(s) while layout unapproved', refused.join(','));
+        if (!evs.length) return json({ ok: false, error: 'layout not approved: no new sites (lot 11 architecture survey only)', refused, fn: 'gate-v1' }, 409); } } }
+  const r = await worldDO(env).fetch('https://rl/world/event', { method: 'POST', body: JSON.stringify(evs) }); const o = await r.json(); o.fn = 'lease-v1+gate-v1'; return json(o, r.status);
 }

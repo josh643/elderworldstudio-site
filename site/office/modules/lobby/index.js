@@ -38,8 +38,8 @@ export default {
       const o = new T.Mesh(g, cladM); o.position.set(px, py, pz); o.rotation.y = ry; o.userData.noCollide = 1; ctx.scene.add(o); return o; };
     const wallX = (wx, z1, z2, inner) => { const l = z2 - z1, c = (z1 + z2) / 2; box(0.2, H, l, wallM, X(wx), H / 2, Z(c)); clad(l, H, X(wx + inner * 0.102), H / 2, Z(c), inner > 0 ? Math.PI / 2 : -Math.PI / 2); const o = box(0.03, 1.1, l, wood, X(wx + inner * 0.115), 0.55, Z(c)); o.userData.noCollide = 1; box(0.04, 0.08, l, trim, X(wx + inner * 0.13), 1.12, Z(c)).userData.noCollide = 1; };
     const wallZ = (wz, x1, x2, inner) => { const l = x2 - x1, c = (x1 + x2) / 2; box(l, H, 0.2, wallM, X(c), H / 2, Z(wz)); clad(l, H, X(c), H / 2, Z(wz + inner * 0.102), inner > 0 ? 0 : Math.PI); const o = box(l, 1.1, 0.03, wood, X(c), 0.55, Z(wz + inner * 0.115)); o.userData.noCollide = 1; box(l, 0.08, 0.04, trim, X(c), 1.12, Z(wz + inner * 0.13)).userData.noCollide = 1; };
-    const lintelX = (wx, z1, z2) => { box(0.2, H - 2.6, z2 - z1, wallM, X(wx), 2.6 + (H - 2.6) / 2, Z((z1 + z2) / 2)); for (const zz of [z1, z2]) box(0.26, 2.6, 0.06, trim, X(wx), 1.3, Z(zz)); box(0.26, 0.06, z2 - z1 + 0.06, trim, X(wx), 2.6, Z((z1 + z2) / 2)); };
-    const lintelZ = (wz, x1, x2) => { box(x2 - x1, H - 2.6, 0.2, wallM, X((x1 + x2) / 2), 2.6 + (H - 2.6) / 2, Z(wz)); for (const xx of [x1, x2]) box(0.06, 2.6, 0.26, trim, X(xx), 1.3, Z(wz)); box(x2 - x1 + 0.06, 0.06, 0.26, trim, X((x1 + x2) / 2), 2.6, Z(wz)); };
+    const lintelX = (wx, z1, z2) => { box(0.2, H - 2.6, z2 - z1, wallM, X(wx), 2.6 + (H - 2.6) / 2, Z((z1 + z2) / 2)); for (const s of [1, -1]) clad(z2 - z1, H - 2.6, X(wx + s * 0.102), 2.6 + (H - 2.6) / 2, Z((z1 + z2) / 2), s > 0 ? Math.PI / 2 : -Math.PI / 2); for (const zz of [z1, z2]) box(0.26, 2.6, 0.06, trim, X(wx), 1.3, Z(zz)); box(0.26, 0.06, z2 - z1 + 0.06, trim, X(wx), 2.6, Z((z1 + z2) / 2)); };
+    const lintelZ = (wz, x1, x2) => { box(x2 - x1, H - 2.6, 0.2, wallM, X((x1 + x2) / 2), 2.6 + (H - 2.6) / 2, Z(wz)); for (const s of [1, -1]) clad(x2 - x1, H - 2.6, X((x1 + x2) / 2), 2.6 + (H - 2.6) / 2, Z(wz + s * 0.102), s > 0 ? 0 : Math.PI);   /* clad both faces: no bare grey band over the doorway */ for (const xx of [x1, x2]) box(0.06, 2.6, 0.26, trim, X(xx), 1.3, Z(wz)); box(x2 - x1 + 0.06, 0.06, 0.26, trim, X((x1 + x2) / 2), 2.6, Z(wz)); };
     // left wall: solid (the Arcade moves out of the campus to its own lot, Joshua 2026-10-16: its doorway is closed)
     wallX(X0, ZB, ZF, 1);
     // right wall: doorway to the services / devlog hall between the coders and the store (z 0.7..2.4)
@@ -47,7 +47,7 @@ export default {
     // back wall: logo wall in the middle (receptionist builds it, x -3.2..3.2); doorways to the stairs (left) and elevator / main hall (right)
     wallZ(ZB, X0, -4.8, 1); wallZ(ZB, 4.8, X1, 1); lintelZ(ZB, -4.8, -3.2); lintelZ(ZB, 3.2, 4.8);
     const plate = (lines, w, h, px, py, pz, ry, opt = {}) => { const p = ctx.panel(ctx.textCanvas(lines, { w: 768, h: Math.round(768 * h / w), size: opt.size || 64, body: opt.body || 0 }), w, h, X(px), py, Z(pz), ry); p.userData.plate = lines[0]; return p; };
-    plate(['Stairs', 'Main hall'], 1.4, 0.42, -4.0, 3.2, ZB + 0.12, 0, { body: 40 });
+    plate(['Main hall', 'Directory · Elevator'], 1.4, 0.42, -4.0, 3.2, ZB + 0.12, 0, { body: 40 });
     plate(['Services', 'Devlog · Odin'], 1.4, 0.42, X1 - 0.12, 3.2, 1.55, -Math.PI / 2, { body: 40 });
 
     /* ---- overhead: wood-slat canopies + halo ring pendants ---- */
@@ -171,7 +171,7 @@ export default {
       for (let k = 0; k < 18; k++) leaf(X(px + (rnd() - 0.5) * 0.95), 0.62 + rnd() * 0.3, Z(pz + (rnd() - 0.5) * 0.35), 1.2); }
 
     /* ---- plants (every one a different species; core/plants.js hands out the next unused one) ---- */
-    for (const [px, pz, s] of [[-3.4, 6.4, 1.1], [4.2, 8.6, 1.1], [-9.3, -4.55, 1.15], [-9.3, 8.9, 1.1], [-3.75, -4.6, 0.9], [9.4, 0.15, 1.0], [5.25, 9.0, 0.9]]) kit.plant(ctx, X(px), Z(pz), s);
+    for (const [px, pz, s] of [[-3.4, 6.4, 1.1], [4.2, 8.6, 1.1], [-9.3, -4.55, 1.15], [-9.3, 8.9, 1.1], [-5.25, -4.68, 0.78], [9.4, 0.15, 1.0], [5.25, 9.0, 0.9]]) kit.plant(ctx, X(px), Z(pz), s);
     ctx.directoryAt = { x: X(X0 + 0.14), y: 1.5, z: Z(6.6), ry: Math.PI / 2 };   /* 'Switch to Classic' plaque on the left wall by the glass */
 
     ctx.extend(X(X0), Z(ZB), X(X1), Z(ZF));

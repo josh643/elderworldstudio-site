@@ -39,7 +39,7 @@ export default {
       const gk = new T.BoxGeometry(0.1, len, 0.005), q0 = new T.Quaternion().setFromUnitVectors(new T.Vector3(0, 1, 0), up); gk.applyQuaternion(q0); gk.translate(0, hy - up.y * len / 2, hz - up.z * len / 2); return gk; })();
     const folioGeo = merge([paint(new T.BoxGeometry(TW - 0.01, TH - 0.01, 0.003).translate(0, 0, -FZ - 0.0016), () => FOL), paint(new T.BoxGeometry(TW - 0.02, 0.01, 0.012).translate(0, -TH / 2 - 0.004, 0.0), () => FOL), paint(kick, () => FOL)]);
     const mountGeo = merge([paint(new T.BoxGeometry(TW + 0.03, TH + 0.03, 0.012).translate(0, 0, -FZ - 0.0065), () => [0.15, 0.16, 0.18]), paint(new T.BoxGeometry(TW - 0.02, 0.012, 0.014).translate(0, -TH / 2 - 0.012, -0.002), () => [0.15, 0.16, 0.18])]);
-    const pedGeo = merge([paint(new T.CylinderGeometry(0.2, 0.22, 0.025, 12).translate(0, 0.0125, 0), () => [0.15, 0.16, 0.18]), paint(new T.CylinderGeometry(0.028, 0.028, 1.06, 8).translate(0, 0.53, -0.012), () => [0.55, 0.57, 0.6])]);
+    const pedGeo = merge([paint(new T.CylinderGeometry(0.2, 0.22, 0.025, 12).translate(0, 0.0125, 0), () => [0.15, 0.16, 0.18]), paint(new T.BoxGeometry(0.16, 0.98, 0.12).translate(0, 0.49 + 0.025, -0.03), () => [0.2, 0.21, 0.23]), paint(new T.BoxGeometry(0.17, 0.02, 0.13).translate(0, 0.035, -0.03), () => [0.72, 0.6, 0.36]), paint(new T.BoxGeometry(0.17, 0.02, 0.13).translate(0, 0.99, -0.03), () => [0.72, 0.6, 0.36])]);
     this.tris = { tablet: tabletGeo.attributes.position.count / 3, case: caseGeo.attributes.position.count / 3 };
     const mat = new T.MeshStandardMaterial({ vertexColors: true, roughness: 0.45, metalness: 0.25 });
     const mk = (g, n, m = mat) => { const o = new T.InstancedMesh(g, m, n); o.count = 0; o.frustumCulled = false; Object.assign(o.userData, { keep: 1, noCollide: 1, noFarCull: 1, label: 'tablet' }); o.instanceMatrix.setUsage(T.DynamicDrawUsage); ctx.scene.add(o); return o; };
@@ -59,13 +59,13 @@ export default {
       const r = { kind, role: kind, mode: 'fixed', stand, m: new T.Matrix4().compose(new T.Vector3(...pos), q, new T.Vector3(1, 1, 1)), sm: new T.Matrix4().compose(new T.Vector3(pos[0], 0, pos[2]), new T.Quaternion().setFromEuler(new T.Euler(0, ry, 0)), new T.Vector3(1, 1, 1)), ...extra };
       recs.push(r); return r; };
     const easelOn = (x, y, z, ry, kind, extra) => fixed(kind, [x, y + 0.028, z], ry, TILT, 'easel', extra);
-    const pedestal = (x, z, ry, kind, extra) => { const r = fixed(kind, [x, 1.1, z], ry, 0.62, 'ped', extra); (ctx.extraCols ||= []).push([x - 0.24, z - 0.24, x + 0.24, z + 0.24]); return r; };
+    const pedestal = (x, z, ry, kind, extra) => { const r = fixed(kind, [x, 1.1, z], ry, 0.38, 'ped', extra); (ctx.extraCols ||= []).push([x - 0.24, z - 0.24, x + 0.24, z + 0.24]); return r; };
     /* fixed campus spots (positions from lobby / receptionist / arch-studio / floors geometry) */
     { const a = 0.45, r = 2.72; easelOn(r * Math.sin(a), 1.08, -3.6 + r * Math.cos(a), a, 'checkin', { title: 'Visitor check-in' }); }
     easelOn(-6.05, 0.468, 2.47, Math.atan2(-2.6 + 6.05, 6.8 - 2.47), 'board', { title: 'Team board' });
     easelOn(5.62, 1.047, 4.45, 0, 'merch', { title: 'Merch Store' });
     const core = ctx.core; this.floorDone = new Set();
-    const addFloor = n => { if (!core || this.floorDone.has(n)) return; this.floorDone.add(n); const ox = n === 'G' ? 0 : (+n - 1) * 400, x = core.x + ox + 1.95, z = core.fz + 1.05;
+    const addFloor = n => { if (!core || this.floorDone.has(n) || !/^(G|\d+)$/.test(n)) return; this.floorDone.add(n); const ox = n === 'G' ? 0 : (+n - 1) * 400;   /* B1 (restricted, frame -400) has its own room: no lobby pedestal; a NaN ox here made an infinite invisible wall at z=fz+1.05 on every floor (Joshua 12:32 AM) */ if (!Number.isFinite(ox)) return; const x = core.x + ox + 1.95, z = core.fz + 1.05;
       pedestal(x, z, Math.atan2(core.x + ox - x, core.fz + 3.2 - z), 'floor', { floor: n, title: 'Floor ' + n });
     };
     for (const f of FLOORS) addFloor(f.n);
