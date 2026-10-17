@@ -13,15 +13,19 @@ tar -C site --exclude=.htaccess --exclude=.nojekyll -cf - . | tar -C /tmp/ews-cf
 # wrangler caches under the nearest node_modules; a root-owned /node_modules on the box breaks that, so keep a local one
 mkdir -p node_modules
 # PRE-DEPLOY PLAYTEST GATE (Joshua HARD RULE 2026-10-17 00:33): upload to the preview alias first, playtest it headless, promote only on PASS.
-# Any FAIL refuses the deploy and files fix tasks (tools/office/playtest_gate.py). No bypass flag.
+# Baseline-diff (2026-10-17): the gate walks the candidate AND the live office-3d build; it blocks on NEW failures/regressions, Joshua-reported
+# regressions, new invisible walls/unreachable floors and perf worse than live. Defects already on live are logged as debt (shots/gate/debt.json)
+# and stay in the world-team queues. Any FAIL refuses the deploy and files fix tasks (tools/office/playtest_gate.py). No bypass flag.
 npx -y wrangler@3 pages deploy /tmp/ews-cf-deploy --project-name elderworldstudio --branch playtest --commit-dirty=true
 PY=/workspace/.venv-gate/bin/python; [ -x "$PY" ] || PY=/workspace/avatar-office/.venv/bin/python   # needs playwright (python3 -m venv /workspace/.venv-gate && /workspace/.venv-gate/bin/pip install playwright)
 sleep 6
-if ! timeout 240 "$PY" tools/office/playtest_gate.py https://playtest.elderworldstudio.pages.dev; then
+GOUT=/workspace/shots/gate/$(date +%Y%m%d-%H%M%S)
+if ! timeout 600 "$PY" tools/office/playtest_gate.py https://playtest.elderworldstudio.pages.dev --live https://office-3d.elderworldstudio.pages.dev --out "$GOUT"; then
   echo 'playtest gate: FAIL -> staging deploy REFUSED (fix tasks filed; see /workspace/shots/gate/<run>/gate.json)'; exit 1
 fi
 echo 'playtest gate: PASS -> promoting to office-3d'
 npx -y wrangler@3 pages deploy /tmp/ews-cf-deploy --project-name elderworldstudio --branch office-3d --commit-dirty=true
+[ -f "$GOUT/det-candidate.json" ] && cp "$GOUT/det-candidate.json" /workspace/shots/gate/det-baseline.json   # promoted build = next deterministic baseline
 # hot updates: tell every connected visitor that modules/assets changed (world DO 'release' broadcast). The office key stays on CT111.
 REL=$(python3 -c "import json;m=json.load(open('site/office/manifest.json'));print(json.dumps({'code':m['code'],'modules':m.get('modules',{}),'assets':len(m['assets'])}))")
 sleep 8   # let the new deployment propagate before clients refetch the manifest
