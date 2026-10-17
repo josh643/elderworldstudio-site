@@ -5,13 +5,19 @@ let G2 = null;
 export default {
   setup(ctx, cfg, [x0, z0]) {
     const { THREE, box, M, roster } = ctx, A = ctx.use('avatar'), cols = cfg.cols || 3, W = cfg.w || 10, D = cfg.d || 9, teams = roster.teams;   /* every roster team (filter removed 2026-10-16, arch-studio request): upper-floor teams (floor != 'G', e.g. architecture on Floor 3) get their avatars here but no ground room; their floor module (modules/arch-studio) gives them desks and chairs */
-    const totalW = cols * W, rooms = {}; this.rooms = rooms; this.A = A; this.ctx = ctx; let gi = 0;
+    const totalW = cols * W, rooms = {}; this.rooms = rooms; this.A = A; this.ctx = ctx; let gi = 0, ui = 0; const upSlots = {};
     teams.forEach(t => {
       if (t.floor && t.floor !== 'G') { const col = COLS[(gi + 4) % COLS.length]; for (const a of t.members) { const av = A.make(a, col, () => { const s = av.userData.state || {}; ctx.card(`<h3>${ctx.esc(a.name)}</h3><p>${ctx.esc(a.role)} · ${ctx.esc(t.name)} (Floor ${ctx.esc(t.floor)})</p><p>${s.stage ? `Working · stage <b>${ctx.esc(s.stage)}</b>` : 'In the studio'}</p>`); }); av.userData.team = t.key; av.userData.floorTeam = t.floor; ctx.scene.add(av); } return; }
-      const i = gi++;
-      const cx = x0 - totalW / 2 + (i % cols) * W + W / 2, cz = z0 - Math.floor(i / cols) * D - D / 2, col = COLS[i % COLS.length];
+      /* 2026-10-16 (Joshua): the teams moved to their own floors; G keeps only the lobby. cfg.floors maps team key -> floor;
+         each upper floor has two room slots flanking the elevator core along the back wall, doors facing the open floor
+         (floor n sits at x + (n-1)*400, core/floors.js). Unmapped teams still get a ground-floor room behind the lobby. */
+      const fl = cfg.floors?.[t.key], core = ctx.core, up = fl && fl !== 'G' && core;
+      let cx, cz, col;
+      if (up) { const k = (upSlots[fl] = (upSlots[fl] ?? -1) + 1), sx = cfg.slots?.[fl]?.[k] ?? (k ? 1 : -1); cx = core.x + (+fl - 1) * 400 + sx * (core.W / 2 + 0.9 + W / 2); cz = core.fz + 1.1 - D / 2; col = COLS[(ui++ + 1) % COLS.length]; }
+      if (up) ((ctx.upperTeams ||= {})[fl] ||= []).push({ key: t.key, name: t.name, x: cx, z: cz });
+      else { const i = gi++; cx = x0 - totalW / 2 + (i % cols) * W + W / 2; cz = z0 - Math.floor(i / cols) * D - D / 2; col = COLS[i % COLS.length]; }
       (ctx.teamSpot ||= {})[t.key || t.id] = [cx, cz];   /* Freyja's ticket handoff target */
-      ctx.kit.room(ctx, { x: cx, z: cz, w: W, d: D, floor: new THREE.Color(col).multiplyScalar(0.25).getHex(), title: ctx.publicMode && /money|cfo/i.test(t.key + t.name) ? 'Private Office' : t.name, sub: ctx.publicMode ? '' : `${t.members.length} agents`, enclose: true, doorX: Math.abs(cx - x0) < 0.5 ? W / 2 - 1.4 : 0 });   /* the room straight behind the lobby logo wall gets its door at the side */
+      ctx.kit.room(ctx, { x: cx, z: cz, w: W, d: D, floor: new THREE.Color(col).multiplyScalar(0.25).getHex(), title: ctx.publicMode && /money|cfo/i.test(t.key + t.name) ? 'Private Office' : t.name, sub: ctx.publicMode ? '' : `${t.members.length} agents`, enclose: true, doorX: !up && Math.abs(cx - x0) < 0.5 ? W / 2 - 1.4 : 0, noExtend: !!up });   /* the room straight behind the lobby logo wall gets its door at the side */
       // QA bench: a real work table with a test tablet; review tray: a low filing cabinet with an in-tray on top
       const qx = cx + W / 2 - 1.3, qz = cz + D / 2 - 1.4, tx = cx - W / 2 + 0.38, tz = cz + D / 2 - 1.3, mt = ctx.mat;
       /* QA station: a full seated desk (chair, monitor with test results, keyboard, mouse) plus a test phone and tablet on stands */
@@ -42,7 +48,7 @@ export default {
          every spot holds one agent at a time */
       const SP = (x, z, rot, k, label) => Object.assign(new THREE.Vector3(x, 0, z), { rot, k, label, holder: null });
       const deskRects = [[qx - 0.95, qz + 0.3 - 1.2, qx + 0.95, qz + 0.3 - 0.05]];
-      rooms[t.key] = { cx, cz, W, D, doorX: Math.abs(cx - x0) < 0.5 ? W / 2 - 1.4 : 0, deskRects, qa: qd.seat ? qd.seat.root : new THREE.Vector3(qx, 0, qz + 0.3), tray: SP(tx + 0.75, tz, -Math.PI / 2, 'inspect', 'review tray'),
+      rooms[t.key] = { cx, cz, W, D, doorX: !up && Math.abs(cx - x0) < 0.5 ? W / 2 - 1.4 : 0, floor: up ? fl : 'G', deskRects, qa: qd.seat ? qd.seat.root : new THREE.Vector3(qx, 0, qz + 0.3), tray: SP(tx + 0.75, tz, -Math.PI / 2, 'inspect', 'review tray'),
         spots: [SP(cx - 0.35, cz - D / 2 + 1.0, Math.PI, 'inspect', 'whiteboard'), SP(cx + 0.45, cz - D / 2 + 1.05, Math.PI, 'present', 'whiteboard'), SP(cx + W / 2 - 0.6, cz - D / 2 + 1.05, Math.PI, 'stand', 'water cooler'), SP(tx + 0.75, tz, -Math.PI / 2, 'inspect', 'review tray'), SP(cx - W / 2 + 0.7, cz - D / 2 + 1.0, Math.PI, 'stand', 'printer')] };
       const per = Math.ceil(t.members.length / 2);
       t.members.forEach((a, j) => {
@@ -106,7 +112,7 @@ export default {
       const av = agents.get(w.agent); if (!av || !av.userData.team) continue; const u = av.userData, r = this.rooms[u.team]; if (u.selfDriven) { if (u.serverAct) u.state = w; continue; } u.state = w;   /* server-driven agents keep their live state (desk screen + clip), the server decides where they go */
       /* quality checklist (Joshua 2026-10-16): an agent whose desk screen shows active work is SEATED at that desk facing it;
          only a released task sends them to the gate. Agents with no work wander their room (see onFrame). */
-      if (u.spot) { u.spot.holder = null; u.spot = null; } u.spotK = null; u.target = w.stage === 'released' && gate ? gate : u.home; u.wander = null;
+      if (u.spot) { u.spot.holder = null; u.spot = null; } u.spotK = null; u.target = w.stage === 'released' && gate && Math.abs(gate.x - u.home.x) < 150 ? gate : u.home;   /* the release gate is on G: agents on upper floors stay at their desk */ u.wander = null;
     }
   },
 };

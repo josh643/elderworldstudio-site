@@ -4,7 +4,7 @@
 // hanging wayfinding boards. Plain boxes/cylinders on shared materials (batched) + a few sign panels. Remove from modules.json to undo.
 export default {
   setup(ctx) {
-    const { THREE: T, box, M, mat } = ctx, spots = ctx.teamSpot || {}, pts = Object.values(spots); if (!pts.length) return;
+    const { THREE: T, box, M, mat } = ctx, spots = Object.fromEntries(Object.entries(ctx.teamSpot || {}).filter(([, p]) => Math.abs(p[0]) < 150)), pts = Object.values(spots);   /* G rooms only: the teams moved upstairs (team-halls cfg.floors) */
     const W = 10, D = 9, rx0 = Math.min(...pts.map(p => p[0])) - W / 2, rx1 = Math.max(...pts.map(p => p[0])) + W / 2;
     const rzF = Math.max(...pts.map(p => p[1])) + D / 2, rzB = Math.min(...pts.map(p => p[1])) - D / 2;   // room block: front (doors) / back
     const S = (c, r = 0.7) => (ctx.M.standard ? new T.MeshStandardMaterial({ color: c, roughness: r }) : new T.MeshLambertMaterial({ color: c }));
@@ -29,8 +29,32 @@ export default {
       halo(x, z); };
     const board = (x, z, ry, lines) => {   // hanging wayfinding board: brass rod + cords + navy/gold panel
       const g = new T.Group(); g.position.set(x, 2.75, z); g.rotation.y = ry; ctx.scene.add(g);
-      const p = ctx.panel(ctx.textCanvas(lines, { w: 900, h: 400, size: 62, body: 40 }), 2.2, 0.98, 0, 0, 0.01, 0, g); p.material.side = T.DoubleSide; p.userData.plate = lines[0];
+      const cv = ctx.textCanvas(lines, { w: 900, h: 400, size: 62, body: 40 }), p = ctx.panel(cv, 2.2, 0.98, 0, 0, 0.012, 0, g); p.userData.plate = lines[0];
+      box(2.24, 1.02, 0.02, mat.dark, 0, 0, 0, g); ctx.panel(cv, 2.2, 0.98, 0, 0, -0.012, Math.PI, g);   /* two-sided: a readable face each way (a DoubleSide panel read mirrored from behind) */
       box(2.3, 0.05, 0.05, mat.trim, 0, 0.53, 0, g); for (const sx of [-1, 1]) box(0.01, 4 - 3.3, 0.01, mat.dark, sx * 1.0, 0.53 + (4 - 3.3) / 2, 0, g); return p; };
+    /* 2026-10-16 (Joshua): the team rooms moved to their own floors. G keeps only the lobby; the hall behind the crest wall
+       gets a lounge either side of the elevator core and a board pointing upstairs. Each upper floor gets the same family of
+       dressing: a runner rug along the room fronts, boards at the elevator exit naming the rooms left/right, lounges and
+       window planters, kept clear of the arcade (Floor 2) and the architecture studio (Floor 3, front left). */
+    if (!pts.length) {
+      const core = ctx.core || { x: 0, fz: -7.7, W: 4.6 }, up = ctx.upperTeams || {};
+      lounge(-7.4, -9.6, Math.PI / 2); planter(-7.2, -5.6, 4.6); planter(7.2, -5.6, 4.6); planter(-4.6, -12.6, 2.2); halo(-7.4, -9.6);
+      const fl = ['2 · Games', '3 · Architecture, Design & Marketing', '4 · Client Sites & Call Center', '5 · Ops & Leadership'];
+      board(-4.0, -6.6, 0, ['Our teams work upstairs', 'Elevator ↓ ' + fl.slice(0, 2).join('   '), fl.slice(2).join('   ')]);
+      board(4.0, -6.6, 0, ['Elevator', 'Floors 2 to 5 · tap the doors', 'Every team has its own floor']);
+      for (const n of ['2', '3', '4', '5']) { const cx = core.x + (+n - 1) * 400, fz = core.fz, rooms = up[n] || [];
+        const L = rooms.filter(r => r.x < cx).map(r => r.name), R = rooms.filter(r => r.x > cx).map(r => r.name);
+        rug(26.4, 2.0, cx, fz + 2.7, 0x7a2f3a);   // runner along the room fronts, crossing the elevator exit
+        if (n === '3' && ctx.archStudio) L.push('Architecture studio ↙');
+        board(cx - 4.6, fz + 3.4, Math.PI, [L.length ? '← ' + L.join(' · ') : 'Lounge ←', 'Floor ' + n]);
+        board(cx + 4.6, fz + 3.4, Math.PI, [R.length ? R.join(' · ') + ' →' : 'Lounge →', 'Floor ' + n]);
+        const lx = n === '2' ? 12.6 : 10.5, lz = fz + 12;
+        if (!(n === '3' && ctx.archStudio)) lounge(cx - lx, lz, n === '2' ? Math.PI / 2 : 0);
+        lounge(cx + lx, lz, n === '2' ? Math.PI / 2 : 0);
+        planter(cx - 6.5, fz + 20.9, 4.4); planter(cx + 6.5, fz + 20.9, 4.4);
+        if (n !== '2') { planter(cx, fz + 13.5, 3.2); halo(cx, fz + 13.5, 1.3); } }
+      return;
+    }
     const names = (ctx.roster?.teams || []).filter(t => spots[t.key || t.id]).map(t => [t.name, spots[t.key || t.id][0]]);
     const left = names.filter(n => n[1] < -0.5).map(n => n[0]), mid = names.filter(n => Math.abs(n[1]) <= 0.5).map(n => n[0]), right = names.filter(n => n[1] > 0.5).map(n => n[0]);
     const zH = (rzF + -5.2) / 2;   // middle of the main hall (lobby back wall at z = -5.2)

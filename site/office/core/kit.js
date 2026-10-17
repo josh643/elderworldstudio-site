@@ -3,7 +3,7 @@ import { chairs } from './chairs.js?v=1';
 export { chairs };
 // Snap-together kit pieces. Every piece is a pure function of (ctx, options) and returns its THREE.Group.
 // Grid unit = 1 m. Rooms snap on their centre; walls/doors are optional per side.
-export function room(ctx, { x = 0, z = 0, w = 10, d = 8, floor = 0x2a2236, walls = '', title, sub, enclose = false, doorX = 0 }) {
+export function room(ctx, { x = 0, z = 0, w = 10, d = 8, floor = 0x2a2236, walls = '', title, sub, enclose = false, doorX = 0, noExtend = false }) {
   const { THREE, box, M } = ctx, g = new THREE.Group(); g.position.set(x, 0, z);
   box(w - 0.2, 0.04, d - 0.2, ctx.rug ? ctx.rug(new ctx.THREE.Color(0x8a8f9c).lerp(new ctx.THREE.Color(floor).multiplyScalar(3), 0.18).getHex()) : M(floor), 0, 0.02, 0, g);
   const W = (lx, lz, len, rot) => { const m = box(len, 3, 0.2, ctx.mat.wall, lx, 1.5, lz, g); m.rotation.y = rot; };
@@ -37,7 +37,7 @@ export function room(ctx, { x = 0, z = 0, w = 10, d = 8, floor = 0x2a2236, walls
       const pl = ctx.panel(ctx.textCanvas([title, sub || ''], { w: 768, h: 192, size: 64 }), 1.6, 0.4, sx + 0.25, 2.75, fz, 0, g); pl.userData.plate = title;
       if (ctx.site?.brand?.logo) { const lg = ctx.panel(ctx.image(ctx.site.brand.logo), 0.42, 0.42, sx - 0.85, 2.75, fz, 0, g); lg.material.toneMapped = false; lg.userData.label = title + ' crest'; } }
   } else if (title) { const pl = ctx.panel(ctx.textCanvas([title, sub || ''], { w: 768, h: 192, size: 64 }), 1.5, 0.375, 0, 2.62, d / 2 + 0.012, 0, g); pl.userData.plate = title; }
-  ctx.scene.add(g); ctx.extend(x - w / 2, z - d / 2, x + w / 2, z + d / 2); return g;
+  ctx.scene.add(g); if (!noExtend) ctx.extend(x - w / 2, z - d / 2, x + w / 2, z + d / 2); return g;   /* noExtend: rooms on upper floors (x + 400 n) must not stretch the ground-floor shell */
 }
 export function corridor(ctx, { x1, z1, x2, z2, width = 3 }) {
   const { box, M } = ctx, l = Math.hypot(x2 - x1, z2 - z1), m = box(l, 0.03, width, ctx.mat.floor, (x1 + x2) / 2, 0.015, (z1 + z2) / 2);
