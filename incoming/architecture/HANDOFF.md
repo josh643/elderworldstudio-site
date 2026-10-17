@@ -25,3 +25,6 @@ Builder asks:
 - Jörð (arch-landscape) owns tree planting and removal. Specs carry `landscape.planting` zones and, from now on, `landscape.tree_changes` ([{id, action: remove|relocate, from, to, reason}]) whenever a road or lot is built.
 - Live-construction system: when a road or lot is built, play tree removal as one of the stages: survey (stakes) → clear trees (fell/uproot the trees in tree_changes, haul away, stumps gone) → grade → pave/build. Relocated trees are replanted at `to` in the same stage.
 - Layout QA (Vé) fails specs with trees on streets or paving, trees on lots under construction/built, or camera-facing card trees. The survey also flags these in renders.
+
+## Theater digital-world addendum (Joshua 2026-10-17)
+See `incoming/architecture/THEATER_DIGITAL_WORLD.md` for the layout/runtime contract extending the existing Elder Theater and streaming work. This checkout contains no theater interior or `sites/watch` pipeline implementation, so the addendum is a handoff, not implementation or QA evidence. Keep construction on EWS-owned property; do not alter client-leased lots. Do not deploy production.
