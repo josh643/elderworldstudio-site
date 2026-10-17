@@ -5,7 +5,8 @@
 import * as THREE from '../vendor/three.module.min.js?v=169';
 import { mergeGeometries } from '../vendor/jsm/utils/BufferGeometryUtils.js?v=169';
 import * as kit from './kit.js?v=30';
-import * as DN from './daynight.js?v=1';
+import * as DN from './daynight.js?v=2';
+import * as EX from './exterior.js?v=1';   /* real 3D exterior (campus + town reserve); ?ext=0 = old baked view */
 const V = 30, GOLD = 0xd9b45a;
 const $ = (t, a = {}, h = '') => { const e = document.createElement(t); for (const k in a) e.setAttribute(k, a[k]); e.innerHTML = h; return e; };
 export const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -147,21 +148,26 @@ const PUBLIC = /(^|\.)elderworldstudio\.com$/.test(location.hostname) || /[?&]pu
   wall(fx, fz, fX, fz);
   /* entrance glass front (floor_g): floor-to-ceiling glass over the shell opening, brass mullions every ~1.85 m, a baked lake view
      behind it (day/night drives that view + the glass tint), and real two-panel sliding doors centred on the red carpet. */
+  const EXT = !!EN && !/[?&]ext=0/.test(location.search);
   if (EN) { const gz = fZ, gm = new THREE.MeshBasicMaterial({ color: 0x9fc4d8, transparent: true, opacity: 0.32, depthWrite: false, side: THREE.DoubleSide });
-    const vv = new THREE.Mesh(new THREE.PlaneGeometry(EN.w + 2, 4.2), new THREE.MeshBasicMaterial({ map: kit.viewTex(ctx), toneMapped: false })); vv.position.set(EN.x, 2.0, gz + 0.9); vv.rotation.y = Math.PI; vv.userData.noCollide = 1; scene.add(vv);
+    if (!EXT) { const vv = new THREE.Mesh(new THREE.PlaneGeometry(EN.w + 2, 4.2), new THREE.MeshBasicMaterial({ map: kit.viewTex(ctx), toneMapped: false })); vv.position.set(EN.x, 2.0, gz + 0.9); vv.rotation.y = Math.PI; vv.userData.noCollide = 1; scene.add(vv); }
     const pane = (cx, w, y, h) => { const g = new THREE.Mesh(new THREE.PlaneGeometry(w, h), gm); g.position.set(cx, y, gz); g.userData.dn = 'glass'; g.userData.noCollide = 1; scene.add(g); };
     const DW = 2.9, side = (EN.w - DW) / 2, n = 3;
     for (const sg of [-1, 1]) for (let i = 0; i < n; i++) { const w = side / n, cx = EN.x + sg * (DW / 2 + w * (i + 0.5)); pane(cx, w, 2.0, 4.0); box(0.06, 4.0, 0.1, mat.trim, EN.x + sg * (DW / 2 + w * (i + 1)), 2.0, gz); }
     box(EN.w, 0.08, 0.12, mat.trim, EN.x, 0.04, gz); box(EN.w, 0.1, 0.14, mat.trim, EN.x, 3.95, gz);   // sill + head rail
     pane(EN.x, DW, 3.35, 1.3); box(DW + 0.1, 0.12, 0.14, mat.trim, EN.x, 2.7, gz);                      // transom over the doors + door header/track
     for (const sx of [-1, 1]) box(0.08, 2.7, 0.12, mat.trim, EN.x + sx * DW / 2, 1.35, gz);              // door jambs
+    ctx.entranceDoors = [];
     for (const sx of [-1, 1]) { const dx = EN.x + sx * DW / 4, dz = gz - 0.05 - (sx > 0 ? 0.04 : 0);       // two sliding leaves on offset tracks
-      const lf = new THREE.Mesh(new THREE.PlaneGeometry(DW / 2 - 0.02, 2.6), gm); lf.position.set(dx, 1.32, dz); lf.userData.dn = 'glass'; lf.userData.noCollide = 1; scene.add(lf);
-      for (const ex of [-1, 1]) box(0.05, 2.62, 0.05, mat.trim, dx + ex * (DW / 4 - 0.03), 1.32, dz); box(DW / 2, 0.05, 0.05, mat.trim, dx, 0.03, dz); box(DW / 2, 0.05, 0.05, mat.trim, dx, 2.62, dz);
-      box(0.03, 0.9, 0.05, mat.trim, EN.x + sx * 0.12, 1.1, dz - 0.04); }                                // pull bars at the meeting edge
+      const lg = new THREE.Group(); lg.userData.keep = 1; scene.add(lg); ctx.entranceDoors.push({ g: lg, sx, w: DW / 2 });   /* exterior.js slides them open when someone walks up */
+      const lf = new THREE.Mesh(new THREE.PlaneGeometry(DW / 2 - 0.02, 2.6), gm); lf.position.set(dx, 1.32, dz); lf.userData.dn = 'glass'; lf.userData.noCollide = 1; lg.add(lf);
+      const parts = []; for (const ex of [-1, 1]) parts.push(box(0.05, 2.62, 0.05, mat.trim, dx + ex * (DW / 4 - 0.03), 1.32, dz, lg)); parts.push(box(DW / 2, 0.05, 0.05, mat.trim, dx, 0.03, dz, lg), box(DW / 2, 0.05, 0.05, mat.trim, dx, 2.62, dz, lg));
+      parts.push(box(0.03, 0.9, 0.05, mat.trim, EN.x + sx * 0.12, 1.1, dz - 0.04, lg)); if (EXT) for (const o of parts) o.userData.noCollide = 1; }   // pull bars at the meeting edge
     const ep = ctx.panel(ctx.textCanvas(['Entrance', 'Elder World Studio'], { w: 640, h: 160, size: 60 }), 1.6, 0.4, EN.x, 3.3, gz - 0.12, Math.PI); ep.userData.plate = 'Entrance';
-    { const c = box(EN.w, 4, 0.05, new THREE.MeshBasicMaterial({ visible: false }), EN.x, 2, gz + 0.05); c.userData.keep = 1; }   /* the glass still blocks walking out */
+    if (!EXT) { const c = box(EN.w, 4, 0.05, new THREE.MeshBasicMaterial({ visible: false }), EN.x, 2, gz + 0.05); c.userData.keep = 1; }   /* the glass still blocks walking out */
+    else for (const sg of [-1, 1]) { const a = DW / 2 - 0.02, b = EN.w / 2, c = box(b - a, 4, 0.05, new THREE.MeshBasicMaterial({ visible: false }), EN.x + sg * (a + b) / 2, 2, gz + 0.05); c.userData.keep = 1; }   /* exterior on: side glass blocks, the doorway is open (doors slide) */
   } wall(fx, fz, fx, fZ); wall(fX, fz, fX, fZ);
+  if (EXT) { try { ctx.exterior = EX.build(ctx, { fx, fX, fz, fZ, EN }); } catch (e) { console.warn('exterior failed', e); } }
   /* hallway dressing along the outer walls: wainscot band, big framed prints at eye height with sconces, pillars between bays,
      benches, plants and runner rugs. Same material = one batched draw call. Prints are game key art (no logo stretch). */
   { const imgs = (ctx.site?.games || []).filter(g => g.img).map(g => g.img), artM = new Map(), wood = mat.wood, warm = new THREE.MeshBasicMaterial({ color: 0xffe2b0 }), fab = mat.fabric || mat.dark; let ai = 0;
@@ -278,7 +284,7 @@ const PUBLIC = /(^|\.)elderworldstudio\.com$/.test(location.hostname) || /[?&]pu
   const floorPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), fhit = new THREE.Vector3();
   function walkTo(e) { const r = el.getBoundingClientRect(); ndc.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1); ray.setFromCamera(ndc, cam);
     if (!ray.ray.intersectPlane(floorPlane, fhit)) return; const d = Math.min(fhit.distanceTo(pos), 14), dir = fhit.clone().sub(pos).setY(0).normalize();
-    const to = pos.clone().addScaledVector(dir, Math.max(0, d - 0.8)); { const B = ctx.curBounds || [fx, fX, fz, fZ]; to.x = Math.max(B[0] + 1, Math.min(B[1] - 1, to.x)); to.z = Math.max(B[2] + 1, Math.min(B[3] - 1, to.z)); } to.y = pos.y;
+    const to = pos.clone().addScaledVector(dir, Math.max(0, d - 0.8)); { const B = ctx.curBounds || ctx.exterior?.bounds || [fx, fX, fz, fZ]; to.x = Math.max(B[0] + 1, Math.min(B[1] - 1, to.x)); to.z = Math.max(B[2] + 1, Math.min(B[3] - 1, to.z)); } to.y = pos.y;
     glide = { from: pos.clone(), to, y0: yaw, y1: yaw, p0: pitch, p1: pitch, t: 0, walk: true }; ripple(fhit); }
   const rip = new THREE.Mesh(new THREE.RingGeometry(0.2, 0.28, 32), new THREE.MeshBasicMaterial({ color: GOLD, transparent: true, opacity: 0 })); rip.rotation.x = -Math.PI / 2; scene.add(rip);
   function ripple(p) { rip.position.set(p.x, 0.02, p.z); rip.material.opacity = 0.9; rip.scale.setScalar(1); }
@@ -308,7 +314,7 @@ const PUBLIC = /(^|\.)elderworldstudio\.com$/.test(location.hostname) || /[?&]pu
     const mvF = (keys.w || keys.arrowup ? 1 : 0) - (keys.s || keys.arrowdown ? 1 : 0) - jv.y, mvR = (keys.d ? 1 : 0) - (keys.a ? 1 : 0) + jv.x;
     if (keys.arrowleft || keys.q) yaw += dt * 1.8; if (keys.arrowright || keys.r) yaw -= dt * 1.8;   // keyboard turning never needs the cursor
     if (edgeX && !locked() && !drag && !card) yaw -= edgeX * dt * 2.2;          // cursor parked at a screen edge = keep turning
-    if (mvF || mvR) { glide = null; fwd.set(-Math.sin(yaw), 0, -Math.cos(yaw)); right.set(-fwd.z, 0, fwd.x); const sp = keys.shift ? 8 : 4; pos.addScaledVector(fwd, mvF * dt * sp).addScaledVector(right, mvR * dt * sp); { const B = ctx.curBounds || [fx, fX, fz, fZ]; pos.x = Math.max(B[0] + 1, Math.min(B[1] - 1, pos.x)); pos.z = Math.max(B[2] + 1, Math.min(B[3] - 1, pos.z)); } }
+    if (mvF || mvR) { glide = null; fwd.set(-Math.sin(yaw), 0, -Math.cos(yaw)); right.set(-fwd.z, 0, fwd.x); const sp = keys.shift ? 8 : 4; pos.addScaledVector(fwd, mvF * dt * sp).addScaledVector(right, mvR * dt * sp); { const B = ctx.curBounds || ctx.exterior?.bounds || [fx, fX, fz, fZ]; pos.x = Math.max(B[0] + 1, Math.min(B[1] - 1, pos.x)); pos.z = Math.max(B[2] + 1, Math.min(B[3] - 1, pos.z)); } }
     cullT += rdt; if (cullT > 0.4) { cullT = 0; const wp = new THREE.Vector3();   // distance-cull signs/displays (each is its own draw call)
       for (const p of farCull) { const u = p.userData.fc; const far = u.c.distanceTo(pos) - u.r > 20; if (far && p.visible) { p.visible = false; p.userData.far = 1; } else if (!far && p.userData.far) { p.visible = true; p.userData.far = 0; } }
       for (const p of displays) { p.getWorldPosition(wp); const far = wp.distanceToSquared(pos) > 18 * 18; if (far && p.visible) { p.visible = false; p.userData.far = 1; } else if (!far && p.userData.far) { p.visible = true; p.userData.far = 0; } } }
@@ -318,6 +324,7 @@ const PUBLIC = /(^|\.)elderworldstudio\.com$/.test(location.hostname) || /[?&]pu
     else { rig.position.set(0, 0, 0); rig.rotation.set(0, 0, 0); cam.position.copy(pos); cam.rotation.set(pitch, yaw, 0, 'YXZ'); }
     if (rip.material.opacity > 0) { rip.material.opacity = Math.max(0, rip.material.opacity - dt * 1.5); rip.scale.multiplyScalar(1 + dt * 1.2); }
     for (const m of mods) m.onFrame?.(dt, t);
+    ctx.exterior?.frame(dt, t, pos, cam);
     R.render(scene, cam);
   }
   clearTimeout(loadDog); sessionStorage.removeItem('ews-retry');
@@ -344,7 +351,7 @@ const PUBLIC = /(^|\.)elderworldstudio\.com$/.test(location.hostname) || /[?&]pu
   buildColliders(); baseCols = cols.slice(); batchStatic(); collectFar(); lowMats();
   setTimeout(() => { buildColliders(); const b0 = ctx.batched; batchStatic(); ctx.batched = { before: b0.before + ctx.batched.before, after: b0.after + ctx.batched.after }; collectFar(); lowMats(); }, 10500);   /* second pass: lazy GLB props */
   { let n = 0; const iv = setInterval(() => { buildColliders(); if (n % 4 === 3) lowMats(); if (++n >= 24) clearInterval(iv); }, 500); }  /* lazy desks/props get colliders within 0.5 s of landing */   // again once the lazy props have landed
-  window.__ewsOffice.pos = () => pos.toArray().map(v => +v.toFixed(3)); window.__ewsOffice.breakdown = () => { const fr = new THREE.Frustum().setFromProjectionMatrix(new THREE.Matrix4().multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse)); const m = {}; scene.traverseVisible(o => { if (!(o.isMesh || o.isSprite || o.isPoints || o.isLine)) return; if (o.frustumCulled && !o.isSkinnedMesh && o.geometry && !fr.intersectsObject(o)) return; let r = o; while (r.parent && r.parent !== scene) r = r.parent; const k = (o.isSkinnedMesh ? "skin:" : o.isSprite ? "sprite:" : o.isInstancedMesh ? "inst:" : "") + (r.userData.mod || r.name || r.type); m[k] = (m[k] || 0) + (Array.isArray(o.material) ? o.material.length : 1); }); return Object.entries(m).sort((a, b) => b[1] - a[1]).slice(0, 40); }; window.__ewsOffice.hands = () => { const desks = ctx.desks || [], out = [];   /* fingertip-to-keyboard contact for typing agents (PR #6 gate: 5 cm) */
+  window.__ewsOffice.exterior = () => ctx.exterior?.info?.() || null; window.__ewsOffice.pos = () => pos.toArray().map(v => +v.toFixed(3)); window.__ewsOffice.breakdown = () => { const fr = new THREE.Frustum().setFromProjectionMatrix(new THREE.Matrix4().multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse)); const m = {}; scene.traverseVisible(o => { if (!(o.isMesh || o.isSprite || o.isPoints || o.isLine)) return; if (o.frustumCulled && !o.isSkinnedMesh && o.geometry && !fr.intersectsObject(o)) return; let r = o; while (r.parent && r.parent !== scene) r = r.parent; const k = (o.isSkinnedMesh ? "skin:" : o.isSprite ? "sprite:" : o.isInstancedMesh ? "inst:" : "") + (r.userData.mod || r.name || r.type); m[k] = (m[k] || 0) + (Array.isArray(o.material) ? o.material.length : 1); }); return Object.entries(m).sort((a, b) => b[1] - a[1]).slice(0, 40); }; window.__ewsOffice.hands = () => { const desks = ctx.desks || [], out = [];   /* fingertip-to-keyboard contact for typing agents (PR #6 gate: 5 cm) */
     for (const g of ctx.use('avatar')?.all || []) { if (g.userData.cur !== 'type' || !g.visible) continue; const tips = []; g.traverse(o => { if (o.isBone && /middle_?0?4/i.test(o.name)) tips.push(o); }); if (!tips.length) continue;
       const p = g.position; let best = null, bd = 1e9; for (const [x, z] of desks) { const d = Math.hypot(x - p.x, z - p.z); if (d < bd) { bd = d; best = [x, z]; } } if (!best || bd > 1.5) continue;
       const kb = new THREE.Box3(new THREE.Vector3(best[0] + 0.095 - 0.23, 0.76, best[1] - 0.48 - 0.08), new THREE.Vector3(best[0] + 0.095 + 0.23, 0.79, best[1] - 0.48 + 0.08));

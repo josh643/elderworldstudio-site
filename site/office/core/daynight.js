@@ -2,7 +2,8 @@
 // in America/Chicago, with real sunrise/sunset for Memphis. No real-time GI: we blend 4 baked looks (day, golden, dusk,
 // night) by sun elevation and push them into a handful of cheap knobs every 20 s:
 //   sky/fog colour, hemisphere + sun light, the shared window-view canvas (one redraw), exterior glass tint,
-//   ring lights + logo backlight (brighter at night), datacenter server glow (more visible at night).
+//   ring lights + logo backlight (brighter at night), datacenter server glow (more visible at night), and the real exterior
+//   (sky, haze, water, lamps, facade windows) via ctx.exterior.dayNight().
 // Staging-only override: ?time=HH:MM (ignored on the public hostname).
 const LAT = 35.1495, LON = -90.049, D2R = Math.PI / 180;
 export function sunElevation(date) {   // NOAA simplified solar position, degrees
@@ -47,6 +48,7 @@ export function start(ctx, { hemi, sun, scene, THREE }) {
   const apply = () => {
     const d = now(), el = sunElevation(d), P = blend(el);
     scene.background.set(P.st); scene.fog?.color.set(mixC(P.st, '#0b0716', 0.5)); hemi.intensity = P.hemi; sun.intensity = P.sun; sun.color.set(P.sc);
+    try { ctx.exterior?.dayNight?.(P, el, d); } catch (e) { console.warn(e); }   /* real exterior (core/exterior.js) */
     const V = ctx.kit.viewTex(ctx); drawView(V.image.getContext('2d'), P); V.needsUpdate = true;
     scene.traverse(o => { const t = o.userData?.dn; if (!t || !o.material) return; const mats = Array.isArray(o.material) ? o.material : [o.material];
       for (const mt of mats) { const b = remember(mt);
