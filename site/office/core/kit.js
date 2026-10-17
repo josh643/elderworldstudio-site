@@ -10,16 +10,32 @@ export function room(ctx, { x = 0, z = 0, w = 10, d = 8, floor = 0x2a2236, walls
   if (walls.includes('n')) W(0, -d / 2, w, 0); if (walls.includes('s')) W(0, d / 2, w, 0);
   if (walls.includes('w')) W(-w / 2, 0, d, Math.PI / 2); if (walls.includes('e')) W(w / 2, 0, d, Math.PI / 2);
   // team accent strip at the room's front edge (the carpet itself is neutral office tiles)
-  if (enclose) {   /* walled room: inset walls (neighbours sit back to back), doorway centred on the south side */
-    const t = 0.12, h = 3, hx = w / 2 - t / 2, hz = d / 2 - t / 2, dw = 1.6;
-    const P = (len, lx, lz, rot) => { const m = box(len, h, t, ctx.mat.wall, lx, h / 2, lz, g); m.rotation.y = rot; m.userData.wall = 1; return m; };
-    P(w, 0, -hz, 0); P(d, -hx, 0, Math.PI / 2); P(d, hx, 0, Math.PI / 2);
+  if (enclose) {   /* walled room v2 (Joshua 2026-10-16: "no more bare boxes"): inset walls (neighbours sit back to back), wood
+       wainscot + brass rail on both faces of the solid walls, a glass storefront on the south side (wood base, glass, brass
+       mullions, dark-wood header with the crest + team name), a framed doorway and a halo pendant inside. Every part uses shared
+       materials (glass is flagged batch), so a room adds ~0 draw calls once the engine batches the scene. */
+    const t = 0.12, h = 3, hx = w / 2 - t / 2, hz = d / 2 - t / 2, dw = 1.6, T = THREE, mt = ctx.mat;
+    const K = (ctx._roomKit ||= { glass: new T.MeshBasicMaterial({ color: 0xbfdcea, transparent: true, opacity: 0.22, depthWrite: false, side: T.DoubleSide }),
+      hide: new T.MeshBasicMaterial({ visible: false }), dk: M(0x3a2618), ring: new T.MeshBasicMaterial({ color: 0xffe6b8, toneMapped: false }), ringG: new T.TorusGeometry(1.0, 0.04, 8, 48).rotateX(Math.PI / 2) });
+    const P = (len, lx, lz, rot) => { const m = box(len, h, t, mt.wall, lx, h / 2, lz, g); m.rotation.y = rot; m.userData.wall = 1; return m; };
+    const wains = (len, lx, lz, rot) => { for (const sd of [-1, 1]) { const o = rot ? [lx + sd * (t / 2 + 0.016), lz] : [lx, lz + sd * (t / 2 + 0.016)];
+      const a = box(len, 1.0, 0.03, mt.wood, o[0], 0.5, o[1], g); a.rotation.y = rot; a.userData.noCollide = 1; const b = box(len, 0.05, 0.045, mt.trim, o[0], 1.02, o[1], g); b.rotation.y = rot; b.userData.noCollide = 1; } };
+    P(w, 0, -hz, 0); wains(w - 0.3, 0, -hz, 0); P(d, -hx, 0, Math.PI / 2); wains(d - 0.3, -hx, 0, Math.PI / 2); P(d, hx, 0, Math.PI / 2); wains(d - 0.3, hx, 0, Math.PI / 2);
     const dx = doorX, L = w / 2 + dx - dw / 2, Rr = w / 2 - dx - dw / 2;   /* doorway centre can be offset (doorX) */
-    P(L, -w / 2 + L / 2, hz, 0); P(Rr, w / 2 - Rr / 2, hz, 0);
-    box(dw, h - 2.3, t, ctx.mat.wall, dx, 2.3 + (h - 2.3) / 2, hz, g);   /* lintel */
-    for (const s of [-1, 1]) box(0.06, 2.3, t + 0.04, ctx.mat.trim, dx + s * (dw / 2 + 0.03), 1.15, hz, g);   /* door frame */
-    box(dw + 0.12, 0.06, t + 0.04, ctx.mat.trim, dx, 2.33, hz, g);
-    if (title) { const pl = ctx.panel(ctx.textCanvas([title, sub || ''], { w: 768, h: 192, size: 64 }), 1.5, 0.375, doorX, 2.62, d / 2 + 0.012, 0, g); pl.userData.plate = title; box(1.58, 0.45, 0.03, ctx.mat.trim, doorX, 2.62, d / 2 - 0.005, g); }
+    const front = (a, b) => { const len = b - a, c = (a + b) / 2; if (len < 0.05) return;
+      box(len, 0.9, t, mt.wood, c, 0.45, hz, g); box(len, 0.04, t + 0.04, mt.trim, c, 0.9, hz, g).userData.noCollide = 1;   // wood base + brass sill
+      const gl = new T.Mesh(new T.PlaneGeometry(len, 1.6), K.glass); gl.position.set(c, 1.7, hz); gl.userData.noCollide = 1; gl.userData.batch = 1; gl.userData.dn = 'glass'; g.add(gl);
+      box(len, 0.5, t, K.dk, c, 2.75, hz, g); box(len, 0.04, t + 0.04, mt.trim, c, 2.5, hz, g).userData.noCollide = 1;     // dark-wood header
+      const n = Math.max(1, Math.round(len / 1.5)); for (let i = 0; i <= n; i++) box(0.05, 1.6, t + 0.02, mt.trim, a + len * i / n, 1.7, hz, g).userData.noCollide = 1;   // mullions
+      const cb = box(len, h, t, K.hide, c, h / 2, hz, g); cb.userData.keep = 1; };   /* invisible blocker: the glass is solid to walk into */
+    front(-w / 2, -w / 2 + L); front(w / 2 - Rr, w / 2);
+    box(dw, h - 2.3, t, K.dk, dx, 2.3 + (h - 2.3) / 2, hz, g);   /* dark-wood lintel over the doorway */
+    for (const s of [-1, 1]) box(0.09, 2.36, t + 0.06, mt.trim, dx + s * (dw / 2 + 0.045), 1.18, hz, g);   /* brass door frame */
+    box(dw + 0.18, 0.07, t + 0.06, mt.trim, dx, 2.36, hz, g);
+    { const r = new T.Mesh(K.ringG, K.ring); r.position.set(0, 2.85, 0); r.userData.noCollide = 1; g.add(r); for (let k = 0; k < 3; k++) { const an = k * 2.094; box(0.008, 0.15, 0.008, mt.dark, Math.cos(an), 2.93, Math.sin(an), g).userData.noCollide = 1; } }
+    if (title) { const fz = d / 2 + 0.012, sx = dx;   /* header signage: crest + team name over the doorway, both faces lit (unlit materials) */
+      const pl = ctx.panel(ctx.textCanvas([title, sub || ''], { w: 768, h: 192, size: 64 }), 1.6, 0.4, sx + 0.25, 2.75, fz, 0, g); pl.userData.plate = title;
+      if (ctx.site?.brand?.logo) { const lg = ctx.panel(ctx.image(ctx.site.brand.logo), 0.42, 0.42, sx - 0.85, 2.75, fz, 0, g); lg.material.toneMapped = false; lg.userData.label = title + ' crest'; } }
   } else if (title) { const pl = ctx.panel(ctx.textCanvas([title, sub || ''], { w: 768, h: 192, size: 64 }), 1.5, 0.375, 0, 2.62, d / 2 + 0.012, 0, g); pl.userData.plate = title; }
   ctx.scene.add(g); ctx.extend(x - w / 2, z - d / 2, x + w / 2, z + d / 2); return g;
 }
