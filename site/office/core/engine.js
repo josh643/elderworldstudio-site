@@ -32,8 +32,9 @@ export async function start(opts = {}) {
   // renderer + auto quality tiers
   // GPU class: integrated/mobile GPUs get a lower pixel-ratio cap and no MSAA
   const gpuName = (() => { try { const g = document.createElement('canvas').getContext('webgl'); const x = g.getExtension('WEBGL_debug_renderer_info'); const n = x ? g.getParameter(x.UNMASKED_RENDERER_WEBGL) : ''; g.getExtension('WEBGL_lose_context')?.loseContext(); return String(n); } catch { return ''; } })();
-  const igpu = /intel|uhd|iris|mali|adreno|powervr|apple gpu|llvmpipe|swiftshader|videocore/i.test(gpuName);
-  const R = new THREE.WebGLRenderer({ antialias: !igpu && devicePixelRatio < 1.5, powerPreference: 'high-performance', stencil: true });   /* stencil: real window openings (kit.windowPane) */
+  const softwareGpu = /llvmpipe|swiftshader|software render/i.test(gpuName), igpu = /intel|uhd|iris|mali|adreno|powervr|apple gpu|llvmpipe|swiftshader|videocore/i.test(gpuName);
+  const qaCapture = !/elderworldstudio\.com$/.test(location.hostname) && (new URLSearchParams(location.search).has('capture') || softwareGpu);
+  const R = new THREE.WebGLRenderer({ antialias: !igpu && devicePixelRatio < 1.5, powerPreference: 'high-performance', stencil: true, preserveDrawingBuffer: qaCapture });   /* stencil: real window openings; retain preview frames for reliable QA capture */
   const lowEnd = (navigator.deviceMemory || 8) <= 4 || (navigator.hardwareConcurrency || 8) <= 4, RATIOS = [0.75, 1, 1.5];   // tier base ratios; DSCALE steps below these at runtime
   let tier = lowEnd ? 0 : devicePixelRatio > 1.5 ? 1 : 2; if (tier === 2 && matchMedia('(pointer: fine)').matches) RATIOS[2] = igpu ? 1.25 : 2;   // desktop: native res up to 2x, 1.25 on integrated GPUs
   if (igpu) { RATIOS[1] = Math.min(RATIOS[1], 1.0); if (tier > 1) tier = 1; }   /* integrated GPUs start on the mid tier: no 2K maps, no MSAA */
@@ -463,5 +464,16 @@ const PUBLIC = /(^|\.)elderworldstudio\.com$/.test(location.hostname) || /[?&]pu
   setInterval(() => { if (wantUpdate && idleNow()) { saveState(); location.reload(); } }, 5000);
   window.__ewsOffice.reloadState = { save: saveState, idleNow, peek: () => sessionStorage.getItem('ews-state') };
   Object.assign(window.__ewsOffice, { health: () => ({ stallMs: Math.round(performance.now() - lastFrameT), idleMs: Math.round(ctx.idleMs()), busy: busy() }), applyUpdateWhenIdle: () => { wantUpdate = true; return 'deferred'; } });
-  const frame0 = frame; R.setAnimationLoop(t => { lastFrameT = performance.now(); frame0(t); }); return { goTo, close, ctx };   // setAnimationLoop also drives WebXR frames
+  const frame0 = frame, renderFrame = t => { lastFrameT = performance.now(); frame0(t); };
+  Object.assign(window.__ewsOffice, {
+    capturePause: () => { if (R.xr.isPresenting) return false; R.setAnimationLoop(null); return true; },
+    captureResume: () => { if (!R.xr.isPresenting) R.setAnimationLoop(renderFrame); },
+    captureSnapshot: () => {
+      if (!qaCapture || R.xr.isPresenting) return null;
+      R.setAnimationLoop(null); renderFrame(performance.now());
+      const copy = document.createElement('canvas'); copy.width = R.domElement.width; copy.height = R.domElement.height;
+      copy.getContext('2d').drawImage(R.domElement, 0, 0); return copy.toDataURL('image/jpeg', 0.9);
+    }
+  });
+  R.setAnimationLoop(renderFrame); return { goTo, close, ctx };   // setAnimationLoop also drives WebXR frames
 }
