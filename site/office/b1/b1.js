@@ -16,9 +16,10 @@ export function buildB1(ctx, core, ox) {
   // curved monitor wall at the far end
   const MON = ['World map', 'Agent status', 'FPS per tier', 'Deploys + hot updates', 'Security patrols', 'Construction gate', 'Budget'];
   const mons = MON.map((title, i) => { const cv = document.createElement('canvas'); cv.width = 384; cv.height = 216; const tex = new THREE.CanvasTexture(cv);
-    const a = (i - 3) * 0.26, R = 11, x = cx + Math.sin(a) * R, z = Z1 - 1.2 - (1 - Math.cos(a)) * R * 0.5;
-    add(new THREE.BoxGeometry(3.1, 1.85, 0.12), dark, x, 1.9, z + 0.07, -a);
-    add(new THREE.PlaneGeometry(2.9, 1.65), new THREE.MeshBasicMaterial({ map: tex, toneMapped: false }), x, 1.9, z, Math.PI - a);
+    const a = (i - 3) * 0.26, R = 11, x = cx + Math.sin(a) * R, z = Z1 - 1.4 - (1 - Math.cos(a)) * R;
+    const tx = cx, tz = fz + 6, yaw = Math.atan2(tx - x, tz - z), nx = Math.sin(yaw), nz = Math.cos(yaw);   // face the command table
+    add(new THREE.BoxGeometry(3.1, 1.85, 0.12), dark, x - nx * 0.08, 1.9, z - nz * 0.08, yaw);
+    add(new THREE.PlaneGeometry(2.9, 1.65), new THREE.MeshBasicMaterial({ map: tex, toneMapped: false }), x, 1.9, z, yaw);
     return { title, cv, tex }; });
   // round command table with the live map on top
   const mapCv = document.createElement('canvas'); mapCv.width = mapCv.height = 256; const mapTex = new THREE.CanvasTexture(mapCv);
@@ -29,7 +30,7 @@ export function buildB1(ctx, core, ox) {
   add(new THREE.BoxGeometry(5, 0.35, 3), walnut, cx, 0.17, fz + 11.5, 0, true, 5, 3);
   add(new THREE.BoxGeometry(2.6, 0.75, 0.9), walnut, cx, 0.72, fz + 11.2, 0, true, 2.6, 0.9);
   add(new THREE.BoxGeometry(2.4, 0.04, 0.05), brass, cx, 1.1, fz + 10.75);
-  const consoles = [[-6, 7, 'Bestla'], [6, 7, 'Nerthus'], [0, 2.5, 'Fjörgyn']];
+  const consoles = [[-6, 7, 'Bestla'], [6, 7, 'Nerthus'], [-6, 10, 'Fjörgyn']];
   for (const [dx, dz] of consoles) { add(new THREE.BoxGeometry(1.8, 0.8, 0.8), slate, cx + dx, 0.4, fz + dz, 0, true, 1.8, 0.8); add(new THREE.BoxGeometry(0.9, 0.55, 0.05), E(0x274a5a), cx + dx, 1.15, fz + dz - 0.2); }
   for (const [dx, dz] of [[-8, 11], [-8, 13], [8, 11], [8, 13]]) add(new THREE.BoxGeometry(0.6, 0.45, 0.6), seat, cx + dx, 0.23, fz + dz);
   add(new THREE.BoxGeometry(4, 1.05, 0.7), walnut, X0 + 2.6, 0.52, fz - 3.8, 0, true, 4, 0.7);
@@ -59,15 +60,15 @@ export function buildB1(ctx, core, ox) {
     busy = false;
   }
   // people: the world team at their posts + off-duty (paused) agents at the coffee bar. Same avatar maker as the team halls.
-  try { const A = ctx.use?.('avatar'), teams = ctx.roster?.teams || [];
-    const posts = { 'world-ops': [0, 11.6, Math.PI], 'world-interiors': [-6, 7.6, Math.PI], 'world-exterior': [6, 7.6, Math.PI], 'world-life': [0, 3.1, Math.PI], 'world-physics': [-8, 11, 0], 'world-light': [-8, 13, 0], 'world-qa': [8, 11, 0], 'world-character': [8, 13, 0] };
+  (async () => { try { const A = ctx.use?.('avatar'); let teams = ctx.roster?.teams; if (!teams?.length) teams = (await (await fetch('/office/data/roster.json', { cache: 'no-store' })).json()).teams || [];
+    const posts = { 'world-ops': [0, 11.6, Math.PI], 'world-interiors': [-6, 7.6, Math.PI], 'world-exterior': [6, 7.6, Math.PI], 'world-life': [-6, 10.6, Math.PI], 'world-physics': [-8, 11, 0], 'world-light': [-8, 13, 0], 'world-qa': [8, 11, 0], 'world-character': [8, 13, 0] };
     const off = []; let k = 0;
     for (const t of teams) for (const m of t.members || []) {
       let p = posts[m.id]; if (!p && m.offDuty) { p = [-12 + 1.4 + (k++) * 1.1, -2.9, 0]; off.push(m.id); } if (!p || !A) continue;
       const av = A.make(m, t.floor === 'B1' ? 0x6a8fb0 : 0x8a7a6a, () => ctx.card(`<h3>${ctx.esc(m.name)}</h3><p>${ctx.esc(m.role)}${m.offDuty ? ' · off duty (paused)' : ''}</p>`));
       av.position.set(cx + p[0], 0, fz + p[1]); av.rotation.y = p[2]; av.userData.b1 = true; g.add(av); }
-    window.__ewsB1 = { offDuty: off };
-  } catch (e) { console.warn('b1 people', e); }
+    window.__ewsB1 = { offDuty: off, avatars: !!A };
+  } catch (e) { console.warn('b1 people', e); window.__ewsB1 = { err: String(e) }; } })();
   refresh();
   return { group: g, bounds: { x0: X0 + 0.5, z0: Z0 + 0.5, x1: X1 - 0.5, z1: Z1 - 0.5 }, onFrame() { const t = performance.now(); if (t - last > 1000) { last = t; refresh(); } }, dispose() { alive = false; } };
 }

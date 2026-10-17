@@ -1,434 +1,358 @@
 {
-  "subceo": {
-    "id": "subceo",
-    "name": "Odin",
-    "role": "Sub-CEO"
-  },
-  "receptionist": {
-    "id": "receptionist",
-    "name": "Freyja",
-    "role": "receptionist",
-    "hall": "Fólkvangr"
-  },
-  "teams": [
+ "subceo": {
+  "id": "subceo",
+  "name": "Odin",
+  "role": "Sub-CEO"
+ },
+ "receptionist": {
+  "id": "receptionist",
+  "name": "Freyja",
+  "role": "receptionist",
+  "hall": "Fólkvangr"
+ },
+ "teams": [
+  {
+   "key": "games",
+   "name": "Games",
+   "members": [
     {
-      "key": "games",
-      "name": "Games",
-      "members": [
-        {
-          "id": "lead-games",
-          "name": "Freyr",
-          "role": "games lead",
-          "lead": true
-        },
-        {
-          "id": "game-coder",
-          "name": "Brokkr",
-          "role": "game coder",
-          "lead": false
-        },
-        {
-          "id": "coder",
-          "name": "Völund",
-          "role": "coder",
-          "lead": false
-        },
-        {
-          "id": "assets",
-          "name": "Dvalin",
-          "role": "assets + office characters",
-          "lead": false
-        },
-        {
-          "id": "animation",
-          "name": "Loki",
-          "role": "animation + office motion",
-          "lead": false
-        },
-        {
-          "id": "anim-polish",
-          "name": "Lofn",
-          "role": "animation polish + office motion",
-          "lead": false
-        },
-        {
-          "id": "qa",
-          "name": "Forseti",
-          "role": "QA",
-          "lead": false
-        },
-        {
-          "id": "store",
-          "name": "Hermod",
-          "role": "store",
-          "lead": false
-        }
-      ]
+     "id": "lead-games",
+     "name": "Freyr",
+     "role": "games lead",
+     "lead": true
     },
     {
-      "key": "client",
-      "name": "Client sites",
-      "members": [
-        {
-          "id": "lead-client",
-          "name": "Frigg",
-          "role": "client sites lead",
-          "lead": true
-        },
-        {
-          "id": "client-fast",
-          "name": "Thor",
-          "role": "client sites",
-          "lead": false
-        },
-        {
-          "id": "client-care",
-          "name": "Eir",
-          "role": "client care",
-          "lead": false
-        },
-        {
-          "id": "followup",
-          "name": "Hlín",
-          "role": "follow-up",
-          "lead": false
-        },
-        {
-          "id": "kiosk-polish",
-          "name": "Iðunn",
-          "role": "kiosk polish",
-          "lead": false
-        }
-      ]
+     "id": "game-coder",
+     "name": "Brokkr",
+     "role": "game coder",
+     "lead": false
     },
     {
-      "key": "marketing",
-      "name": "Marketing",
-      "members": [
-        {
-          "id": "lead-marketing",
-          "name": "Bragi",
-          "role": "marketing lead",
-          "lead": true
-        },
-        {
-          "id": "social",
-          "name": "Huginn",
-          "role": "social",
-          "lead": false
-        },
-        {
-          "id": "devlog",
-          "name": "Saga",
-          "role": "devlog",
-          "lead": false
-        },
-        {
-          "id": "research",
-          "name": "Muninn",
-          "role": "research",
-          "lead": false
-        },
-        {
-          "id": "stats",
-          "name": "Mímir",
-          "role": "stats + world analytics",
-          "lead": false
-        },
-        {
-          "id": "prospects",
-          "name": "Skaði",
-          "role": "prospects",
-          "lead": false,
-          "offDuty": true,
-          "status": "off duty (paused)"
-        }
-      ]
+     "id": "coder",
+     "name": "Völund",
+     "role": "coder",
+     "lead": false
     },
     {
-      "key": "money",
-      "name": "Money",
-      "members": [
-        {
-          "id": "lead-money",
-          "name": "Njord",
-          "role": "money lead",
-          "lead": true
-        },
-        {
-          "id": "cfo",
-          "name": "Fulla",
-          "role": "CFO",
-          "lead": false
-        },
-        {
-          "id": "bookkeeper",
-          "name": "Vár",
-          "role": "bookkeeper",
-          "lead": false
-        },
-        {
-          "id": "compliance",
-          "name": "Týr",
-          "role": "compliance",
-          "lead": false
-        },
-        {
-          "id": "finance",
-          "name": "Gefjon",
-          "role": "finance",
-          "lead": false
-        }
-      ]
+     "id": "assets",
+     "name": "Dvalin",
+     "role": "assets",
+     "lead": false
     },
     {
-      "key": "ops",
-      "name": "Ops",
-      "members": [
-        {
-          "id": "lead-ops",
-          "name": "Heimdall",
-          "role": "ops lead",
-          "lead": true
-        },
-        {
-          "id": "guard",
-          "name": "Víðarr",
-          "role": "guard",
-          "lead": false
-        },
-        {
-          "id": "watchdog",
-          "name": "Garmr",
-          "role": "watchdog",
-          "lead": false
-        },
-        {
-          "id": "docs",
-          "name": "Kvasir",
-          "role": "docs",
-          "lead": false
-        },
-        {
-          "id": "support",
-          "name": "Baldr",
-          "role": "support",
-          "lead": false
-        },
-        {
-          "id": "inbox",
-          "name": "Ratatoskr",
-          "role": "inbox",
-          "lead": false
-        },
-        {
-          "id": "bugs",
-          "name": "Vali",
-          "role": "bug triage",
-          "lead": false
-        },
-        {
-          "id": "pipeline-audit",
-          "name": "Norns",
-          "role": "pipeline audit",
-          "lead": false
-        }
-      ]
+     "id": "animation",
+     "name": "Loki",
+     "role": "animation",
+     "lead": false
     },
     {
-      "key": "callcenter",
-      "name": "Call Center",
-      "members": [
-        {
-          "id": "lead-callcenter",
-          "name": "Gná",
-          "role": "call center lead",
-          "lead": true,
-          "unstaffed": true,
-          "status": "not staffed yet"
-        },
-        {
-          "id": "callcenter-voice",
-          "name": "Rind",
-          "role": "phone answering",
-          "lead": false,
-          "unstaffed": true,
-          "status": "not staffed yet"
-        },
-        {
-          "id": "callcenter-sms",
-          "name": "Syn",
-          "role": "texts",
-          "lead": false,
-          "unstaffed": true,
-          "status": "not staffed yet"
-        },
-        {
-          "id": "callcenter-email",
-          "name": "Hnoss",
-          "role": "call center",
-          "lead": false
-        },
-        {
-          "id": "callcenter-train",
-          "name": "Snotra",
-          "role": "training data",
-          "lead": false
-        }
-      ]
+     "id": "anim-polish",
+     "name": "Lofn",
+     "role": "animation polish",
+     "lead": false
     },
     {
-      "key": "design",
-      "name": "Design",
-      "members": [
-        {
-          "id": "design-ui",
-          "name": "Rán",
-          "role": "UI designer (world UI)",
-          "lead": false,
-          "offDuty": true,
-          "status": "off duty (paused)"
-        },
-        {
-          "id": "design-qa",
-          "name": "Eistla",
-          "role": "design QA",
-          "lead": false,
-          "offDuty": true,
-          "status": "off duty (paused)"
-        }
-      ]
+     "id": "qa",
+     "name": "Forseti",
+     "role": "QA",
+     "lead": false
     },
     {
-      "key": "architecture",
-      "name": "Architecture",
-      "members": [
-        {
-          "id": "lead-arch",
-          "name": "Máni",
-          "role": "architecture lead",
-          "lead": true
-        },
-        {
-          "id": "arch-building",
-          "name": "Vili",
-          "role": "building architect",
-          "lead": false
-        },
-        {
-          "id": "arch-landscape",
-          "name": "Jörð",
-          "role": "landscape & urban designer",
-          "lead": false
-        },
-        {
-          "id": "arch-qa",
-          "name": "Vé",
-          "role": "layout QA",
-          "lead": false
-        }
-      ],
-      "floor": "3",
-      "seats": {
-        "lead-arch": "f3-arch-lead-arch",
-        "arch-building": "f3-arch-arch-building",
-        "arch-landscape": "f3-arch-arch-landscape",
-        "arch-qa": "f3-arch-arch-qa"
-      }
-    },
-    {
-      "key": "world",
-      "name": "World Direction",
-      "floor": "B1",
-      "members": [
-        {
-          "id": "world-ops",
-          "name": "Ægir",
-          "role": "World Director",
-          "lead": true,
-          "post": "b1-director-desk"
-        },
-        {
-          "id": "world-interiors",
-          "name": "Bestla",
-          "role": "Interiors & Floors lead",
-          "post": "rounds:floors"
-        },
-        {
-          "id": "world-life",
-          "name": "Fjörgyn",
-          "role": "Agents & Life lead",
-          "post": "rounds:floors"
-        },
-        {
-          "id": "world-character",
-          "name": "Ívaldi",
-          "role": "Character Artist",
-          "post": "b1-console"
-        }
-      ],
-      "restricted": true
-    },
-    {
-      "key": "world-eng",
-      "name": "World Engineering",
-      "floor": "B1",
-      "members": [
-        {
-          "id": "world-physics",
-          "name": "Sleipnir",
-          "role": "physics, collision & navigation"
-        },
-        {
-          "id": "world-light",
-          "name": "Sunna",
-          "role": "lighting, sky & ambience",
-          "post": "roaming"
-        },
-        {
-          "id": "world-exterior",
-          "name": "Nerthus",
-          "role": "Exterior & Town lead",
-          "post": "rounds:town"
-        },
-        {
-          "id": "world-qa",
-          "name": "Alvíss",
-          "role": "level & fps QA",
-          "post": "rounds:qa"
-        }
-      ],
-      "restricted": true
+     "id": "store",
+     "name": "Hermod",
+     "role": "store",
+     "lead": false
     }
-  ],
-  "nodes": [
+   ]
+  },
+  {
+   "key": "client",
+   "name": "Client sites",
+   "members": [
     {
-      "name": "pve-720",
-      "kind": "Proxmox node",
-      "cpus": 20,
-      "online": true
+     "id": "lead-client",
+     "name": "Frigg",
+     "role": "client sites lead",
+     "lead": true
     },
     {
-      "name": "pve-mini",
-      "kind": "Proxmox node",
-      "cpus": 8,
-      "online": true
+     "id": "client-fast",
+     "name": "Thor",
+     "role": "client sites",
+     "lead": false
     },
     {
-      "name": "pve-mini-3070",
-      "kind": "Proxmox node",
-      "cpus": 6,
-      "online": true
+     "id": "client-care",
+     "name": "Eir",
+     "role": "client care",
+     "lead": false
     },
     {
-      "name": "Gen8",
-      "kind": "HPE ProLiant",
-      "online": false
+     "id": "followup",
+     "name": "Hlín",
+     "role": "follow-up",
+     "lead": false
     },
     {
-      "name": "Gen9",
-      "kind": "HPE ProLiant",
-      "online": false
+     "id": "kiosk-polish",
+     "name": "Iðunn",
+     "role": "kiosk polish",
+     "lead": false
     }
-  ]
+   ]
+  },
+  {
+   "key": "marketing",
+   "name": "Marketing",
+   "members": [
+    {
+     "id": "lead-marketing",
+     "name": "Bragi",
+     "role": "marketing lead",
+     "lead": true
+    },
+    {
+     "id": "social",
+     "name": "Huginn",
+     "role": "social",
+     "lead": false
+    },
+    {
+     "id": "devlog",
+     "name": "Saga",
+     "role": "devlog",
+     "lead": false
+    },
+    {
+     "id": "research",
+     "name": "Muninn",
+     "role": "research",
+     "lead": false
+    },
+    {
+     "id": "stats",
+     "name": "Mímir",
+     "role": "stats",
+     "lead": false
+    },
+    {
+     "id": "prospects",
+     "name": "Skaði",
+     "role": "prospects",
+     "lead": false
+    }
+   ]
+  },
+  {
+   "key": "money",
+   "name": "Money",
+   "members": [
+    {
+     "id": "lead-money",
+     "name": "Njord",
+     "role": "money lead",
+     "lead": true
+    },
+    {
+     "id": "cfo",
+     "name": "Fulla",
+     "role": "CFO",
+     "lead": false
+    },
+    {
+     "id": "bookkeeper",
+     "name": "Vár",
+     "role": "bookkeeper",
+     "lead": false
+    },
+    {
+     "id": "compliance",
+     "name": "Týr",
+     "role": "compliance",
+     "lead": false
+    },
+    {
+     "id": "finance",
+     "name": "Gefjon",
+     "role": "finance",
+     "lead": false
+    }
+   ]
+  },
+  {
+   "key": "ops",
+   "name": "Ops",
+   "members": [
+    {
+     "id": "lead-ops",
+     "name": "Heimdall",
+     "role": "ops lead",
+     "lead": true
+    },
+    {
+     "id": "guard",
+     "name": "Víðarr",
+     "role": "guard",
+     "lead": false
+    },
+    {
+     "id": "watchdog",
+     "name": "Garmr",
+     "role": "watchdog",
+     "lead": false
+    },
+    {
+     "id": "docs",
+     "name": "Kvasir",
+     "role": "docs",
+     "lead": false
+    },
+    {
+     "id": "support",
+     "name": "Baldr",
+     "role": "support",
+     "lead": false
+    },
+    {
+     "id": "inbox",
+     "name": "Ratatoskr",
+     "role": "inbox",
+     "lead": false
+    },
+    {
+     "id": "bugs",
+     "name": "Vali",
+     "role": "bug triage",
+     "lead": false
+    },
+    {
+     "id": "pipeline-audit",
+     "name": "Norns",
+     "role": "pipeline audit",
+     "lead": false
+    }
+   ]
+  },
+  {
+   "key": "callcenter",
+   "name": "Call Center",
+   "members": [
+    {
+     "id": "lead-callcenter",
+     "name": "Gná",
+     "role": "call center lead",
+     "lead": true
+    },
+    {
+     "id": "callcenter-voice",
+     "name": "Var",
+     "role": "phone answering",
+     "lead": false
+    },
+    {
+     "id": "callcenter-sms",
+     "name": "Syn",
+     "role": "texts",
+     "lead": false
+    },
+    {
+     "id": "callcenter-email",
+     "name": "Hnoss",
+     "role": "call center",
+     "lead": false
+    },
+    {
+     "id": "callcenter-train",
+     "name": "Snotra",
+     "role": "training data",
+     "lead": false
+    }
+   ]
+  },
+  {
+   "key": "design",
+   "name": "Design",
+   "members": [
+    {
+     "id": "design-ui",
+     "name": "Rán",
+     "role": "UI designer",
+     "lead": false
+    },
+    {
+     "id": "design-qa",
+     "name": "Vor",
+     "role": "design QA",
+     "lead": false
+    }
+   ]
+  },
+  {
+   "key": "architecture",
+   "name": "Architecture",
+   "members": [
+    {
+     "id": "lead-arch",
+     "name": "Máni",
+     "role": "architecture lead",
+     "lead": true
+    },
+    {
+     "id": "arch-building",
+     "name": "Vili",
+     "role": "building architect",
+     "lead": false
+    },
+    {
+     "id": "arch-landscape",
+     "name": "Jörð",
+     "role": "landscape & urban designer",
+     "lead": false
+    },
+    {
+     "id": "arch-qa",
+     "name": "Vé",
+     "role": "layout QA",
+     "lead": false
+    }
+   ],
+   "floor": "3",
+   "seats": {
+    "lead-arch": "f3-arch-lead-arch",
+    "arch-building": "f3-arch-arch-building",
+    "arch-landscape": "f3-arch-arch-landscape",
+    "arch-qa": "f3-arch-arch-qa"
+   }
+  }
+ ],
+ "nodes": [
+  {
+   "name": "pve-720",
+   "kind": "Proxmox node",
+   "cpus": 20,
+   "online": true
+  },
+  {
+   "name": "pve-mini",
+   "kind": "Proxmox node",
+   "cpus": 8,
+   "online": true
+  },
+  {
+   "name": "pve-mini-3070",
+   "kind": "Proxmox node",
+   "cpus": 6,
+   "online": true
+  },
+  {
+   "name": "Gen8",
+   "kind": "HPE ProLiant",
+   "online": false
+  },
+  {
+   "name": "Gen9",
+   "kind": "HPE ProLiant",
+   "online": false
+  }
+ ]
 }
