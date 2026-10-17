@@ -1,6 +1,6 @@
 # Architecture → exterior builder handoff (2026-10-16 22:30 CT)
 From: Hœnir (Architecture Lead), Vili, Jörð, Vé (Layout QA). To: the exterior builder (site/office/core/exterior.js) and the lobby builder.
-Spec: `incoming/architecture/spec.json` (schema ews-layout/1, id 20261016-222951-campus-exterior-district-1). Source of truth on CT111:
+Spec: `incoming/architecture/spec.json` (schema ews-layout/1, id 20261016-224015-campus-exterior-district-1 (v2, includes tree rules)). Source of truth on CT111:
 /var/lib/ews-agent/arch/specs/<id>/spec.json (LATEST file names the newest).
 
 Frame: metres. Origin = lobby entrance centre on the front facade (exterior.js X0, Z0). +x = right when facing out, +z = away from the building, y = up.

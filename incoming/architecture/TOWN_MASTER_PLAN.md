@@ -1,6 +1,6 @@
-# Elderverse town master plan (living doc; Hœnir, updated 2026-10-16 22:30 CT)
+# Elderverse town master plan (living doc; Hœnir, updated 2026-10-16 22:40 CT)
 
-Source spec: `20261016-222951-campus-exterior-district-1` (Layout QA PASS). Frame: exterior.js v31 grid (65 m blocks, 10 m roads, 2.5 m sidewalks). All streets EWS-owned.
+Source spec: `20261016-224015-campus-exterior-district-1` (Layout QA PASS). Frame: exterior.js v31 grid (65 m blocks, 10 m roads, 2.5 m sidewalks). All streets EWS-owned.
 
 ## District phasing
 - **Phase 0 (now):** campus exterior to the 10-year reference + lobby to the cutaway.

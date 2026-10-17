@@ -1,8 +1,8 @@
 {
  "schema": "ews-layout/1",
- "id": "20261016-222951-campus-exterior-district-1",
+ "id": "20261016-224015-campus-exterior-district-1",
  "area": "campus-exterior+district-1",
- "created": "2026-10-16T22:29:51.838786-05:00",
+ "created": "2026-10-16T22:40:15.213111-05:00",
  "reference": "/opt/ews-agent/policy/architecture/refs/campus-vision-10yr.jpg",
  "reference_lobby": "/opt/ews-agent/policy/architecture/refs/lobby-ground-floor.jpg",
  "master": {
@@ -37,7 +37,7 @@
      -60,
      -70,
      60,
-     57.0
+     57
     ],
     "use": "EWS campus core"
    },
@@ -45,9 +45,9 @@
     "id": "district-1",
     "rect": [
      -97.5,
-     57.0,
+     57,
      97.5,
-     132.0
+     132
     ],
     "use": "first client district (12 lots: commercial on Elder Avenue, mixed on Forge Street)"
    },
@@ -55,7 +55,7 @@
     "id": "reserve",
     "rect": [
      -162.5,
-     132.0,
+     132,
      162.5,
      322
     ],
@@ -70,9 +70,9 @@
     "owner": "EWS",
     "rect": [
      -167.5,
-     57.0,
+     57,
      167.5,
-     67.0
+     67
     ],
     "lanes": 2,
     "sidewalk_w": 2.5
@@ -84,9 +84,9 @@
     "owner": "EWS",
     "rect": [
      -167.5,
-     122.0,
+     122,
      167.5,
-     132.0
+     132
     ],
     "lanes": 2,
     "sidewalk_w": 2.5
@@ -98,9 +98,9 @@
     "owner": "EWS",
     "rect": [
      -102.5,
-     67.0,
+     67,
      -92.5,
-     122.0
+     122
     ],
     "lanes": 2,
     "sidewalk_w": 2.5
@@ -112,9 +112,9 @@
     "owner": "EWS",
     "rect": [
      -37.5,
-     67.0,
+     67,
      -27.5,
-     122.0
+     122
     ],
     "lanes": 2,
     "sidewalk_w": 2.5
@@ -126,9 +126,9 @@
     "owner": "EWS",
     "rect": [
      27.5,
-     67.0,
+     67,
      37.5,
-     122.0
+     122
     ],
     "lanes": 2,
     "sidewalk_w": 2.5
@@ -140,9 +140,9 @@
     "owner": "EWS",
     "rect": [
      92.5,
-     67.0,
+     67,
      102.5,
-     122.0
+     122
     ],
     "lanes": 2,
     "sidewalk_w": 2.5
@@ -389,6 +389,7 @@
     -4
    ],
    "floors": 7,
+   "floor_h": 4.2,
    "height": 31,
    "facade": {
     "type": "charcoal stone slab",
@@ -410,6 +411,7 @@
     -6
    ],
    "floors": 4,
+   "floor_h": 4.5,
    "height": 18,
    "facade": {
     "type": "billboard wall over glazed ground floor",
@@ -436,6 +438,7 @@
     -14
    ],
    "floors": 3,
+   "floor_h": 4.0,
    "height": 13,
    "facade": {
     "type": "glass curtain wall"
@@ -455,6 +458,7 @@
     -14
    ],
    "floors": 1,
+   "floor_h": 12,
    "height": 12,
    "facade": {
     "type": "geodesic dome",
@@ -628,8 +632,7 @@
     "face": "+z",
     "feed": "central ad server"
    }
-  ],
-  "source": "baseline"
+  ]
  },
  "interiors": [
   {
@@ -1123,7 +1126,7 @@
    "note": "lobby from the approved cutaway; floor 3 architecture studio"
   }
  },
- "cost_usd": 0.00625,
+ "cost_usd": 0.00594,
  "task": "",
  "qa": {
   "verdict": "PASS",
@@ -1136,11 +1139,11 @@
    "streets": 6
   },
   "by": "Vé (arch-qa)",
-  "vision_advisory": "Here's the comparison of the plan versus the reference:\n\n1. **Landmarks Missing**: The reference shows a glass dome and pavilion which are not represented in the plan.\n2. **Crest Tower Position**: The charcoal crest tower in the reference is not aligned correctly in the plan.\n3. **Billboard Wing**: There’s no indication of a billboard wing in the plan.\n4. **Pond Representation**: The pond with boulders and reeds is visible in the reference but not included in the plan.\n5. **Path Placement**: The curving lit paths depicted in the reference do not appear in the plan layout.\n6. **Building Orientation**: The orientation and placement of buildings in the plan do not match the perspective view from the reference.\n\nVERDICT: FAIL - significant mismatches including missing landmarks and incorrect placements.",
+  "vision_advisory": "Upon comparison of the approved reference image and the plan, the following mismatches have been identified:\n\n1. **Missing Glass Dome**: The reference shows a glass dome structure that is absent from the plan.\n2. **No Pavilion**: The pavilion noted in the reference image is not depicted in the plan.\n3. **Incorrect Building Arrangement**: The placement of buildings in the plan does not correspond correctly with the perspective view; buildings appear misaligned.\n4. **Missing Landmark Elements**: Other key landmark features (pond, boulders, reeds) that are visible in the reference are not represented in the plan.\n5. **Pathways**: The curving lit paths shown in the reference are not present in the plan.\n\nVERDICT: FAIL - Reasons: Missing key structures (glass dome, pavilion), incorrect building arrangement, lack of landmark elements, and absence of pathways.",
   "vision_note": "advisory: gpt-4o-mini cannot reliably match a top-down plan to a perspective photo; the blocking side-by-side check runs on in-engine renders (survey) once the builder ships the spec to staging"
  },
  "sheets": [
-  "/var/lib/ews-agent/arch/specs/20261016-222951-campus-exterior-district-1/compare_campus.jpg",
-  "/var/lib/ews-agent/arch/specs/20261016-222951-campus-exterior-district-1/compare_lobby.jpg"
+  "/var/lib/ews-agent/arch/specs/20261016-224015-campus-exterior-district-1/compare_campus.jpg",
+  "/var/lib/ews-agent/arch/specs/20261016-224015-campus-exterior-district-1/compare_lobby.jpg"
  ]
 }
