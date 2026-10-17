@@ -19,7 +19,7 @@ function stamp(e, stages, ev, now) {
   if (ev.overall != null) { const o = clamp(ev.overall); e.si = Math.min(N, Math.floor(o * N + 1e-9)); e.p = e.si >= N ? 1 : +(o * N - e.si).toFixed(4); }
   else { if (ev.stage != null) { const i = stages.indexOf(ev.stage); if (i >= 0) e.si = i; } if (ev.progress != null) e.p = clamp(ev.progress); }
   if (e.si >= N) { e.si = N; e.p = 1; }
-  e.at = now; e.next = ev.next && ev.next.eta > 0 ? { o: clamp(ev.next.o), eta: Math.min(3600, Math.floor(ev.next.eta)) } : null;
+  e.at = now; e.progressAt = now; e.next = ev.next && ev.next.eta > 0 ? { o: clamp(ev.next.o), eta: Math.min(3600, Math.floor(ev.next.eta)) } : null;
 }
 // Layout gate (Joshua 2026-10-16 11:20 PM: "redo the layout first, not start building first"). Until Anna sets an approved town layout
 // (w.layout = {approved:true, version, by, at} via a 'layout.approve' event with the office ingest key), every site, road and zone is held at

@@ -13,6 +13,7 @@ import { GLTFLoader } from '../../vendor/jsm/loaders/GLTFLoader.js?v=169';
 import { mergeGeometries } from '../../vendor/jsm/utils/BufferGeometryUtils.js?v=169';
 import { DRACOLoader } from '../../vendor/jsm/loaders/DRACOLoader.js?v=169';
 import { KTX2Loader } from '../../vendor/jsm/loaders/KTX2Loader.js?v=169';
+import { ago, constructionStatus } from './construction-status.mjs';
 
 const BUILD = ['survey', 'groundwork', 'foundation', 'framing', 'walls', 'glazing', 'signage', 'landscaping', 'open'];
 const ROAD = ['survey', 'grading', 'base', 'paving', 'striping', 'open'];
@@ -49,9 +50,14 @@ export default {
       ws.onclose = () => { if (me.dead) return; connected = false; me.stats.mode = 'reconnecting'; setTimeout(connect, retry); retry = Math.min(30000, retry * 2); };
       ws.onerror = () => { try { ws.close(); } catch {} };
     };
+    const refreshPipelineStatus = async () => {
+      try { const r = await fetch('/api/office/state', { cache: 'no-store' }); if (r.ok) me.pipelineState = await r.json(); } catch {}
+    };
+    refreshPipelineStatus();
     me.timers = [setTimeout(() => { poll(); connect(); }, 600),
       setInterval(() => { if (connected && ws.readyState === 1) ws.send('ping'); else if (Date.now() - pollT > 10000) { pollT = Date.now(); poll(); } }, 25000),
-      setInterval(() => { if (!connected) poll(); }, 10000)];
+      setInterval(() => { if (!connected) poll(); }, 10000),
+      setInterval(refreshPipelineStatus, 15000)];
     me.closeWs = () => { try { ws && ws.close(); } catch {} };
     this.sites = new Map(); this.workers = null; this.acc = 0; this.toastQ = [];
     this.staging = /\.pages\.dev$|^localhost$|^127\./.test(location.hostname) && !ctx.publicMode;
@@ -506,8 +512,10 @@ export default {
     el.banner.visible = si >= 8 && (Date.now() - (this.vis.get(e.id).openAt ||= Date.now())) < 15 * 60e3;
     const pct = (si + f) / 8, lotN = 'LOT ' + String(e.lot).padStart(2, '0'), title = (e.public && e.tenant) || 'New shop', CS = ['Staking out the pad', 'Grading the pad', 'Pouring the slab', 'Raising steel', 'Closing in the walls', 'Setting the glass', 'Hanging the signage', 'Planting + paving', 'Open'];
     S.board.grp.visible = si < 8 || el.banner.visible;
-    if (near) { const hold = !!e.hold; S.board.draw(title, 'Website → explorable building', hold ? 'Planned · awaiting layout approval' : si >= 8 ? 'Open now' : BL[si], hold ? 0 : Math.min(pct, 1), hold ? 0 : si, 8,
-      hold ? 'Survey crew: pad staked · build starts after Joshua approves the town layout' : si >= 8 ? 'Built live in the Elderverse' : 'Live · crew: ' + CS[si] + ' · ' + this.ago(e.since),
+    if (near) { const hold = !!e.hold, status = constructionStatus(e, this.pipelineState, this.layout), lastProgress = 'Last progress ' + ago(e.progressAt || e.at);
+      const activity = si >= 8 ? 'Built live in the Elderverse' : status.running ? 'Live crew: ' + CS[si] : 'Paused, waiting on ' + status.reason;
+      S.board.draw(title, 'Website → explorable building', hold ? 'Planned · awaiting layout approval' : si >= 8 ? 'Open now' : BL[si], hold ? 0 : Math.min(pct, 1), hold ? 0 : si, 8,
+      activity + ' · ' + lastProgress,
       { plaque: lotN, hold, header: e.demo ? 'STAGING DEMO · NOT A REAL LEASE' : 'ELDERVERSE · DISTRICT 1 · CONSTRUCTION', labels: ['Survey', 'Ground', 'Found.', 'Frame', 'Walls', 'Glass', 'Signs', 'Land'] }); }
     // crew
     this.ensureCrew(S, near ? crewN + (si === 3 || si === 4 ? 1 : 0) : 0); const top = sc ? 99 : 0.45 + floorsUp * FH + 0.01, ck = si + ':' + top;
@@ -529,14 +537,14 @@ export default {
     el.roller.visible = at('paving') || (at('striping') && f < 0.2); if (el.roller.visible) el.roller.position.set(at('paving') ? Math.max(1.2, L * lp - 5 + Math.sin(t * 0.8) * 2.5) : L - 3, 0, S.w / 5);
     const ds = at('striping') ? f : si > 4 ? 1 : 0; let k = 0; while (k < S.dashN && S.dashX[k] <= L * ds) k++; el.dash.count = k; el.dash.instanceMatrix.needsUpdate = true;
     el.striper.visible = at('striping'); if (el.striper.visible) el.striper.position.set(L * ds + 0.8, 0, 0);
-    S.board.grp.visible = si < 5; if (near && si < 5) S.board.draw(e.name.toUpperCase().slice(0, 24), e.demo ? 'Demo job (staging)' : 'Architecture team road job', e.hold ? 'Planned · awaiting layout approval' : (e.resurface ? RLR : RL)[si], e.hold ? 0 : (si + f) / 5, e.hold ? 0 : si, 5, e.hold ? 'Surveyed · paving starts after the layout is approved' : 'Live from the road crew · ' + this.ago(e.since), { plaque: 'ROAD', hold: !!e.hold });
+    S.board.grp.visible = si < 5; if (near && si < 5) { const status = constructionStatus(e, this.pipelineState, this.layout), note = status.running ? 'Live road crew' : 'Paused, waiting on ' + status.reason;
+      S.board.draw(e.name.toUpperCase().slice(0, 24), e.demo ? 'Demo job (staging)' : 'Architecture team road job', e.hold ? 'Planned · awaiting layout approval' : (e.resurface ? RLR : RL)[si], e.hold ? 0 : (si + f) / 5, e.hold ? 0 : si, 5,
+        note + ' · Last progress ' + ago(e.progressAt || e.at), { plaque: 'ROAD', hold: !!e.hold }); }
     // crew: stays with the working machine
     const fx = at('paving') ? L * lp : at('striping') ? L * ds : at('grading') ? L * lg : at('base') ? L * lb : L * f, n = near && si < 5 ? Math.min(3, crewN) : 0;
     this.ensureCrew(S, n); const pts = []; if (n) { pts.push([fx - 2, 0, S.w / 2 + 0.8, 'work', -Math.PI / 2], [fx + 3.5, 0, -S.w / 2 - 0.8, 'wave', Math.PI / 2], [Math.max(0, fx - 7), 0, -S.w / 2 + 0.6, 'work']); pts.gen = si * 1000 + Math.floor(fx / 6); }
     for (let i = n; i < S.crew.length; i++) S.crew[i].on = false; this.crewStep(S.crew.slice(0, n), pts, dt, S.g.position, S.g.rotation.y);
   },
-  ago(since) { if (!since) return 'live'; const m = Math.round((Date.now() - since) / 60000); return m < 1 ? 'started just now' : m < 60 ? `started ${m} min ago` : `started ${Math.round(m / 60)} h ago`; },
-
   /* ---------------- stage toasts (small, top-centre, 4 s; screen-reader announced) ---------------- */
   toast(e, si) {
     const where = e.kind === 'road' || e.kind === 'zone' ? e.name : 'Lot ' + String(e.lot).padStart(2, '0') + ((e.public && e.tenant) ? ' · ' + e.tenant : '');
