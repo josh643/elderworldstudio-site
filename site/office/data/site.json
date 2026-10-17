@@ -21,6 +21,7 @@
    "tier": "live",
    "img": "/assets/img/games/astro-dodge-icon.png",
    "alt": "Astro Dodge app icon",
+   "rating": "Unknown",
    "buttons": [
     {
      "label": "Get it on Google Play",
@@ -37,6 +38,7 @@
    "tier": "live",
    "img": "/assets/img/star-wayfarer.jpg",
    "alt": "Star Wayfarer title screen",
+   "rating": "Unknown",
    "buttons": [
     {
      "label": "Get it on Google Play",
@@ -53,6 +55,7 @@
    "tier": "bigger",
    "img": "/assets/img/omnivael.jpg",
    "alt": "Omnivael key art",
+   "rating": "Unknown",
    "buttons": [
     {
      "label": "View on Steam",
@@ -69,6 +72,7 @@
    "tier": "bigger",
    "img": "/assets/img/chronicles-of-the-realm.jpg",
    "alt": "Chronicles of the Realm: fighting slimes in a torch-lit cave arena",
+   "rating": "Unknown",
    "buttons": [
     {
      "label": "View on Steam",
@@ -85,6 +89,7 @@
    "tier": "casual",
    "img": "",
    "alt": "",
+   "rating": "Unknown",
    "buttons": []
   },
   {
@@ -95,6 +100,7 @@
    "tier": "casual",
    "img": "/assets/img/games/brick-blitz.jpg",
    "alt": "Brick Blitz screenshot",
+   "rating": "Unknown",
    "buttons": []
   },
   {
@@ -105,6 +111,7 @@
    "tier": "casual",
    "img": "",
    "alt": "",
+   "rating": "Unknown",
    "buttons": []
   },
   {
@@ -115,6 +122,7 @@
    "tier": "casual",
    "img": "/assets/img/games/crystal-merge.jpg",
    "alt": "Crystal Merge screenshot",
+   "rating": "Unknown",
    "buttons": []
   },
   {
@@ -125,6 +133,7 @@
    "tier": "casual",
    "img": "/assets/img/games/gem-hopper-icon.png",
    "alt": "Gem Hopper app icon",
+   "rating": "Unknown",
    "buttons": []
   },
   {
@@ -135,6 +144,7 @@
    "tier": "casual",
    "img": "",
    "alt": "",
+   "rating": "Unknown",
    "buttons": []
   },
   {
@@ -145,6 +155,7 @@
    "tier": "casual",
    "img": "",
    "alt": "",
+   "rating": "Unknown",
    "buttons": []
   },
   {
@@ -155,6 +166,7 @@
    "tier": "casual",
    "img": "",
    "alt": "",
+   "rating": "Unknown",
    "buttons": []
   },
   {
@@ -165,9 +177,14 @@
    "tier": "casual",
    "img": "",
    "alt": "",
+   "rating": "Unknown",
    "buttons": []
   }
  ],
+ "theaterRatings": {
+  "maxXboxRating": "T",
+  "childAllowList": []
+ },
  "services": [
   {
    "title": "Demo first",

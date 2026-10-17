@@ -7,7 +7,8 @@ import { mergeGeometries } from '../vendor/jsm/utils/BufferGeometryUtils.js?v=16
 import * as kit from './kit.js?v=32';
 import * as DN from './daynight.js?v=2';
 import * as EX from './exterior.js?v=4';   /* real 3D exterior (campus + town reserve); ?ext=0 = old baked view */
-const V = 30, GOLD = 0xd9b45a;
+import { xboxChatDisabled } from '../data/chat-safety.js?v=1';
+const V = 31, GOLD = 0xd9b45a;
 const $ = (t, a = {}, h = '') => { const e = document.createElement(t); for (const k in a) e.setAttribute(k, a[k]); e.innerHTML = h; return e; };
 export const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -79,7 +80,8 @@ export async function start(opts = {}) {
   /* PUBLIC-CONTENT-RULES: public mode on the production host (or ?public=1 for QA): roles-only nameplates, generic screens, no telemetry, no task text */
   let KIOSK = false; try { KIOSK = !!localStorage.getItem('ews-kiosk'); } catch {}
 const PUBLIC = /(^|\.)elderworldstudio\.com$/.test(location.hostname) || /[?&]public=1/.test(location.search);
-  const ctx = { igpu, publicMode: PUBLIC,
+  const XBOX = new URLSearchParams(location.search).get('xbox') === '1';
+  const ctx = { igpu, publicMode: PUBLIC, xbox: XBOX,
     verb, touch, lod: 1,
     THREE, kit, scene, cam, rig, renderer: R, mat, get tier() { return tier; }, M, box, panel, image, textCanvas, label, site, roster, esc, root,
     onClick: (obj, handler) => { obj.userData.onPick = handler; clickables.push(obj); return obj; },
@@ -95,6 +97,49 @@ const PUBLIC = /(^|\.)elderworldstudio\.com$/.test(location.hostname) || /[?&]pu
     activity: () => { lastInput = performance.now(); },
     setTitle: t => { hud.querySelector('.t').textContent = t; }, announce: t => { live.textContent = t; },
   };
+  if (XBOX) {
+    const privileges = { communications: true, childAccount: false, multiplayer: true, ugc: true };
+    const identity = async () => ({ gamertag: 'EWS Tester', privileges: { ...privileges } });
+    window.ewsHost = window.ewsHost || {};
+    window.ewsHost.identity = identity;
+    window.ewsHost.controllerButton = (button, pressed) => dispatchEvent(new CustomEvent('ews-controller-button', { detail: { button, pressed } }));
+    ctx.xboxPrivileges = privileges;
+    ctx.xboxIdentity = identity;
+    ctx.xboxChatEnabled = () => !xboxChatDisabled(privileges);
+    const openDevMenu = () => {
+      let menu = document.querySelector('.ews-xbox-dev');
+      if (menu) { menu.remove(); return; }
+      menu = $('section', { class: 'ews-xbox-dev', role: 'dialog', 'aria-label': 'Xbox test privilege menu' },
+        '<h2>Xbox test privileges</h2><p>Test gamertag: EWS Tester</p><p class="ews-xbox-status"></p><button type="button" data-xbox="communications">Toggle communications</button> <button type="button" data-xbox="childAccount">Toggle child account</button> <button type="button" data-xbox="reset">Reset test privileges</button>');
+      Object.assign(menu.style, { position: 'fixed', zIndex: 120, top: '12%', left: '50%', transform: 'translateX(-50%)', width: 'min(480px,90vw)', padding: '20px', color: '#fff', background: '#171024', border: '2px solid #d9b45a', borderRadius: '12px' });
+      const update = () => { menu.querySelector('.ews-xbox-status').textContent = `communications=${privileges.communications} · childAccount=${privileges.childAccount} · multiplayer=${privileges.multiplayer} · ugc=${privileges.ugc}`; };
+      menu.querySelectorAll('button').forEach(b => { b.style.minHeight = '48px'; b.onclick = () => {
+        if (b.dataset.xbox === 'reset') Object.assign(privileges, { communications: true, childAccount: false, multiplayer: true, ugc: true });
+        else if (b.dataset.xbox === 'childAccount') { privileges.childAccount = !privileges.childAccount; privileges.ugc = !privileges.childAccount; }
+        else privileges.communications = !privileges.communications;
+        update(); dispatchEvent(new CustomEvent('ews-xbox-privileges', { detail: { ...privileges } }));
+      }; });
+      root.append(menu); update();
+    };
+    const chord = new Set(); let chordTimer = 0;
+    const mapButton = value => /^(view|back|browserback|backspace|gamepadview)$/i.test(String(value)) ? 'view' : /^(menu|contextmenu|f10|gamepadmenu)$/i.test(String(value)) ? 'menu' : '';
+    const buttonEvent = e => {
+      const d = e.detail || {}, key = mapButton(d.button || d.key || e.key);
+      if (!key) return;
+      if (e.type === 'keyup' || d.pressed === false) { chord.delete(key); clearTimeout(chordTimer); chordTimer = 0; return; }
+      chord.add(key);
+      if (chord.has('view') && chord.has('menu') && !chordTimer) chordTimer = setTimeout(() => { chordTimer = 0; if (chord.size === 2) openDevMenu(); }, 1200);
+    };
+    addEventListener('keydown', buttonEvent); addEventListener('keyup', buttonEvent); addEventListener('ews-controller-button', buttonEvent);
+    addEventListener('blur', () => { chord.clear(); clearTimeout(chordTimer); chordTimer = 0; });
+    let heldSince = 0, holdFired = false;
+    ctx.xboxFrame = () => {
+      const pad = Array.from(navigator.getGamepads?.() || []).find(Boolean), held = !!(pad?.buttons?.[8]?.pressed && pad?.buttons?.[9]?.pressed);
+      if (!held) { heldSince = 0; holdFired = false; return; }
+      if (!heldSince) heldSince = performance.now();
+      if (!holdFired && performance.now() - heldSince >= 1200) { holdFired = true; openDevMenu(); }
+    };
+  }
   // HUD (built before modules so they can add buttons)
   const hud = $('div', { class: 'office-hud' }, `<span class="t">Elder World Studio · Fólkvangr</span>`); root.append(hud);
   const srNav = $('nav', { class: 'office-srnav', 'aria-label': 'Office navigation' }); const bClassic = $('button', { class: 'ob', type: 'button' }, tr('Switch to Classic')); srNav.append(bClassic);
@@ -107,6 +152,7 @@ const PUBLIC = /(^|\.)elderworldstudio\.com$/.test(location.hostname) || /[?&]pu
   // load + set up modules in registry order
   const mods = [], byId = {};
   for (const m of registry.modules) {
+    if (XBOX && m.id === 'merch-display') continue;
     await new Promise(r => setTimeout(r, 0));   // yield between modules: no long main-thread tasks
     try {
       let anchor = m.anchor || [0, 0];
@@ -313,6 +359,7 @@ const PUBLIC = /(^|\.)elderworldstudio\.com$/.test(location.hostname) || /[?&]pu
   addEventListener('resize', resize); resize();
   function frame() {
     if (!running) return; if (document.hidden && !R.xr.isPresenting) return;
+    if (XBOX) ctx.xboxFrame?.();
     const rdt = clock.getDelta(), dt = Math.min(rdt, 0.05), t = clock.elapsedTime;
     fa += rdt; fn++; fps1 += rdt; fpsN++; if (fpsEl && fps1 > 0.5) { fpsEl.textContent = `${Math.round(fpsN / fps1)} fps · tier ${tier} · ${R.getPixelRatio().toFixed(2)}x · ${R.info.render.calls} calls${igpu ? ' · iGPU' : ''}`; fps1 = fpsN = 0; }
     if (fa > 2 && performance.now() - T0 < 6000) { fa = fn = 0; }   // ignore the load spike

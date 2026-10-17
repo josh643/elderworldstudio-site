@@ -3,10 +3,13 @@
 // canvas when the game has no art yet), control deck, store QR + button plate. Neon trims, runner rug, wall posters.
 import qrcode from '../../vendor/qrcode.js?v=1';
 import { attract } from './attract.js?v=1';
+import { xboxTheaterTitles } from '../../data/chat-safety.js?v=1';
 export default {
   setup(ctx, cfg, [x0, z0]) {
     const { THREE, site, box, mat, panel, textCanvas, esc, M, renderer: R } = ctx, bay = cfg.bay || 3.2;
-    const show = g => ctx.card(`<h3>${esc(g.title)}</h3><p><b>${esc(g.tag)}</b></p>${g.img ? `<img src="${esc(g.img)}" alt="${esc(g.alt)}">` : ''}<p>${esc(g.text)}</p><div class="row">${g.buttons.map(ctx.btn).join('') || '<span class="ob">Coming soon</span>'}<a class="ob" href="/games/">All games</a></div>`);
+    const allowed = g => !ctx.xbox || xboxTheaterTitles([g], { childAccount: !!ctx.xboxPrivileges?.childAccount,
+      maxRating: site.theaterRatings?.maxXboxRating || 'T', childAllowList: site.theaterRatings?.childAllowList || [] }).length > 0;
+    const show = g => { if (!allowed(g)) return; ctx.card(`<h3>${esc(g.title)}</h3><p><b>${esc(g.tag)}</b>${ctx.xbox ? ` · ESRB-style ${esc(g.rating || 'Unknown')}` : ''}</p>${g.img ? `<img src="${esc(g.img)}" alt="${esc(g.alt)}">` : ''}<p>${esc(g.text)}</p><div class="row">${ctx.xbox ? '' : (g.buttons.map(ctx.btn).join('') || '<span class="ob">Coming soon</span>')}${ctx.xbox ? '' : '<a class="ob" href="/games/">All games</a>'}</div>`); };
     const aniso = R.capabilities.getMaxAnisotropy();
     const sharp = t => { t.anisotropy = aniso; t.colorSpace = THREE.SRGBColorSpace; t.generateMipmaps = true; t.minFilter = THREE.LinearMipmapLinearFilter; return t; };
     const NEON = [0xff3ea5, 0x3ee8ff, 0x9b5cff, 0x3dff8a, 0xffb43e];
@@ -17,7 +20,9 @@ export default {
       for (let r = 0; r < n; r++) for (let k = 0; k < n; k++) if (q.isDark(r, k)) g.fillRect((k + 4) * s, (r + 4) * s, s, s);
       const t = new THREE.CanvasTexture(c); t.magFilter = THREE.NearestFilter; t.colorSpace = THREE.SRGBColorSpace; return t; };
     const loops = [], CASUAL = ['Astro Dodge', 'Tile 2048', 'Brick Blitz', 'Color Gate', 'Crystal Merge', 'Gem Hopper', 'Neon Snake', 'Spiral Drop', 'Stack Tower', 'Void Flip'];
-    const games = site.games.filter(g => CASUAL.includes(g.title));   /* arcade = casual games only; Star Wayfarer / Omnivael get their own showcase */
+    const theater = ctx.xbox ? xboxTheaterTitles(site.games, { maxRating: site.theaterRatings?.maxXboxRating || 'T' }) : site.games;
+    const games = theater.filter(g => CASUAL.includes(g.title));   /* arcade = casual games only; Star Wayfarer / Omnivael get their own showcase */
+    const cabinets = [];
     const sideArt = (title, col) => { const c = document.createElement('canvas'); c.width = 256; c.height = 512; const g = c.getContext('2d'), h = '#' + col.toString(16).padStart(6, '0');
       const gr = g.createLinearGradient(0, 0, 256, 512); gr.addColorStop(0, h); gr.addColorStop(0.55, '#2a1650'); gr.addColorStop(1, '#ffb43e'); g.fillStyle = gr; g.fillRect(0, 0, 256, 512);
       for (let k = 0; k < 14; k++) { g.fillStyle = `hsla(${(k * 53) % 360},90%,65%,0.55)`; g.beginPath(); g.arc((k * 97) % 256, (k * 151) % 512, 14 + (k % 4) * 10, 0, 7); g.fill(); }
@@ -26,6 +31,7 @@ export default {
     games.forEach((g, i) => {
       const side = i % 2 ? 1 : -1, x = x0 - 2 - Math.floor(i / 2) * bay, z = z0 + side * 2.6, ry = side > 0 ? Math.PI : 0, col = NEON[i % NEON.length];
       const G = new THREE.Group(); G.position.set(x, 0, z); G.rotation.y = ry; G.userData.cabinet = g.title; ctx.scene.add(G);   // local +z faces the aisle
+      G.visible = allowed(g); cabinets.push({ game: g, group: G });
       box(0.95, 1.05, 0.75, body, 0, 0.525, 0, G);                                   // base
       box(0.97, 0.92, 0.5, body, 0, 1.5, -0.12, G);                                   // screen housing
       box(0.95, 0.34, 0.6, body, 0, 2.12, -0.06, G);                                 // marquee box
@@ -71,7 +77,8 @@ export default {
     box(len, 0.06, 7.2, new THREE.MeshBasicMaterial({ color: 0xcfc6b6 }), x0 + 2 - len / 2, 3.4, z0);   /* unlit warm ceiling (hemisphere light would make a down-facing panel dark) */
     for (const sz of [-1.6, 0, 1.6]) box(len - 0.4, 0.02, 0.22, glow(0xfff6e4), x0 + 2 - len / 2, 3.36, z0 + sz);
     // no extra realtime lights (each one costs every lit pixel on iGPUs); screens/neon are unlit emissive
-    ctx.sign('Arcade', `${games.length} games · ${ctx.verb} a cabinet`, x0 + 1.5, 2.9, z0, -Math.PI / 2, null, 2.4);
+    ctx.sign('Arcade', `${ctx.xbox ? 'Xbox theater' : `${games.length} games · ${ctx.verb} a cabinet`}`, x0 + 1.5, 2.9, z0, -Math.PI / 2, null, 2.4);
+    if (ctx.xbox) addEventListener('ews-xbox-privileges', () => cabinets.forEach(({ game, group }) => { group.visible = allowed(game); }));
     ctx.extend(x0 - len - 1, z0 - 6, x0 + 4, z0 + 6);
     ctx.spot('games', [x0 - 1, 1.6, z0], [x0 - 10, 1.4, z0], 'Games');
     // attract loops: only animate cabinets near the player, ~20 fps
