@@ -1,5 +1,5 @@
 # Architecture team field behavior: spec for the motion + seating builder (Joshua 2026-10-16)
-Agents: Hœnir (lead-arch), Vili (arch-building), Jörð (arch-landscape), Vé (arch-qa). Team key `architecture`, roster floor "3".
+Agents: Máni (lead-arch), Vili (arch-building), Jörð (arch-landscape), Vé (arch-qa). Team key `architecture`, roster floor "3".
 They must NOT be stuck at desks. Location follows their real task stage from the live feed (work[].stage plus arch log stages):
 
 | Stage (feed) | Where | Props | Actions (close-range only) |

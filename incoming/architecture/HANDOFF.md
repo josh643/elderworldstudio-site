@@ -1,5 +1,5 @@
 # Architecture → exterior builder handoff (2026-10-16 22:30 CT)
-From: Hœnir (Architecture Lead), Vili, Jörð, Vé (Layout QA). To: the exterior builder (site/office/core/exterior.js) and the lobby builder.
+From: Máni (Architecture Lead), Vili, Jörð, Vé (Layout QA). To: the exterior builder (site/office/core/exterior.js) and the lobby builder.
 Spec: `incoming/architecture/spec.json` (schema ews-layout/1, id 20261016-224015-campus-exterior-district-1 (v2, includes tree rules)). Source of truth on CT111:
 /var/lib/ews-agent/arch/specs/<id>/spec.json (LATEST file names the newest).
 
@@ -19,7 +19,7 @@ Builder asks:
 2. Place the lot pads and plates for L01-L12 from `master.lots` (status reserved). Leave the other reserve pads as they are.
 3. Put the pond, paths, monument and billboards where `landscape` says.
 4. Do NOT deploy. Anna ships one combined update.
-5. Any coordinate you can't honour (collision with existing geometry) goes back as a note in incoming/architecture/BUILDER_NOTES.md. Vili and Hœnir will revise the spec.
+5. Any coordinate you can't honour (collision with existing geometry) goes back as a note in incoming/architecture/BUILDER_NOTES.md. Vili and Máni will revise the spec.
 
 ## Trees (Joshua 2026-10-16)
 - Jörð (arch-landscape) owns tree planting and removal. Specs carry `landscape.planting` zones and, from now on, `landscape.tree_changes` ([{id, action: remove|relocate, from, to, reason}]) whenever a road or lot is built.

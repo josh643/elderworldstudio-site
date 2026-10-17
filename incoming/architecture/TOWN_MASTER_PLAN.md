@@ -1,4 +1,4 @@
-# Elderverse town master plan (living doc; Hœnir, updated 2026-10-16 22:40 CT)
+# Elderverse town master plan (living doc; Máni, updated 2026-10-16 22:40 CT)
 
 Source spec: `20261016-224015-campus-exterior-district-1` (Layout QA PASS). Frame: exterior.js v31 grid (65 m blocks, 10 m roads, 2.5 m sidewalks). All streets EWS-owned.
 
