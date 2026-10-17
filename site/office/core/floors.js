@@ -5,10 +5,10 @@
 import { mergeGeometries } from '../vendor/jsm/utils/BufferGeometryUtils.js?v=169';
 export const FLOORS = [
   { n: 'G', name: 'Lobby', sub: 'Reception, merch store, studio' },
-  { n: '2', name: 'Games', sub: 'Arcade and game showcase', floor: 0x5a4632 },
-  { n: '3', name: 'Architecture, Design & Marketing', sub: 'Architecture studio open; more opening soon', floor: 0x4a4f5a },
-  { n: '4', name: 'Client Sites & Call Center', sub: 'Opening soon', floor: 0x3f4a44 },
-  { n: '5', name: 'Ops & Leadership', sub: 'Opening soon', floor: 0x3a3a48 },
+  { n: '2', name: 'Games', sub: 'Games team · arcade', floor: 0x5a4632 },
+  { n: '3', name: 'Architecture, Design & Marketing', sub: 'Architecture studio · Design · Marketing', floor: 0x4a4f5a },
+  { n: '4', name: 'Client Sites & Call Center', sub: 'Client Sites team · Call Center', floor: 0x3f4a44 },
+  { n: '5', name: 'Ops & Leadership', sub: 'Ops room · Money & leadership', floor: 0x3a3a48 },
 ];
 export const CASUAL = ['Astro Dodge', 'Tile 2048', 'Brick Blitz', 'Color Gate', 'Crystal Merge', 'Gem Hopper', 'Neon Snake', 'Spiral Drop', 'Stack Tower', 'Void Flip'];
 const PAL = { 'Astro Dodge': 0x2f6fd6, 'Tile 2048': 0xd99a2b, 'Brick Blitz': 0xd6452f, 'Color Gate': 0x9b3fd6, 'Crystal Merge': 0x2fc4d6, 'Gem Hopper': 0x3fd67a, 'Neon Snake': 0x7ad62f, 'Spiral Drop': 0xd62f8e, 'Stack Tower': 0xd6c22f, 'Void Flip': 0x5a2fd6 };
@@ -44,7 +44,7 @@ export function setupFloors(ctx, core) {
 function buildFloor(ctx, core, F, ox, go) {
   const { THREE } = ctx, T = k => (ctx.t ? ctx.t(k) : k), cx = core.x + ox, fz = core.fz;
   const g = new THREE.Group(); g.userData.mod = 'floor-' + F.n; ctx.scene.add(g);
-  const X0 = cx - 18, X1 = cx + 18, Z0 = fz - core.D - 1.5, Z1 = fz + 22;   // core sits at the back; floor opens out toward +z
+  const X0 = cx - 18, X1 = cx + 18, Z0 = fz - 8.6,   /* deep enough for the team rooms flanking the core (modules/team-halls cfg.floors) */ Z1 = fz + 22;   // core sits at the back; floor opens out toward +z
   const statics = new Map(), cols = ctx.extraCols;
   const M = c => ctx.M ? ctx.M(c) : new THREE.MeshLambertMaterial({ color: c });
   const put = (geo, m, x, y, z, ry = 0, rx = 0) => { geo = geo.clone(); const o = new THREE.Object3D(); o.position.set(x, y, z); o.rotation.set(rx, ry, 0); o.updateMatrix(); geo.applyMatrix4(o.matrix);
@@ -80,7 +80,7 @@ function buildFloor(ctx, core, F, ox, go) {
   const sign = ctx.panel(ctx.textCanvas([`${F.n} · ${T(F.name)}`, T(F.sub)], { w: 1024, h: 220, size: 78, body: 44 }), 2.6, 0.56, cx, 3.35, fz + 0.15, 0); sign.material.toneMapped = false; sign.userData.plate = F.name;
   const res = { bounds: [X0, X1, Z0, Z1], group: g };
   if (F.n === '2') buildArcade(ctx, { g, B, C, put, M, cx, fz, X0, X1, Z1, cols, res });
-  else buildSoon(ctx, { g, B, M, cx, fz, X0, X1, Z1, F });
+  else if (!ctx.upperTeams?.[F.n]) buildSoon(ctx, { g, B, M, cx, fz, X0, X1, Z1, F });
   // merge statics per material
   for (const [m, list] of statics) { const geo = mergeGeometries(list, false); const mesh = new THREE.Mesh(geo, m); mesh.userData.noCollide = 1; mesh.userData.keep = 1; g.add(mesh); list.forEach(x => x.dispose()); }
   ctx.spot?.('floor' + F.n, [cx, 2.2, fz + 2], [cx, 1.2, fz + 10], `Floor ${F.n}`);

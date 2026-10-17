@@ -84,7 +84,22 @@
    "config": {
     "cols": 3,
     "w": 10,
-    "d": 9
+    "d": 9,
+    "floors": {
+     "games": "2",
+     "marketing": "3",
+     "design": "3",
+     "client": "4",
+     "callcenter": "4",
+     "ops": "5",
+     "money": "5"
+    },
+    "slots": {
+     "3": [
+      1,
+      -1
+     ]
+    }
    }
   },
   {
