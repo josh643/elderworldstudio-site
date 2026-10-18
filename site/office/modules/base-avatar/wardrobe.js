@@ -114,7 +114,7 @@ export async function loadWardrobe(ctx, L) {
     const mat = material(L.pal, L.tex), meshes = [0, 1].map(lod => {
       const m = new THREE.SkinnedMesh(merged(s, lod, L.parts), mat); m.name = 'agent_L' + lod; m.frustumCulled = false; m.castShadow = false;
       host.add(m); m.bind(skel, S.bind); m.updateMorphTargets(); if (m.morphTargetInfluences) L.morph.forEach((v, i) => { m.morphTargetInfluences[i] = v; }); return m; });
-    meshes[1].visible = false;
+    meshes[0].visible = false; meshes[1].visible = true;   // begin on the shared low-detail tier; the frame selector promotes only its closest rigs
     const tris = meshes.map(m => (m.geometry.index ? m.geometry.index.count : m.geometry.attributes.position.count) / 3);
     return { body: root, meshes, look: L, tris, mat };
   }
