@@ -308,13 +308,13 @@ const PUBLIC = /(^|\.)elderworldstudio\.com$/.test(location.hostname) || /[?&]pu
   ctx.state = s => mods.forEach(m => { try { m.onState?.(s); } catch (e) { console.warn(e); } });
 
   // loop with FPS watchdog
-  const clock = new THREE.Clock(); const T0 = performance.now(); let cullT = 0, running = true, fa = 0, fn = 0, slow = false, lowFor = 0, fps1 = 0, fpsN = 0; const fpsEl = new URLSearchParams(location.search).has('fps') ? (() => { const d = document.createElement('div'); d.className = 'office-fps'; d.style.cssText = 'position:absolute;right:8px;top:8px;z-index:9;font:12px monospace;color:#0f0;background:#000a;padding:3px 6px;pointer-events:none'; root.append(d); return d; })() : null; const fwd = new THREE.Vector3(), right = new THREE.Vector3();
+  const clock = new THREE.Clock(); const T0 = performance.now(); let cullT = 0, running = true, fa = 0, fn = 0, slow = false, lowFor = 0, fps1 = 0, fpsN = 0, measuredFps = 0; const fpsEl = new URLSearchParams(location.search).has('fps') ? (() => { const d = document.createElement('div'); d.className = 'office-fps'; d.style.cssText = 'position:absolute;right:8px;top:8px;z-index:9;font:12px monospace;color:#0f0;background:#000a;padding:3px 6px;pointer-events:none'; root.append(d); return d; })() : null; window.__ewsOffice.fps = () => measuredFps; const fwd = new THREE.Vector3(), right = new THREE.Vector3();
   function resize() { const w = root.clientWidth, h = root.clientHeight; R.setSize(w, h, false); cam.aspect = w / h; const a = w / h; cam.fov = a >= 1 ? 62 : Math.min(78, Math.max(62, 2 * Math.atan(Math.tan(Math.PI / 8) / a) * 180 / Math.PI)); cam.updateProjectionMatrix(); }   // portrait phones get a wider view
   addEventListener('resize', resize); resize();
   function frame() {
     if (!running) return; if (document.hidden && !R.xr.isPresenting) return;
     const rdt = clock.getDelta(), dt = Math.min(rdt, 0.05), t = clock.elapsedTime;
-    fa += rdt; fn++; fps1 += rdt; fpsN++; if (fpsEl && fps1 > 0.5) { fpsEl.textContent = `${Math.round(fpsN / fps1)} fps · tier ${tier} · ${R.getPixelRatio().toFixed(2)}x · ${R.info.render.calls} calls${igpu ? ' · iGPU' : ''}`; fps1 = fpsN = 0; }
+    fa += rdt; fn++; fps1 += rdt; fpsN++; if (fps1 > 0.5) { measuredFps = fpsN / fps1; if (fpsEl) fpsEl.textContent = `${Math.round(measuredFps)} fps · tier ${tier} · ${R.getPixelRatio().toFixed(2)}x · ${R.info.render.calls} calls${igpu ? ' · iGPU' : ''}`; fps1 = fpsN = 0; }
     if (fa > 2 && performance.now() - T0 < 6000) { fa = fn = 0; }   // ignore the load spike
     if (fa > 2) { const fps = fn / fa; fa = fn = 0;   // step quality down first; only offer classic after sustained <20 fps for 10 s at the lowest level
       if (fps < 40 && ctx.lod > 0.5) { ctx.lod = Math.max(0.5, ctx.lod - 0.15); lowFor = 0; }
