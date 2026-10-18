@@ -196,13 +196,13 @@ const PUBLIC = /(^|\.)elderworldstudio\.com$/.test(location.hostname) || /[?&]pu
      0.5 m, a brass trim line and a soft baked cove glow per 4 m bay. One texture, one draw call. */
   /* ceiling v2 (campus vision board): warm wood slats over a warm taupe plaster, brass trim, and glowing ring coves
      (one InstancedMesh, unlit, baked glow halo texture under each ring). Unlit so it never reads black; 3 draw calls total. */
-  { const c = document.createElement('canvas'); c.width = c.height = 512; const g = c.getContext('2d');
+  { const c = document.createElement('canvas'); c.width = c.height = 512; const g = c.getContext('2d', { alpha: false });
     g.fillStyle = '#b9a58c'; g.fillRect(0, 0, 512, 512);
     for (let i = 0; i < 16; i++) { const x = i * 32 + 6, wg = g.createLinearGradient(x, 0, x + 20, 0); wg.addColorStop(0, '#7a5434'); wg.addColorStop(0.5, '#986a42'); wg.addColorStop(1, '#6d4a2d'); g.fillStyle = wg; g.fillRect(x, 0, 20, 512);
       g.globalAlpha = 0.16; g.fillStyle = '#3e2614'; for (let k = 0; k < 10; k++) g.fillRect(x + 2 + (k * 5) % 16, (k * 97 + i * 31) % 512, 1, 50 + (k * 31) % 90); g.globalAlpha = 1; }
     g.fillStyle = '#c9a24e'; g.fillRect(0, 0, 512, 5); g.fillRect(0, 507, 512, 5);
     const tx = new THREE.CanvasTexture(c); tx.colorSpace = THREE.SRGBColorSpace; tx.wrapS = tx.wrapT = THREE.RepeatWrapping; tx.repeat.set((fX - fx) / 4, (fZ - fz) / 4); tx.anisotropy = 4;
-    const ceil = box(fX - fx, 0.1, fZ - fz, new THREE.MeshBasicMaterial({ map: tx }), (fx + fX) / 2, 4.05, (fz + fZ) / 2); ceil.userData.noCollide = 1; ceil.name = 'ceiling';
+    const ceil = box(fX - fx, 0.1, fZ - fz, new THREE.MeshBasicMaterial({ map: tx, transparent: false, depthTest: true, depthWrite: true, side: THREE.DoubleSide }), (fx + fX) / 2, 4.05, (fz + fZ) / 2); ceil.userData.noCollide = 1; ceil.name = 'ceiling';
     /* stair shaft (modules/stairs): open the ceiling over it (same texture mapping on the pieces, so the slats line up) */
     const SH = ctx.stairShaft && ctx.stairShaft.O('G'), HR = SH && ctx.stairShaft.ceilHole, inHole = (x, z, pad = 0) => !!HR && x > SH.x + HR[0] - pad && x < SH.x + HR[2] + pad && z < SH.z + HR[1] + pad && z > SH.z + HR[3] - pad;
     if (HR) { const hx0 = SH.x + HR[0], hx1 = SH.x + HR[2], hz1 = SH.z + HR[1], hz0 = SH.z + HR[3], piece = (x0, z0, x1, z1) => { if (x1 - x0 < 0.01 || z1 - z0 < 0.01) return; const g = new THREE.PlaneGeometry(x1 - x0, z1 - z0).rotateX(Math.PI / 2); g.translate((x0 + x1) / 2, 4.0, (z0 + z1) / 2);
