@@ -139,6 +139,24 @@ export default {
     }
     const dur = (u, k) => u.act(k).getClip().duration || 1;
     const tmp = new THREE.Vector3(), frustum = new THREE.Frustum(), pm = new THREE.Matrix4(), sph = new THREE.Sphere(new THREE.Vector3(), 1.2);
+    const lod0Limit = () => (ctx.tier ?? 2) === 0 ? 4 : 6; let lod0Count = 0;
+    const chooseLod0 = () => {
+      const L = ctx.lod || 1, candidates = [];
+      for (const av of all) {
+        const u = av.userData; u.lod0Selected = false;
+        if (!u.wb || !av.parent) continue;
+        sph.center.copy(av.position).setY(0.9); const d = sph.center.distanceTo(ctx.cam.position);
+        if (d < 7 * L && frustum.intersectsSphere(sph)) candidates.push({ av, d });
+      }
+      candidates.sort((a, b) => a.d - b.d || String(a.av.userData.a?.id || '').localeCompare(String(b.av.userData.a?.id || '')));
+      lod0Count = Math.min(candidates.length, lod0Limit());
+      for (let i = 0; i < lod0Count; i++) candidates[i].av.userData.lod0Selected = true;
+    };
+    const lodAudit = () => {
+      const result = { lod0_lt_7: 0, selectedLod0: lod0Count, lod0Limit: lod0Limit(), lod0RangeM: 7 * (ctx.lod || 1), visibleWardrobeRigs: 0, tier: ctx.tier ?? 2, lod: ctx.lod || 1 };
+      for (const av of all) { const u = av.userData; if (!av.parent || !u.wb) continue; if (av.visible) result.visibleWardrobeRigs++; if (u.wb.meshes[0].visible) result.lod0_lt_7++; }
+      return result;
+    };
     const CH = ctx.kit.chairs ? ctx.kit.chairs(ctx) : null, OFF = { tucked: 0.087, sat: 0.337, out: 0.48 }; this.CH = CH;
     const wrap = a => { while (a > Math.PI) a -= 2 * Math.PI; while (a < -Math.PI) a += 2 * Math.PI; return a; };
     const ease = a => a * a * (3 - 2 * a);
@@ -247,7 +265,7 @@ export default {
       sph.center.copy(av.position).setY(0.9); const d = sph.center.distanceTo(ctx.cam.position); u.acc += dt; u.frame++;
       const L = ctx.lod || 1, visible = d < 16 * L && frustum.intersectsSphere(sph), every = d < 8 * L ? 1 : d < 14 * L ? 2 : 6;   // far agents: hidden; mid: thinned updates
       av.visible = d < 15 * Math.max(0.8, L) && frustum.intersectsSphere(sph);
-      if (u.wb) { const near = d < 7 * L; if (u.wb.meshes[0].visible !== near) { u.wb.meshes[0].visible = near; u.wb.meshes[1].visible = !near; } u.far = !av.visible && d < 34 * L && frustum.intersectsSphere(sph) && !!av.parent; }   /* LOD0 < 7 m, LOD1 to the cull distance, LOD2 pawn beyond */
+      if (u.wb) { const near = u.lod0Selected === true; if (u.wb.meshes[0].visible !== near) { u.wb.meshes[0].visible = near; u.wb.meshes[1].visible = !near; } u.far = !av.visible && d < 34 * L && frustum.intersectsSphere(sph) && !!av.parent; }   /* at most 6 LOD0 rigs globally (4 on tier 0); LOD1 to cull distance, LOD2 pawn beyond */
       if (!visible && u.frame % 90 === 0) { u.mixer.update(u.acc); u.acc = 0; }   // off-screen rigs still get a rare update so a state change never reveals a bind pose
       if (visible && u.frame % every === 0) { u.mixer.update(u.acc); u.acc = 0; if (u.layer && u.lw > 0.01 && d < 14) { u.lt = (u.lt || 0) + dt * every; av.updateMatrixWorld(true); pose(u.bones, u.layer, u.lt + u.phase, u.lw, av); } }
       const p = s.progress; u.bar.visible = u.bg.visible = visible && p != null && !!s.stage && !u.waitOn;   /* a maker waiting on its checker shows no copied bar */
@@ -256,7 +274,7 @@ export default {
       u.flag.visible = false; if (s.blocked) u.flag.rotation.y += dt * 2;
     }
     this.pre = () => { ctx.cam.updateMatrixWorld(); pm.multiplyMatrices(ctx.cam.projectionMatrix, ctx.cam.matrixWorldInverse); frustum.setFromProjectionMatrix(pm); };
-    ctx.provide('avatar', { make, animate, all, rigged: true }); ctx.provide('agents', agents);
+    ctx.provide('avatar', { make, animate, all, rigged: true, lodAudit }); ctx.provide('agents', agents);
     /* Town crews on the shared rig (Joshua 2026-10-16: Lot 11 crews were box-head stick figures). world-live's crew pools call
        crews.draw(pool, kind, t) before drawing: the nearest workers get a pooled wardrobe character (LOD0/LOD1, real clips),
        everyone else inside 70 m becomes an instanced LOD2 pawn, and all of them are flagged w.rigged so the old instanced
@@ -295,7 +313,7 @@ export default {
         if (pv.z > 1 || shown.some(q => r.x0 < q.x1 && r.x1 > q.x0 && r.y0 < q.y1 && r.y1 > q.y0) || shown.length >= 4) { u.tag.visible = false; continue; }
         shown.push(r); u.tag.visible = true; const f = (u.reveal || 0) > now ? 1 : Math.min(1, (NEAR - u.tagD) / 1.5); u.tag.material.opacity = Math.max(0.15, f);
         const sc = Math.min(1, 0.55 + u.tagD * 0.06); u.tag.scale.set(1.3 * sc, 0.325 * sc, 1); } };
-    this._all = all; this._animate = animate;
+    this._all = all; this._animate = animate; this._chooseLod0 = chooseLod0; this._lodAudit = lodAudit;
     const find = n => [...all].find(av => av.userData.a?.name === n);
     this.dbgApi = { dbg: n => { const av = find(n); if (!av) return null; const u = av.userData; return { ph: u.ph, path: (u.path || []).map(p => [+p.x.toFixed(2), +p.z.toFixed(2)]), tgt: u.target && [u.target.x, u.target.z], seat: u.seat?.i, goal: u.goalSeat?.i, rate: u.rate, clip: u.cur, life: u.life }; },
       /* test hooks for the motion checks: hold an agent's wander and send them somewhere / home */
@@ -303,7 +321,7 @@ export default {
       agentHome: n => { const av = find(n); if (!av) return false; av.userData.wander = { until: Infinity }; av.userData.target = av.userData.home; return true; },
       agentLife: (n, k, secs = 6) => { const av = find(n); if (!av) return false; const t = performance.now() / 1000; av.userData.life = { k, until: t + secs, next: t + secs + 60 }; return true; } };
   },
-  onFrame(dt, t) { if (this.fb) return this.fb.onFrame(dt, t); if (this.dbgApi && window.__ewsOffice && !window.__ewsOffice.agentGo) Object.assign(window.__ewsOffice, this.dbgApi); this.pre(); this.CH?.update(dt); for (const av of this._all) this._animate(av, dt);
+  onFrame(dt, t) { if (this.fb) return this.fb.onFrame(dt, t); if (this.dbgApi && window.__ewsOffice && !window.__ewsOffice.agentGo) Object.assign(window.__ewsOffice, this.dbgApi); if (window.__ewsOffice && !window.__ewsOffice.lodAudit) window.__ewsOffice.lodAudit = () => this._lodAudit(); this.pre(); this.CH?.update(dt); this._chooseLod0(); for (const av of this._all) this._animate(av, dt);
     if (this.W) { const P = this.W.pawns; P.begin(); for (const av of this._all) { const u = av.userData; if (u.wb && u.far) P.add(av, u.wb.mat.userData.pal[3]); }
       for (const w of this.crewExtra) P.addAt(w.x, w.y || 0, w.z, w.yaw || 0, w.tablet ? '#22324f' : '#ff7a1a'); this.crewExtra.length = 0; P.end(); }   /* LOD2: far agents + far crews = one instanced draw call */
     this._tags(); },
