@@ -314,7 +314,7 @@ export function build(ctx, shell) {
   /* ---------- trees: real 3D Poly Haven models with LOD. Near (< R0): full mesh (~50k tris); mid (< 45 m): simplified mesh (~12k);
      far mid (< 82 m): light mesh (~2.6k) where available; beyond 80 m: 8-angle baked impostors (frame-blended, never a single
      camera-facing card). Instanced per species + part + level; buckets re-sorted 4x per second. Paving clearance enforced. ---------- */
-  const trees = []; let firK = 0;
+  const trees = [], domeInteriorTrees = new Set(); let firK = 0;
   const tree = (sp, x, z, k = rnd()) => { if (sp === 4 || sp === 0) sp = [3, 2, 1][firK++ % 3];   /* fir: no 3D LOD; jacaranda: its branch mesh will not decimate below ~40k tris, too heavy for iGPUs */   /* fir has no 3D LOD (Blender ran out of memory): swapped for a 3D species */
     if (!clearOf(x, z)) return; const S = SPECIES[sp], h = S.h[0] + (S.h[1] - S.h[0]) * k, sc = h / S.H; trees.push([x, z, sp, S.S * sc, rnd() * 6.283, 0.88 + rnd() * 0.2, S, 0, sc]); };
   { // lake ring (mixed), west grove, along the main walk, parking islands, avenue verge, campus edges, inside the dome
@@ -326,25 +326,27 @@ export function build(ctx, shell) {
     for (let i = 0; i < 30; i++) tree([0, 3, 2][i % 3], fx - 8 - rnd() * 40, fz - 30 + rnd() * (Z0 - fz + 20));
     for (let i = 0; i < 30; i++) tree([2, 3, 0, 1][i % 4], fX + 34 + rnd() * 70, fz - 30 + rnd() * (Z0 - fz + 10));
     for (let i = 0; i < 22; i++) tree([0, 3][i % 2], fx + rnd() * (fX - fx), fz - 6 - rnd() * 24);
-    if (shell.dome) for (let i = 0; i < 5; i++) { const a = i * 1.3, r = 3 + (i % 3) * 3, S = SPECIES[[1, 2, 5][i % 3]], sc = (S.h[0] + (S.h[1] - S.h[0]) * 0.3) / S.H; trees.push([shell.dome.x + Math.cos(a) * r, shell.dome.z + Math.sin(a) * r, [1, 2, 5][i % 3], S.S * sc, rnd() * 6.283, 0.95, S, 0, sc]); }
+    if (shell.dome) for (let i = 0; i < 5; i++) { const a = i * 1.3, r = 3 + (i % 3) * 3, S = SPECIES[[1, 2, 5][i % 3]], sc = (S.h[0] + (S.h[1] - S.h[0]) * 0.3) / S.H;
+      domeInteriorTrees.add(trees.length); trees.push([shell.dome.x + Math.cos(a) * r, shell.dome.z + Math.sin(a) * r, [1, 2, 5][i % 3], S.S * sc, rnd() * 6.283, 0.95, S, 0, sc]); }
   }
   function townTree(x, z, h) { const sp = [1, 3, 2, 1][(h + Math.round(x)) & 3], S = SPECIES[sp], sc = (S.h[0] + (S.h[1] - S.h[0]) * (0.3 + 0.4 * rnd())) / S.H; trees.push([x, z, sp, S.S * sc, rnd() * 6.283, 0.92 + rnd() * 0.12, S, 0, sc]); }
   for (const [x, z] of trees) col(x - 0.3, z - 0.3, x + 0.3, z + 0.3);
   const treeMesh = { mesh: null, n: trees.length, blob: null };
   { const base = new T.PlaneGeometry(1, 1), g = new T.InstancedBufferGeometry(); g.index = base.index; g.setAttribute('position', base.attributes.position); g.setAttribute('uv', base.attributes.uv);
-    const ip = new Float32Array(trees.length * 3), id = new Float32Array(trees.length * 4);
-    trees.forEach(([x, z, sp, S, rot, tv, , y], i) => { ip.set([x, y, z], i * 3); id.set([S, sp, rot, tv], i * 4); });
-    g.setAttribute('iPos', new T.InstancedBufferAttribute(ip, 3)); g.setAttribute('iData', new T.InstancedBufferAttribute(id, 4)); g.instanceCount = trees.length;
+    const ip = new Float32Array(trees.length * 3), id = new Float32Array(trees.length * 4), ii = new Float32Array(trees.length);
+    trees.forEach(([x, z, sp, S, rot, tv, , y], i) => { ip.set([x, y, z], i * 3); id.set([S, sp, rot, tv], i * 4); ii[i] = domeInteriorTrees.has(i) ? 1 : 0; });
+    g.setAttribute('iPos', new T.InstancedBufferAttribute(ip, 3)); g.setAttribute('iData', new T.InstancedBufferAttribute(id, 4)); g.setAttribute('iInterior', new T.InstancedBufferAttribute(ii, 1)); g.instanceCount = trees.length;
     const tm = new T.ShaderMaterial({ uniforms: { ...U, uMap: { value: null }, uFlip: { value: 0 }, uFar: { value: tier > 0 ? 125 : 95 }, uNear: { value: 0 } }, fog: false, side: T.DoubleSide,
-      vertexShader: `attribute vec3 iPos; attribute vec4 iData; uniform float uFar, uNear; varying vec2 vA, vB; varying float vW, vD, vT;
+      vertexShader: `attribute vec3 iPos; attribute vec4 iData; attribute float iInterior; uniform float uFar, uNear; varying vec2 vA, vB; varying float vW, vD, vT, vI;
         void main(){ float S = iData.x; vec3 P = (modelMatrix * vec4(iPos, 1.0)).xyz; vec2 d = cameraPosition.xz - P.xz; float dist = length(d); d /= max(dist, 1e-3); vD = dist; vT = iData.w;
+          vI = iInterior;
           vec3 right = vec3(d.y, 0.0, -d.x); vec3 w = P + right * (position.x * S) + vec3(0.0, (position.y + 0.5 - ${BASE.toFixed(2)}) * S, 0.0);
           float f = mod((atan(d.x, d.y) - iData.z) / 6.2831853 * ${FR}.0 + ${FR * 4}.0, ${FR}.0); float f0 = floor(f); vW = f - f0; float f1 = mod(f0 + 1.0, ${FR}.0);
           vec2 uv = position.xy + 0.5; float row = iData.y;
           vA = vec2((f0 + uv.x) / ${FR}.0, (row + 1.0 - uv.y) / ${SPECIES.length}.0); vB = vec2((f1 + uv.x) / ${FR}.0, vA.y);
-          gl_Position = (dist > uFar || dist < uNear) ? vec4(2.0, 2.0, 2.0, 1.0) : projectionMatrix * viewMatrix * vec4(w, 1.0); }`,
-      fragmentShader: glsl.haze + `uniform sampler2D uMap; uniform float uFlip; uniform vec3 uTint; varying vec2 vA, vB; varying float vW, vD, vT;
-        void main(){ vec2 a = vA, b = vB; if (uFlip > 0.5) { a.y = 1.0 - a.y; b.y = 1.0 - b.y; }
+          gl_Position = (iInterior > 0.5 || dist > uFar || dist < uNear) ? vec4(2.0, 2.0, 2.0, 1.0) : projectionMatrix * viewMatrix * vec4(w, 1.0); }`,
+      fragmentShader: glsl.haze + `uniform sampler2D uMap; uniform float uFlip; uniform vec3 uTint; varying vec2 vA, vB; varying float vW, vD, vT, vI;
+        void main(){ if (vI > 0.5) discard; vec2 a = vA, b = vB; if (uFlip > 0.5) { a.y = 1.0 - a.y; b.y = 1.0 - b.y; }
           vec4 c = mix(texture2D(uMap, a), texture2D(uMap, b), vW); if (c.a < 0.45) discard;
           vec3 col = c.rgb * uTint * vT * 1.08; col = hazeIt(col, vD); gl_FragColor = vec4(col, 1.0);
           #include <colorspace_fragment>
@@ -359,7 +361,7 @@ export function build(ctx, shell) {
   /* 3D tree LODs */
   const T3 = { R: [16, 32, 82], ready: 0, want: 0, parts: [], mats: new Map() };   // parts: { sp, lvl, im }
   const treeMat = (M0, leaf) => { const key = M0.uuid; if (T3.mats.has(key)) return T3.mats.get(key);
-    const m = LM({ map: M0.map, color: M0.color, alphaTest: leaf ? 0.5 : 0, side: leaf ? T.DoubleSide : T.FrontSide }); m.onBeforeCompile = ((ob) => sh => { ob(sh); sh.uniforms.uTint = U.uTint;
+    const m = LM({ map: M0.map, color: M0.color, emissive: leaf ? 0x182b0a : 0x000000, emissiveIntensity: leaf ? 0.18 : 0, alphaTest: leaf ? 0.5 : 0, side: leaf ? T.DoubleSide : T.FrontSide }); m.onBeforeCompile = ((ob) => sh => { ob(sh); sh.uniforms.uTint = U.uTint;
       sh.fragmentShader = 'uniform vec3 uTint;\n' + sh.fragmentShader.replace('#include <map_fragment>', '#include <map_fragment>\ndiffuseColor.rgb *= mix(vec3(1.0), uTint / max(uLit, 0.2), 0.5);'); })(m.onBeforeCompile);
     m.customProgramCacheKey = () => 'ews-ext-tree'; T3.mats.set(key, m); return m; };
   const tMat = trees.map(([x, z, , , rot, , , y, sc]) => new T.Matrix4().compose(new T.Vector3(x, y, z), new T.Quaternion().setFromEuler(new T.Euler(0, rot, 0)), new T.Vector3(sc, sc, sc)));
@@ -368,19 +370,24 @@ export function build(ctx, shell) {
     for (const sp of ids) { const id = SPECIES[sp].id, cnt = trees.filter(t => t[2] === sp).length, lvls = tier > 0 ? [0, 1, 2] : [1, 2];
       for (const lvl of lvls) { T3.want++; const file = lvl === 2 ? `${id}_lod2.glb` : `${id}_lod${lvl}.glb`;
         L.load(A + 'trees/' + file + '?v=1', gl => { gl.scene.updateMatrixWorld(true); gl.scene.traverse(o => { if (!o.isMesh) return; const leaf = /leaf|leaves|twig/i.test(o.material.name || '');
-            const geo = o.geometry.clone().applyMatrix4(o.matrixWorld); const im = new T.InstancedMesh(geo, treeMat(o.material, leaf), cnt); im.count = 0; im.frustumCulled = false; im.userData.noCollide = 1; im.renderOrder = 20; im.instanceMatrix.setUsage(T.DynamicDrawUsage);
-            root.add(im); T3.parts.push({ sp, lvl, im }); }); T3.ready++; T3.dirty = 1; },
+            const geo = o.geometry.clone().applyMatrix4(o.matrixWorld);
+            const im = new T.InstancedMesh(geo, treeMat(o.material, leaf), cnt); im.count = 0; im.frustumCulled = false; im.userData.noCollide = 1; im.renderOrder = 20; im.instanceMatrix.setUsage(T.DynamicDrawUsage);
+            root.add(im); T3.parts.push({ sp, lvl, im, leaf }); }); T3.ready++; T3.dirty = 1; },
           undefined, () => { T3.ready++; T3.missing = (T3.missing || 0) + 1; T3.miss = T3.miss || {}; T3.miss[sp + ':' + lvl] = 1; T3.dirty = 1; }); } } }
   const tLvl = new Int8Array(trees.length).fill(-1);
   function treeLOD(lp) { if (!T3.want || T3.ready < T3.want) return; const R = tier > 0 ? T3.R : [0, 12, 82], has = (sp, l) => !T3.miss?.[sp + ':' + l] && T3.parts.some(p => p.sp === sp && p.lvl === l);
     let changed = T3.dirty; T3.dirty = 0;
-    for (let i = 0; i < trees.length; i++) { const t = trees[i], d = Math.hypot(t[0] - lp.x, t[1] - lp.z); let l = d < R[0] ? 0 : d < R[1] ? 1 : d < R[2] ? 2 : 3;
+    for (let i = 0; i < trees.length; i++) { const t = trees[i], d = Math.hypot(t[0] - lp.x, t[1] - lp.z);
+      let l = domeInteriorTrees.has(i) ? (has(t[2], 2) ? 2 : has(t[2], 1) ? 1 : has(t[2], 0) ? 0 : 3) : d < R[0] ? 0 : d < R[1] ? 1 : d < R[2] ? 2 : 3;
       if (l === 2 && !has(t[2], 2)) l = 1; if (l === 0 && !has(t[2], 0)) l = 1; if (l === 1 && !has(t[2], 1)) l = has(t[2], 2) ? 2 : 3;
       if (tLvl[i] !== l) { tLvl[i] = l; changed = 1; } }
     if (!changed) return; let n3 = 0;
-    for (const p of T3.parts) { let n = 0; for (let i = 0; i < trees.length; i++) if (tLvl[i] === p.lvl && trees[i][2] === p.sp) { tMat[i].toArray(p.im.instanceMatrix.array, n * 16); n++; }
-      p.im.count = n; p.im.instanceMatrix.needsUpdate = true; n3 += n; }
-    treeMesh.mat.uniforms.uNear.value = R[2] - 2; ctx.extInfo.trees3d = trees.filter((_, i) => tLvl[i] < 3).length; }
+    const plantLeafTint = new T.Color(1.3, 1.6, 0.9), treeWhite = new T.Color(1, 1, 1);
+    for (const p of T3.parts) { let n = 0; for (let i = 0; i < trees.length; i++) if (tLvl[i] === p.lvl && trees[i][2] === p.sp) { tMat[i].toArray(p.im.instanceMatrix.array, n * 16);
+        p.im.setColorAt(n, p.leaf && domeInteriorTrees.has(i) ? plantLeafTint : treeWhite); n++; }
+      p.im.count = n; p.im.instanceMatrix.needsUpdate = true; if (p.im.instanceColor) p.im.instanceColor.needsUpdate = true; n3 += n; }
+    treeMesh.mat.uniforms.uNear.value = R[2] - 2; ctx.extInfo.trees3d = trees.filter((_, i) => tLvl[i] < 3).length;
+    ctx.extInfo.domeTrees3d = [...domeInteriorTrees].filter(i => tLvl[i] < 3).length; }
 
   /* ---------- shrubs: real Poly Haven GLBs (decimated, KTX2 + Draco), instanced in the plaza planters + along the facade ---------- */
   const shrubSpots = [];
