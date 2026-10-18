@@ -12,6 +12,8 @@ import { pose, bonesOf } from './poses.js?v=1';
 import capsule from './capsule.js?v=6';
 import { loadWardrobe } from './wardrobe.js?v=1';
 import { mergeGeometries } from '../../vendor/jsm/utils/BufferGeometryUtils.js?v=169';
+import { createWorldNav } from '../../core/world_nav.js?v=1';
+import { createAgentMovement } from '../../core/agent_movement.js?v=1';
 const CLIP = { idle: 'Sitting_Idle_Loop', type: 'Sitting_Idle_Loop', stand: 'Idle_Loop', walk: 'Walk_Loop', run: 'Jog_Fwd_Loop', carry: 'Walk_Carry_Loop',
   inspect: 'Interact', talk: 'Idle_Talking_Loop', pickup: 'PickUp_Table', blocked: 'Idle_FoldArms_Loop', cheer: 'Dance_Loop', greet: 'Idle_Loop', phone: 'Idle_TalkingPhone_Loop', nod: 'Yes' };
 // authored ground speed of the locomotion clips (m/s, from the root-motion versions) so feet don't slide
@@ -140,6 +142,8 @@ export default {
     const dur = (u, k) => u.act(k).getClip().duration || 1;
     const tmp = new THREE.Vector3(), frustum = new THREE.Frustum(), pm = new THREE.Matrix4(), sph = new THREE.Sphere(new THREE.Vector3(), 1.2);
     const CH = ctx.kit.chairs ? ctx.kit.chairs(ctx) : null, OFF = { tucked: 0.087, sat: 0.337, out: 0.48 }; this.CH = CH;
+    const NAV = createWorldNav(() => ctx.getColliders?.() || ctx.colliders), MOVE = createAgentMovement(ctx);
+    ctx.worldNav = NAV; ctx.agentMovement = MOVE;
     const wrap = a => { while (a > Math.PI) a -= 2 * Math.PI; while (a < -Math.PI) a += 2 * Math.PI; return a; };
     const ease = a => a * a * (3 - 2 * a);
     const ACTIVE = new Set(['plan', 'build', 'self-check', 'QA']);
@@ -161,10 +165,20 @@ export default {
         const len = ONCE.has(k) ? dur(u, k) : 4 + Math.random() * 5; L.k = k; L.until = t + len; L.next = L.until + (working ? 25 : 14) + Math.random() * 35; return k; }
       return working ? (packs ? workClip(u) : 'type') : 'idle';   /* role-appropriate desk work (bd162be) */
     }
-    function routed(av) {   /* expand each leg with the room's walking route (around desks, through doorways) */
-      const u = av.userData, R = ctx.use('route'); if (!R) return; const out = []; let from = av.position;
-      for (const p of u.path) { for (const q of R(from, p)) out.push(q); out.push(p); from = p; } u.path = out;
+    function routed(av) {   /* A* each leg against world colliders, retaining room waypoints and explicit stair handoffs. */
+      const u = av.userData, out = []; u.navFailure = null; let from = av.position;
+      for (const p of u.path) {
+        if (p.hopFrom && Math.hypot(from.x - p.hopFrom.x, from.z - p.hopFrom.z) < 0.12) { out.push(p); from = p; continue; }
+        const route = NAV.route(from, p);
+        if (route !== null) {
+          for (const v of route) if (Math.hypot(v.x - from.x, v.z - from.z) > 0.05) out.push(new THREE.Vector3(v.x, 0, v.z));
+        } else u.navFailure = { from: [from.x, from.z], to: [p.x, p.z] };
+        if (!out.length || Math.hypot(out[out.length - 1].x - p.x, out[out.length - 1].z - p.z) > 0.05) out.push(p);
+        from = p;
+      }
+      u.path = out;
     }
+    ctx.routeAgentPath = routed;
     function buildPath(av) { buildPath0(av); routed(av); }
     function buildPath0(av) {
       const u = av.userData, T = u.target; u.path = []; u.goalSeat = null; u.faceRot = T?.rot ?? null;
@@ -208,7 +222,9 @@ export default {
             /* speed = the clip's own ground speed (x height), slowed while turning sharply and on the final 0.5 m; the clip's
                playback rate follows the same factor, so feet never slide */
             const base = (carryNow ? S3.carry : S3.walk) * u.look.height, f = Math.max(0.3, Math.cos(Math.min(Math.abs(diff), 1.4))) * (lastLeg ? Math.max(0.45, Math.min(1, dist / 0.5)) : 1);
-            sp = base * f; tmp.normalize(); av.position.addScaledVector(tmp, Math.min(dist, dt * sp)); k = carryNow ? 'carry' : 'walk'; u.rate = f;
+            sp = base * f; const step = Math.min(dist, dt * sp), actual = MOVE.move(av, tmp.x, tmp.z, step);
+            if (actual > 0.004) { moving = true; k = carryNow ? 'carry' : 'walk'; u.rate = f * Math.min(1, actual / Math.max(step, 1e-4)); u.blockedFor = 0; }
+            else { u.blockedFor = (u.blockedFor || 0) + dt; k = u.blockedFor > 0.25 ? 'blockedStand' : 'stand'; if (u.blockedFor > 1.2) { u.repath = true; u.blockedFor = 0; } }
             /* chair rolls out and swivels toward the agent as they walk up to it */
             const g = u.goalSeat; if (g && Math.hypot(av.position.x - g.root.x, av.position.z - g.root.z) < 1.8) { g.c.tOff = OFF.out; const sx = Math.cos(g.rot) * (av.position.x - g.root.x) - Math.sin(g.rot) * (av.position.z - g.root.z); g.c.tSw = Math.sign(sx || 1) * 0.5; } } }
         if (!moving) {
@@ -297,7 +313,7 @@ export default {
         const sc = Math.min(1, 0.55 + u.tagD * 0.06); u.tag.scale.set(1.3 * sc, 0.325 * sc, 1); } };
     this._all = all; this._animate = animate;
     const find = n => [...all].find(av => av.userData.a?.name === n);
-    this.dbgApi = { dbg: n => { const av = find(n); if (!av) return null; const u = av.userData; return { ph: u.ph, path: (u.path || []).map(p => [+p.x.toFixed(2), +p.z.toFixed(2)]), tgt: u.target && [u.target.x, u.target.z], seat: u.seat?.i, goal: u.goalSeat?.i, rate: u.rate, clip: u.cur, life: u.life }; },
+    this.dbgApi = { dbg: n => { const av = find(n); if (!av) return null; const u = av.userData; return { ph: u.ph, p: [av.position.x, av.position.y, av.position.z].map(v => +v.toFixed(2)), path: (u.path || []).map(p => [+p.x.toFixed(2), +p.z.toFixed(2)]), tgt: u.target && [u.target.x, u.target.z], navFailure: u.navFailure || null, blockedFor: +(u.blockedFor || 0).toFixed(2), seat: u.seat?.i, goal: u.goalSeat?.i, rate: u.rate, clip: u.cur, life: u.life }; },
       /* test hooks for the motion checks: hold an agent's wander and send them somewhere / home */
       agentGo: (n, x, z, rot) => { const av = find(n); if (!av) return false; av.userData.wander = { until: Infinity }; av.userData.target = Object.assign(new THREE.Vector3(x, 0, z), { rot }); return true; },
       agentHome: n => { const av = find(n); if (!av) return false; av.userData.wander = { until: Infinity }; av.userData.target = av.userData.home; return true; },
