@@ -32,8 +32,9 @@ export function createWorldNav(getColliders, { cell = 0.55, radius = 0.32, margi
     g[start] = 0; push({ i: start, f: heuristic(start) });
     const dirs = [[1, 0, 1], [-1, 0, 1], [0, 1, 1], [0, -1, 1], [1, 1, Math.SQRT2], [1, -1, Math.SQRT2], [-1, 1, Math.SQRT2], [-1, -1, Math.SQRT2]];
     let found = false, visits = 0;
-    while (heap.length && visits++ < count) {
-      const cur = pop().i; if (closed[cur]) continue; if (cur === goal) { found = true; break; } closed[cur] = 1;
+    while (heap.length && visits < count) {
+      const cur = pop().i; if (closed[cur]) continue; closed[cur] = 1; visits++;
+      if (cur === goal) { found = true; break; }
       const cx = cur % w, cz = Math.floor(cur / w);
       for (const [dx, dz, cost] of dirs) { const nx = cx + dx, nz = cz + dz; if (nx < 0 || nx >= w || nz < 0 || nz >= h) continue; const ni = id(nx, nz); if (blocked[ni] || closed[ni]) continue;
         if (dx && dz && (blocked[id(cx + dx, cz)] || blocked[id(cx, cz + dz)])) continue;
@@ -45,10 +46,16 @@ export function createWorldNav(getColliders, { cell = 0.55, radius = 0.32, margi
     // Greedy line-of-sight smoothing keeps short, stable waypoint lists without cutting corners.
     const smooth = []; let from = a, i = 0;
     while (i < chain.length) { let j = chain.length - 1; while (j > i && !lineClear(from, chain[j], r, rad)) j--; smooth.push(chain[j]); from = chain[j]; i = j + 1; }
-    if (Math.hypot(from.x - b.x, from.z - b.z) > cell * 0.35) {
-      if (!lineClear(from, b, r, rad)) return null;
-      smooth.push({ x: b.x, z: b.z });
-    } else if (smooth.length) smooth[smooth.length - 1] = { x: b.x, z: b.z };
+    const gap = Math.hypot(from.x - b.x, from.z - b.z);
+    if (lineClear(from, b, r, rad)) {
+      if (gap > cell * 0.35) smooth.push({ x: b.x, z: b.z });
+      else if (smooth.length) smooth[smooth.length - 1] = { x: b.x, z: b.z };
+    } else {
+      // A target can sit just inside an expanded collider (for example, an authored
+      // chair anchor). Stop at the last clear cell instead of snapping into the obstacle.
+      if (!smooth.length || gap > cell * 2) return null;
+      smooth.snapped = true;
+    }
     return smooth;
   };
   return { route, cellSize: cell };

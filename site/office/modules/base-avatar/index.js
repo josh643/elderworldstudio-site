@@ -170,9 +170,13 @@ export default {
       for (const p of u.path) {
         if (p.hopFrom && Math.hypot(from.x - p.hopFrom.x, from.z - p.hopFrom.z) < 0.12) { out.push(p); from = p; continue; }
         const route = NAV.route(from, p);
-        if (route !== null) {
-          for (const v of route) if (Math.hypot(v.x - from.x, v.z - from.z) > 0.05) out.push(new THREE.Vector3(v.x, 0, v.z));
-        } else u.navFailure = { from: [from.x, from.z], to: [p.x, p.z] };
+        if (route === null) { u.navFailure = { from: [from.x, from.z], to: [p.x, p.z], reason: 'no clear route' }; break; }
+        for (const v of route) if (Math.hypot(v.x - from.x, v.z - from.z) > 0.05) out.push(new THREE.Vector3(v.x, 0, v.z));
+        if (route.snapped) {
+          u.navFailure = { from: [from.x, from.z], to: [p.x, p.z], reason: 'target blocked; stopped at nearest clear cell' };
+          if (out.length) from = out[out.length - 1];
+          break;
+        }
         if (!out.length || Math.hypot(out[out.length - 1].x - p.x, out[out.length - 1].z - p.z) > 0.05) out.push(p);
         from = p;
       }
@@ -213,7 +217,13 @@ export default {
           if (ph.t >= dur(u, 'sitOut') - 0.05) { u.seat = null; setPh(u, 'stand'); if (!stay) CH.release(seat, av); u.repath = false; buildPath(av); } }
       } else {
         if (ph.m !== 'stand') setPh(u, 'stand'); u.off = 0; u.sitA = 0;
-        if (u.repath) { u.repath = false; buildPath(av); }
+        if (u.repath) {
+          u.repath = false;
+          // Stair/elevator trips carry explicit floor handoffs on their remaining
+          // waypoints. Re-route that chain after a blockage instead of rebuilding
+          // a straight path to the final floor coordinate.
+          if (u.path?.some(p => p.hopFrom)) routed(av); else buildPath(av);
+        }
         const P = u.path && u.path[0];
         if (P) { tmp.set(P.x - av.position.x, 0, P.z - av.position.z); const dist = tmp.length(), lastLeg = u.path.length === 1;
           if (dist < 0.05) { av.position.x = P.x; av.position.z = P.z; u.path.shift(); }
