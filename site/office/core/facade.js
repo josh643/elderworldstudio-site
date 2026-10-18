@@ -130,13 +130,13 @@ export function buildFacade(ctx, E) {
     const dm = new T.ShaderMaterial({ uniforms: U, transparent: true, depthWrite: false, side: T.DoubleSide, fog: false,
       vertexShader: 'attribute vec3 aBc; varying vec3 vB, vW, vN; void main(){ vB = aBc; vec4 w = modelMatrix * vec4(position, 1.0); vW = w.xyz; vN = normalize(mat3(modelMatrix) * normal); gl_Position = projectionMatrix * viewMatrix * w; }',
       fragmentShader: `uniform vec3 uSkyT, uSkyH, uHazeC, uSunDir, uSunC; uniform float uHazeN, uHazeF, uLit, uNight, uLights; varying vec3 vB, vW, vN; ${SKY}
-        void main(){ vec3 V = normalize(vW - cameraPosition), N = normalize(vN); if (dot(N, V) > 0.0) N = -N; float e = min(vB.x, min(vB.y, vB.z)); float wd = fwidth(e) * 1.2 + 0.008;
+        void main(){ vec3 V = normalize(vW - cameraPosition), N = normalize(vN); if (dot(N, V) > 0.0) N = -N; float e = min(vB.x, min(vB.y, vB.z)); float wd = fwidth(e) * 1.35 + 0.009;
           float rib = 1.0 - smoothstep(0.0, wd, e); float ndv = max(abs(dot(V, N)), 0.0); float fr = 0.04 + 0.96 * pow(1.0 - ndv, 5.0);
-          vec3 env = skyCol(reflect(V, N)); vec3 frameDay = vec3(0.2, 0.21, 0.22) + uSunC * 0.12;
-          vec3 frameNight = vec3(0.12, 0.15, 0.2) + vec3(1.0, 0.72, 0.42) * uLights * 0.5;
+          vec3 env = skyCol(reflect(V, N)); vec3 frameDay = vec3(0.075, 0.09, 0.105) + uSunC * 0.045;
+          vec3 frameNight = vec3(0.15, 0.12, 0.09) + vec3(1.0, 0.72, 0.42) * uLights * 0.28;
           vec3 frame = mix(frameDay, frameNight, uNight);
-          vec3 inner = vec3(0.3, 0.4, 0.42) * uLit + vec3(1.0, 0.78, 0.5) * uLights * 0.55;
-          vec3 c = mix(inner, env, fr * 0.9); float a = 0.1 + 0.62 * fr; c = mix(c, frame, rib); a = mix(a, 1.0, rib);
+          vec3 inner = vec3(0.38, 0.52, 0.52) * uLit + vec3(1.0, 0.78, 0.5) * uLights * 0.4;
+          vec3 c = mix(inner, env, fr * 0.5); float a = 0.045 + 0.34 * fr; c = mix(c, frame, rib); a = mix(a, 1.0, rib);
           c = mix(c, uHazeC, pow(smoothstep(uHazeN, uHazeF, length(vW - cameraPosition)), 1.5)); gl_FragColor = vec4(c, a);
           #include <colorspace_fragment>
         }` });

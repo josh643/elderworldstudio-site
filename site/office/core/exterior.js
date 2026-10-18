@@ -11,7 +11,7 @@ import { mergeGeometries } from '../vendor/jsm/utils/BufferGeometryUtils.js?v=16
 import { GLTFLoader } from '../vendor/jsm/loaders/GLTFLoader.js?v=169';
 import { DRACOLoader } from '../vendor/jsm/loaders/DRACOLoader.js?v=169';
 import { KTX2Loader } from '../vendor/jsm/loaders/KTX2Loader.js?v=169';
-import { buildFacade } from './facade.js?v=3';
+import { buildFacade } from './facade.js?v=4';
 
 const A = '/office/assets/exterior/';
 const SPECIES = [   // atlas row order (assets/exterior/trees_atlas.*): id, frame side S in model metres, model height H, target height range
@@ -382,7 +382,7 @@ export function build(ctx, shell) {
       if (l === 2 && !has(t[2], 2)) l = 1; if (l === 0 && !has(t[2], 0)) l = 1; if (l === 1 && !has(t[2], 1)) l = has(t[2], 2) ? 2 : 3;
       if (tLvl[i] !== l) { tLvl[i] = l; changed = 1; } }
     if (!changed) return; let n3 = 0;
-    const plantLeafTint = new T.Color(1.3, 1.6, 0.9), treeWhite = new T.Color(1, 1, 1);
+    const plantLeafTint = new T.Color(1.2, 1.85, 0.72), treeWhite = new T.Color(1, 1, 1);
     for (const p of T3.parts) { let n = 0; for (let i = 0; i < trees.length; i++) if (tLvl[i] === p.lvl && trees[i][2] === p.sp) { tMat[i].toArray(p.im.instanceMatrix.array, n * 16);
         p.im.setColorAt(n, p.leaf && domeInteriorTrees.has(i) ? plantLeafTint : treeWhite); n++; }
       p.im.count = n; p.im.instanceMatrix.needsUpdate = true; if (p.im.instanceColor) p.im.instanceColor.needsUpdate = true; n3 += n; }
