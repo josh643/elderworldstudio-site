@@ -124,16 +124,19 @@ export function buildFacade(ctx, E) {
     const fr = Batch(); fr.box(bw + 0.8, bh + 0.8, 0.3, '#121317', (MW[0] + MW[1]) / 2, 2 * FH + 1 + bh / 2, MW[3] - 0.13); fr.mesh(mats.vc, FG); }
   /* ---------- geodesic glass dome: icosphere top half, rib lines from barycentrics, sky reflection, warm glow at night ---------- */
   const dx = fx - 15, dz = Z0 - 1, DR = 16;
-  { const ico = new T.IcosahedronGeometry(DR, 4), p = ico.attributes.position, P = [], Bc = [];
+  { const ico = new T.IcosahedronGeometry(DR, 3), p = ico.attributes.position, P = [], Bc = [];
     for (let i = 0; i < p.count; i += 3) { const y = (p.getY(i) + p.getY(i + 1) + p.getY(i + 2)) / 3; if (y < -0.2) continue; for (let k = 0; k < 3; k++) { P.push(p.getX(i + k), Math.max(0, p.getY(i + k)), p.getZ(i + k)); Bc.push(k === 0 ? 1 : 0, k === 1 ? 1 : 0, k === 2 ? 1 : 0); } }
     const g = new T.BufferGeometry(); g.setAttribute('position', new T.Float32BufferAttribute(P, 3)); g.setAttribute('aBc', new T.Float32BufferAttribute(Bc, 3)); g.computeVertexNormals();
     const dm = new T.ShaderMaterial({ uniforms: U, transparent: true, depthWrite: false, side: T.DoubleSide, fog: false,
       vertexShader: 'attribute vec3 aBc; varying vec3 vB, vW, vN; void main(){ vB = aBc; vec4 w = modelMatrix * vec4(position, 1.0); vW = w.xyz; vN = normalize(mat3(modelMatrix) * normal); gl_Position = projectionMatrix * viewMatrix * w; }',
       fragmentShader: `uniform vec3 uSkyT, uSkyH, uHazeC, uSunDir, uSunC; uniform float uHazeN, uHazeF, uLit, uNight, uLights; varying vec3 vB, vW, vN; ${SKY}
-        void main(){ vec3 V = normalize(vW - cameraPosition), N = normalize(vN); if (dot(N, V) > 0.0) N = -N; float e = min(vB.x, min(vB.y, vB.z)); float wd = fwidth(e) * 1.4 + 0.012;
-          float rib = 1.0 - smoothstep(0.0, wd, e); vec3 env = skyCol(reflect(V, N)); float fr = 0.25 + 0.75 * pow(1.0 - abs(dot(V, N)), 3.0);
-          vec3 inner = vec3(0.32, 0.4, 0.3) * uLit + vec3(1.0, 0.8, 0.55) * uLights * 0.55;
-          vec3 c = mix(inner, env, fr * 0.8); float a = mix(0.42, 0.85, fr); c = mix(c, vec3(0.12, 0.13, 0.15) + uSunC * 0.05, rib); a = mix(a, 1.0, rib);
+        void main(){ vec3 V = normalize(vW - cameraPosition), N = normalize(vN); if (dot(N, V) > 0.0) N = -N; float e = min(vB.x, min(vB.y, vB.z)); float wd = fwidth(e) * 1.2 + 0.008;
+          float rib = 1.0 - smoothstep(0.0, wd, e); float ndv = max(abs(dot(V, N)), 0.0); float fr = 0.04 + 0.96 * pow(1.0 - ndv, 5.0);
+          vec3 env = skyCol(reflect(V, N)); vec3 frameDay = vec3(0.2, 0.21, 0.22) + uSunC * 0.12;
+          vec3 frameNight = vec3(0.12, 0.15, 0.2) + vec3(1.0, 0.72, 0.42) * uLights * 0.5;
+          vec3 frame = mix(frameDay, frameNight, uNight);
+          vec3 inner = vec3(0.3, 0.4, 0.42) * uLit + vec3(1.0, 0.78, 0.5) * uLights * 0.55;
+          vec3 c = mix(inner, env, fr * 0.9); float a = 0.1 + 0.62 * fr; c = mix(c, frame, rib); a = mix(a, 1.0, rib);
           c = mix(c, uHazeC, pow(smoothstep(uHazeN, uHazeF, length(vW - cameraPosition)), 1.5)); gl_FragColor = vec4(c, a);
           #include <colorspace_fragment>
         }` });
