@@ -24,6 +24,7 @@ usage: playtest_gate.py CANDIDATE_URL [--live URL] [--out DIR] [--no-vision] [--
 """
 import asyncio, json, os, sys, time, subprocess
 from playwright.async_api import async_playwright
+from probe_screenshot import capture_screenshot
 BASE = sys.argv[1].rstrip('/'); A = sys.argv[2:]
 def opt(k, d=None): return A[A.index(k) + 1] if k in A and A.index(k) + 1 < len(A) else d
 LIVE = opt('--live', 'https://office-3d.elderworldstudio.pages.dev').rstrip('/')
@@ -95,12 +96,12 @@ async def walk(b, url, out, full):
   for name, fl, args, lab in INDOOR:
     if time.time() - T0 > BUDGET - 60: W['skipped'] = W.get('skipped', []) + [name]; continue
     await pg.evaluate(f"__ewsOffice.floor('{fl}')"); await pg.wait_for_timeout(1500); await pg.evaluate(f"__ewsOffice.look({args})"); await pg.wait_for_timeout(1800)
-    await pg.screenshot(path=f'{out}/{name}.jpg', type='jpeg', quality=80); W['views'][name] = {'label': lab, 'zone': 'floor ' + fl}
+    await capture_screenshot(pg, f'{out}/{name}.jpg', image_type='jpeg', quality=80); W['views'][name] = {'label': lab, 'zone': 'floor ' + fl}
   await pg.evaluate("__ewsOffice.floor('G')"); await pg.wait_for_timeout(1500)
   for name, args, lab in OUTDOOR:
     if time.time() - T0 > BUDGET - 45: W['skipped'] = W.get('skipped', []) + [name]; continue
     await pg.evaluate(f"window.__ewsFreeY=0;__ewsOffice.look({args})"); await pg.wait_for_timeout(2000)
-    await pg.screenshot(path=f'{out}/{name}.jpg', type='jpeg', quality=80); W['views'][name] = {'label': lab, 'zone': 'exterior', 'out': True}
+    await capture_screenshot(pg, f'{out}/{name}.jpg', image_type='jpeg', quality=80); W['views'][name] = {'label': lab, 'zone': 'exterior', 'out': True}
   await pg.evaluate("__ewsOffice.look(0,6,0,-4)"); await pg.wait_for_timeout(1500)
   W['perf'] = await pg.evaluate("new Promise(r=>{let n=0;const t0=performance.now();const f=()=>{n++; if(performance.now()-t0<4000) requestAnimationFrame(f); else r({fps_swiftshader:+(n/4).toFixed(2), ...(__ewsOffice.info?__ewsOffice.info():{})})};requestAnimationFrame(f)})")
   json.dump(W['views'], open(f'{out}/views.json', 'w'), indent=1); W['secs'] = round(time.time() - T0, 1)
@@ -116,12 +117,12 @@ async def reshoot(url, names, out):
     for name, fl, args, lab in INDOOR:
       if name not in names: continue
       await pg.evaluate(f"__ewsOffice.floor('{fl}')"); await pg.wait_for_timeout(1500); await pg.evaluate(f"__ewsOffice.look({args})"); await pg.wait_for_timeout(4000)
-      await pg.screenshot(path=f'{out}/{name}__cand.jpg', type='jpeg', quality=80)
+      await capture_screenshot(pg, f'{out}/{name}__cand.jpg', image_type='jpeg', quality=80)
     await pg.evaluate("__ewsOffice.floor('G')"); await pg.wait_for_timeout(1500)
     for name, args, lab in OUTDOOR:
       if name not in names: continue
       await pg.evaluate(f"window.__ewsFreeY=0;__ewsOffice.look({args})"); await pg.wait_for_timeout(4000)
-      await pg.screenshot(path=f'{out}/{name}__cand.jpg', type='jpeg', quality=80)
+      await capture_screenshot(pg, f'{out}/{name}__cand.jpg', image_type='jpeg', quality=80)
     await b.close()
 
 def judge(d, gid):
