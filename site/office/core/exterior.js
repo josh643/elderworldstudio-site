@@ -372,7 +372,7 @@ export function build(ctx, shell) {
             root.add(im); T3.parts.push({ sp, lvl, im }); }); T3.ready++; T3.dirty = 1; },
           undefined, () => { T3.ready++; T3.missing = (T3.missing || 0) + 1; T3.miss = T3.miss || {}; T3.miss[sp + ':' + lvl] = 1; T3.dirty = 1; }); } } }
   const tLvl = new Int8Array(trees.length).fill(-1);
-  function treeLOD(lp) { if (!T3.want || T3.ready < T3.want) return; const R = tier > 0 ? T3.R : [0, 12, 82], has = (sp, l) => !T3.miss?.[sp + ':' + l] && T3.parts.some(p => p.sp === sp && p.lvl === l);
+  function treeLOD(lp) { if (!T3.want || T3.ready < T3.want) return; const R = tier > 0 ? T3.R : [0, 6, 32], has = (sp, l) => !T3.miss?.[sp + ':' + l] && T3.parts.some(p => p.sp === sp && p.lvl === l);
     let changed = T3.dirty; T3.dirty = 0;
     for (let i = 0; i < trees.length; i++) { const t = trees[i], d = Math.hypot(t[0] - lp.x, t[1] - lp.z); let l = d < R[0] ? 0 : d < R[1] ? 1 : d < R[2] ? 2 : 3;
       if (l === 2 && !has(t[2], 2)) l = 1; if (l === 0 && !has(t[2], 0)) l = 1; if (l === 1 && !has(t[2], 1)) l = has(t[2], 2) ? 2 : 3;
