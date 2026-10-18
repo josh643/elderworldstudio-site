@@ -62,12 +62,14 @@ export function buildB1(ctx, core, ox) {
   // people: the world team at their posts + off-duty (paused) agents at the coffee bar. Same avatar maker as the team halls.
   (async () => { try { const A = ctx.use?.('avatar'); let teams = ctx.roster?.teams; if (!teams?.length) teams = (await (await fetch('/office/data/roster.json', { cache: 'no-store' })).json()).teams || [];
     const posts = { 'world-ops': [0, 11.6, Math.PI], 'world-interiors': [-6, 7.6, Math.PI], 'world-exterior': [6, 7.6, Math.PI], 'world-life': [-6, 10.6, Math.PI], 'world-physics': [-8, 11, 0], 'world-light': [-8, 13, 0], 'world-qa': [8, 11, 0], 'world-character': [8, 13, 0] };
-    const off = []; let k = 0;
+    const off = [], people = []; let k = 0, extra = 0;
     for (const t of teams) for (const m of t.members || []) {
-      let p = posts[m.id]; if (!p && m.offDuty) { p = [-12 + 1.4 + (k++) * 1.1, -2.9, 0]; off.push(m.id); } if (!p || !A) continue;
+      let p = posts[m.id];
+      if (!p && t.floor === 'B1' && !m.offDuty) { const x = [-10, -8, 8, 10][extra % 4], row = Math.floor(extra++ / 4); p = [x, 2 + row * 1.6, x < 0 ? Math.PI / 2 : -Math.PI / 2]; }
+      if (!p && m.offDuty) { p = [-12 + 1.4 + (k++) * 1.1, -2.9, 0]; off.push(m.id); } if (!p || !A) continue;
       const av = A.make(m, t.floor === 'B1' ? 0x6a8fb0 : 0x8a7a6a, () => ctx.card(`<h3>${ctx.esc(m.name)}</h3><p>${ctx.esc(m.role)}${m.offDuty ? ' · off duty (paused)' : ''}</p>`));
-      av.position.set(cx + p[0], 0, fz + p[1]); av.rotation.y = p[2]; av.userData.b1 = true; g.add(av); }
-    window.__ewsB1 = { offDuty: off, avatars: !!A, bar: [X0 + 2.6, fz - 3.8], room: [X0, Z0, X1, Z1], at: () => ({ cam: ctx.cam ? [ctx.cam.position.x, ctx.cam.position.z].map(v => +v.toFixed(1)) : null, people: g.children.filter(o => o.userData?.b1).map(o => [o.userData?.a?.id || '', +o.position.x.toFixed(1), +o.position.z.toFixed(1)]) }) };   // read-only test probe
+      av.position.set(cx + p[0], 0, fz + p[1]); av.rotation.y = p[2]; av.userData.b1 = true; g.add(av); people.push({ id: m.id, name: m.name, role: m.role, x: +av.position.x.toFixed(1), y: +av.position.y.toFixed(1), z: +av.position.z.toFixed(1), interactive: true }); }
+    window.__ewsB1 = { offDuty: off, avatars: !!A, people, worldLifePresent: people.some(p => p.id === 'world-life'), bar: [X0 + 2.6, fz - 3.8], room: [X0, Z0, X1, Z1], at: () => ({ cam: ctx.cam ? [ctx.cam.position.x, ctx.cam.position.z].map(v => +v.toFixed(1)) : null, people: g.children.filter(o => o.userData?.b1).map(o => [o.userData?.a?.id || '', +o.position.x.toFixed(1), +o.position.z.toFixed(1)]) }) };   // read-only test probe
   } catch (e) { console.warn('b1 people', e); window.__ewsB1 = { err: String(e) }; } })();
   refresh();
   return { group: g, bounds: { x0: X0 + 0.5, z0: Z0 + 0.5, x1: X1 - 0.5, z1: Z1 - 0.5 }, onFrame() { const t = performance.now(); if (t - last > 1000) { last = t; refresh(); } }, dispose() { alive = false; } };
