@@ -140,6 +140,7 @@ export default {
     const dur = (u, k) => u.act(k).getClip().duration || 1;
     const tmp = new THREE.Vector3(), frustum = new THREE.Frustum(), pm = new THREE.Matrix4(), sph = new THREE.Sphere(new THREE.Vector3(), 1.2);
     const CH = ctx.kit.chairs ? ctx.kit.chairs(ctx) : null, OFF = { tucked: 0.087, sat: 0.337, out: 0.48 }; this.CH = CH;
+    const LOD0_END = 7, LOD1_END = 15, LOD2_END = 34;
     const wrap = a => { while (a > Math.PI) a -= 2 * Math.PI; while (a < -Math.PI) a += 2 * Math.PI; return a; };
     const ease = a => a * a * (3 - 2 * a);
     const ACTIVE = new Set(['plan', 'build', 'self-check', 'QA']);
@@ -245,11 +246,11 @@ export default {
       const lay = packs ? null : (LAYER[k] || null); if (lay) u.layer = lay; u.lw += ((lay ? 1 : 0) - u.lw) * Math.min(1, dt * 5);
       // culling + distance LOD for the skeleton update
       sph.center.copy(av.position).setY(0.9); const d = sph.center.distanceTo(ctx.cam.position); u.acc += dt; u.frame++;
-      const L = ctx.lod || 1, visible = d < 16 * L && frustum.intersectsSphere(sph), every = d < 8 * L ? 1 : d < 14 * L ? 2 : 6;   // far agents: hidden; mid: thinned updates
-      av.visible = d < 15 * Math.max(0.8, L) && frustum.intersectsSphere(sph);
-      if (u.wb) { const near = d < 7 * L; if (u.wb.meshes[0].visible !== near) { u.wb.meshes[0].visible = near; u.wb.meshes[1].visible = !near; } u.far = !av.visible && d < 34 * L && frustum.intersectsSphere(sph) && !!av.parent; }   /* LOD0 < 7 m, LOD1 to the cull distance, LOD2 pawn beyond */
-      if (!visible && u.frame % 90 === 0) { u.mixer.update(u.acc); u.acc = 0; }   // off-screen rigs still get a rare update so a state change never reveals a bind pose
-      if (visible && u.frame % every === 0) { u.mixer.update(u.acc); u.acc = 0; if (u.layer && u.lw > 0.01 && d < 14) { u.lt = (u.lt || 0) + dt * every; av.updateMatrixWorld(true); pose(u.bones, u.layer, u.lt + u.phase, u.lw, av); } }
+      const L = ctx.lod || 1, visible = d < LOD1_END * Math.max(0.8, L) && frustum.intersectsSphere(sph), update = d < Math.min(LOD1_END * Math.max(0.8, L), 16 * L) && frustum.intersectsSphere(sph), every = d < 8 * L ? 1 : d < 14 * L ? 2 : 6;   // off-screen rigs keep only rare updates; normal updates never exceed the old work range
+      av.visible = visible;
+      if (u.wb) { const near = d < LOD0_END * L; if (u.wb.meshes[0].visible !== near) { u.wb.meshes[0].visible = near; u.wb.meshes[1].visible = !near; } u.far = !visible && d < LOD2_END * L && frustum.intersectsSphere(sph) && !!av.parent; }   /* LOD0 < 7 m, LOD1 < 15 m, LOD2 pawn < 34 m */
+      if (!update && u.frame % 90 === 0) { u.mixer.update(u.acc); u.acc = 0; }   // off-screen rigs still get a rare update so a state change never reveals a bind pose
+      if (update && u.frame % every === 0) { u.mixer.update(u.acc); u.acc = 0; if (u.layer && u.lw > 0.01 && d < 14) { u.lt = (u.lt || 0) + dt * every; av.updateMatrixWorld(true); pose(u.bones, u.layer, u.lt + u.phase, u.lw, av); } }
       const p = s.progress; u.bar.visible = u.bg.visible = visible && p != null && !!s.stage && !u.waitOn;   /* a maker waiting on its checker shows no copied bar */
       if (u.bar.visible) { u.bar.scale.x = Math.max(0.02, p); u.bar.position.x = -0.45 * (1 - p); u.bar.quaternion.copy(ctx.cam.quaternion); u.bg.quaternion.copy(ctx.cam.quaternion); }
       u.tagD = visible ? d : Infinity;
