@@ -100,14 +100,15 @@ export default {
       const d = Math.abs(fi(to) - fi(from)), via = opt.via || (d === 1 ? (Math.random() < 0.6 ? 'stairs' : 'elevator') : (Math.random() < 0.2 ? 'stairs' : 'elevator'));
       const legs = [], hops = [];
       if (via === 'stairs') { const dir = fi(to) > fi(from) ? 1 : -1; let n = from; legs.push(pt(n, 3.1, 0.9), pt(n, 3.1, -1.0));
-        while (n !== to) { const nx = FLOORS[fi(n) + dir];
-          if (dir > 0) { legs.push(pt(n, 3.15, ZL), pt(n, 3.15, ZM - 0.5), pt(n, 1.05, ZM - 0.5), pt(n, 1.05, ZL)); const h = pt(nx, 1.05, ZL); h.hopFrom = legs[legs.length - 1]; hops.push(h); legs.push(h, pt(nx, 1.05, -1.0)); }
-          else { legs.push(pt(n, 1.05, -1.0), pt(n, 1.05, ZL)); const h0 = legs[legs.length - 1]; const h = pt(nx, 1.05, ZL); h.hopFrom = h0; h.dy = 4; hops.push(h); legs.push(h, pt(nx, 1.05, ZM - 0.5), pt(nx, 3.15, ZM - 0.5), pt(nx, 3.15, ZL), pt(nx, 3.1, -1.0)); }
+        while (n !== to) { const nx = FLOORS[fi(n) + dir], landingZ = ZL - 0.45;
+          if (dir > 0) { legs.push(pt(n, 3.15, ZL), pt(n, 3.15, ZM - 0.5), pt(n, 1.05, ZM - 0.5), pt(n, 1.05, landingZ)); const h = pt(nx, 1.05, landingZ); h.hopFrom = legs[legs.length - 1]; hops.push(h); legs.push(h, pt(nx, 1.05, -1.0)); }
+          else { legs.push(pt(n, 1.05, -1.0), pt(n, 1.05, landingZ)); const h0 = legs[legs.length - 1]; const h = pt(nx, 1.05, landingZ); h.hopFrom = h0; h.dy = 4; hops.push(h); legs.push(h, pt(nx, 1.05, ZM - 0.5), pt(nx, 3.15, ZM - 0.5), pt(nx, 3.15, ZL), pt(nx, 3.1, -1.0)); }
           n = nx; }
         legs.push(pt(to, 3.1, 0.9)); }
       else { const a = door(from), b = door(to); legs.push(a); b.hopFrom = a; b.ride = 2.5 + d * 0.8; hops.push(b); legs.push(b, b.clone().setZ(b.z + 1.2)); }
       if (!AC.moveTo(id, { zone: 'lobby', x: 0, z: 0 })) return false;
       const u = av.userData, fin = legs[legs.length - 1]; u.target = fin; u._tgt = fin; u.path = legs.slice(); u.goalSeat = null; u.faceRot = null;
+      ctx.routeAgentPath?.(av);   // A* the room/landing legs; the marked floor handoffs stay explicit.
       this.trips.set(av, { hops, then: opt.then ?? 'home', fin, to, via, y: 0, t0: performance.now() / 1000 }); return via; };
     this.travel = travel; ctx.stairsTravel = travel;
     const reg = () => { const O_ = window.__ewsOffice; if (O_?.agents) { O_.agents.travel = travel; O_.stairs = () => ({ floor: ctx.curFloor || 'G', y: +py.toFixed(2), shafts: Object.fromEntries(FLOORS.map(n => [n, O(n)])), trips: [...this.trips].map(([a, t]) => ({ id: a.userData.a?.id, to: t.to, via: t.via, left: a.userData.path?.length || 0 })) }); } else setTimeout(reg, 500); }; reg();

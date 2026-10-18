@@ -473,7 +473,13 @@ export function build(ctx, shell) {
     outdoors = onG && (pos.z > Z0 + 0.2 || pos.x < fx - 0.2 || pos.x > fX + 0.2 || pos.z < fz - 0.2);
     root.visible = true; sky.visible = true;   // real window openings on every floor look out onto it
     if (scene.fog) { if (outdoors) { scene.fog.color.copy(U.uHazeC.value); scene.fog.near = 55; scene.fog.far = 118; } else if (scene.fog.near !== fogN) { scene.fog.color.copy(indoorFog); scene.fog.near = fogN; scene.fog.far = fogF; } }
-    if (ctx.entranceDoors) { const near = onG && Math.abs(pos.x - X0) < 2.4 && Math.abs(pos.z - Z0) < 3.4; doorOpen += ((near ? 1 : 0) - doorOpen) * Math.min(1, dt * 5); for (const d of ctx.entranceDoors) d.g.position.x = d.sx * doorOpen * (d.w - 0.08); }
+    if (ctx.entranceDoors) {
+      const playerNear = Math.abs(pos.x - X0) < 2.4 && Math.abs(pos.z - Z0) < 3.4;
+      let agentNear = false;
+      for (const a of ctx.use('avatar')?.all || []) if (a.parent && Math.abs(a.position.x - X0) < 2.4 && Math.abs(a.position.z - Z0) < 3.4) { agentNear = true; break; }
+      const near = onG && (playerNear || agentNear); doorOpen += ((near ? 1 : 0) - doorOpen) * Math.min(1, dt * 5);
+      for (const d of ctx.entranceDoors) d.g.position.x = d.sx * doorOpen * (d.w - 0.08);
+    }
     accT += dt; if (accT > 0.25) { accT = 0; treeLOD(lp); }
     acc += dt; if (acc < 0.3) return; acc = 0; let nb = 0, nv = 0;
     for (const c of chunks) { const dx = Math.max(c.x0 - lp.x, 0, lp.x - c.x1), dz = Math.max(c.z0 - lp.z, 0, lp.z - c.z1), dd = Math.hypot(dx, dz);

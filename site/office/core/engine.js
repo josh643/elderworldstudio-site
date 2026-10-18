@@ -121,7 +121,7 @@ const PUBLIC = /(^|\.)elderworldstudio\.com$/.test(location.hostname) || /[?&]pu
   const visChain = m => { if (window.__ewsColLegacy) return true; for (let p = m; p; p = p.parent) if (!p.visible && !p.userData?.colWhenHidden) return false; return true; };   /* hidden meshes never collide (no invisible walls) */
   const inScene = m => { for (let p = m; p; p = p.parent) if (p === scene) return true; return false; };
   const colAlive = c => { const m = c.mesh; if (!m) return true; const b = m.userData.batchedInto; return b ? inScene(b) && visChain(b) && !m.userData.colGone : inScene(m) && visChain(m); };   /* stale = mesh removed/hidden since the first pass */
-  let baseCols = null; function buildColliders() { cols.length = 0; if (baseCols) { baseCols = baseCols.filter(colAlive); cols.push(...baseCols); } scene.updateMatrixWorld(true);
+  let baseCols = null, collisionCache = cols; function buildColliders() { cols.length = 0; if (baseCols) { baseCols = baseCols.filter(colAlive); cols.push(...baseCols); } scene.updateMatrixWorld(true);
     scene.traverse(m => { if (!m.isMesh || !visChain(m) || m.isSkinnedMesh || m.isInstancedMesh || m.userData.batched || m.userData.colDone || displays.includes(m) || m.material?.transparent || m.userData.noCollide) return; if (baseCols) m.userData.colDone = 1;
       let p = m.parent; while (p) { if (p.userData?.a) return; p = p.parent; }   // avatar hit-cylinders etc.
       tmpB.setFromObject(m); if (tmpB.max.y < 0.15 || tmpB.min.y > 1.8) return;
@@ -134,10 +134,22 @@ const PUBLIC = /(^|\.)elderworldstudio\.com$/.test(location.hostname) || /[?&]pu
         const w = tmpB.max.x - tmpB.min.x, d = tmpB.max.z - tmpB.min.z; if ((w < 0.02 && d < 0.02) || (w > 20 && d > 20)) continue; const r = [tmpB.min.x, tmpB.min.z, tmpB.max.x, tmpB.max.z]; r.src = 'inst:' + (m.name || '?') + '#' + i; r.mesh = m; cols.push(r); } });
     if (baseCols) baseCols = cols.slice();   /* keep lazily-added colliders (they're marked colDone, so they'd vanish on the next pass); extras are re-added below, never copied into base (they used to duplicate every rebuild) */
     if (ctx.extraCols) for (const c of ctx.extraCols) { if (!c.src) c.src = 'extra'; if (!(Number.isFinite(c[0]) && Number.isFinite(c[1]) && Number.isFinite(c[2]) && Number.isFinite(c[3]))) { if (!c.warned) { c.warned = 1; console.warn('office: dropped non-finite collider', c.slice(0, 4)); } continue; } cols.push(c); }   /* a NaN edge collides along a whole axis = invisible wall */   /* explicit rects from merged floors (core/floors.js) */
-    ctx.colliders = cols; }
+    collisionCache = doorCache?.length ? cols.concat(doorCache) : cols; ctx.colliders = cols; }
   ctx.rebuildColliders = () => buildColliders();
+  let doorKey = '', doorCache = [];
+  const dynamicDoorRects = () => {
+    const doors = ctx.entranceDoors || [], key = doors.map(d => d.g.position.x.toFixed(3)).join(',');
+    if (key === doorKey) return doorCache; doorKey = key; doorCache = [];
+    for (const d of doors) { d.g.updateMatrixWorld(true); const b = new THREE.Box3();
+      d.g.traverse(o => { if (o.isMesh && o.geometry) { if (!o.geometry.boundingBox) o.geometry.computeBoundingBox(); b.expandByObject(o); } });
+      if (!b.isEmpty()) { const r = [b.min.x, b.min.z, b.max.x, b.max.z]; r.src = 'dynamic-door'; doorCache.push(r); }
+    }
+    collisionCache = doorCache.length ? cols.concat(doorCache) : cols;
+    return doorCache;
+  };
+  const collisionRects = () => { dynamicDoorRects(); return collisionCache; }; ctx.getColliders = collisionRects;
   function collide(p, noAv) { for (let it = 0; it < 2; it++) {
-      for (const [x0, z0, x1, z1] of cols) { if (p.x < x0 - PR || p.x > x1 + PR || p.z < z0 - PR || p.z > z1 + PR) continue;
+      for (const [x0, z0, x1, z1] of collisionRects()) { if (p.x < x0 - PR || p.x > x1 + PR || p.z < z0 - PR || p.z > z1 + PR) continue;
         const l = p.x - (x0 - PR), r = (x1 + PR) - p.x, b = p.z - (z0 - PR), f = (z1 + PR) - p.z, m = Math.min(l, r, b, f);
         if (m === l) p.x = x0 - PR; else if (m === r) p.x = x1 + PR; else if (m === b) p.z = z0 - PR; else p.z = z1 + PR; }
       if (!noAv) for (const av of ctx.use('avatar')?.all || []) { if (!av.visible) continue; const dx = p.x - av.position.x, dz = p.z - av.position.z, d2 = dx * dx + dz * dz, R2 = 0.55;
