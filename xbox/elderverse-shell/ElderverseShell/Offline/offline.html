@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>Elderverse — Reconnecting</title>
+  <style>
+    :root { color-scheme: dark; font-family: "Segoe UI", system-ui, sans-serif; background: #0a1224; color: #f5f2ea; }
+    * { box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; margin: 0; cursor: none; }
+    body { display: grid; place-items: center; text-align: center; }
+    main { max-width: 58rem; padding: 2rem; }
+    h1 { margin: 0 0 1rem; font-size: clamp(2rem, 5vw, 3.5rem); letter-spacing: .04em; }
+    p { margin: .6rem 0; color: #e3c978; font-size: clamp(1.6rem, 4vw, 2.4rem); }
+    .detail { color: #d6dce8; font-size: clamp(1.25rem, 2vw, 1.6rem); }
+    .dots::after { content: ""; animation: dots 1.8s steps(4, end) infinite; }
+    @keyframes dots { 0% { content: ""; } 25% { content: "."; } 50% { content: ".."; } 75%, 100% { content: "..."; } }
+    @media (prefers-reduced-motion: reduce) { .dots::after { animation: none; content: "…"; } }
+  </style>
+</head>
+<body>
+  <main aria-live="polite">
+    <h1>Elderverse</h1>
+    <p>Reconnecting<span class="dots" aria-hidden="true"></span></p>
+    <div class="detail" id="status">Waiting for the world connection…</div>
+  </main>
+  <script>
+    window.chrome?.webview?.addEventListener('message', event => {
+      if (event.data?.type === 'resume') document.getElementById('status').textContent = 'Rejoining the current world…';
+      if (event.data?.type === 'back') document.getElementById('status').textContent = 'The world will reconnect automatically.';
+    });
+  </script>
+</body>
+</html>
