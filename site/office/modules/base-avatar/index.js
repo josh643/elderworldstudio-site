@@ -139,22 +139,26 @@ export default {
     }
     const dur = (u, k) => u.act(k).getClip().duration || 1;
     const tmp = new THREE.Vector3(), frustum = new THREE.Frustum(), pm = new THREE.Matrix4(), sph = new THREE.Sphere(new THREE.Vector3(), 1.2);
-    const lod0Limit = () => (ctx.tier ?? 2) === 0 ? 4 : 6; let lod0Count = 0;
+    const rigLimit = () => (ctx.tier ?? 2) === 0 ? 6 : 12;
+    const lod0Limit = () => (ctx.tier ?? 2) === 0 ? 4 : 6; let rigCount = 0, lod0Count = 0;
     const chooseLod0 = () => {
       const L = ctx.lod || 1, candidates = [];
       for (const av of all) {
-        const u = av.userData; u.lod0Selected = false;
+        const u = av.userData; u.lod0Selected = false; u.rigSelected = false;
         if (!u.wb || !av.parent) continue;
         sph.center.copy(av.position).setY(0.9); const d = sph.center.distanceTo(ctx.cam.position);
-        if (d < 7 * L && frustum.intersectsSphere(sph)) candidates.push({ av, d });
+        if (d < 15 * Math.max(0.8, L) && frustum.intersectsSphere(sph)) candidates.push({ av, d });
       }
       candidates.sort((a, b) => a.d - b.d || String(a.av.userData.a?.id || '').localeCompare(String(b.av.userData.a?.id || '')));
-      lod0Count = Math.min(candidates.length, lod0Limit());
-      for (let i = 0; i < lod0Count; i++) candidates[i].av.userData.lod0Selected = true;
+      rigCount = Math.min(candidates.length, rigLimit());
+      for (let i = 0; i < rigCount; i++) candidates[i].av.userData.rigSelected = true;
+      const near = candidates.filter(c => c.d < 7);
+      lod0Count = Math.min(near.length, lod0Limit());
+      for (let i = 0; i < lod0Count; i++) near[i].av.userData.lod0Selected = true;
     };
     const lodAudit = () => {
-      const result = { lod0_lt_7: 0, selectedLod0: lod0Count, lod0Limit: lod0Limit(), lod0RangeM: 7 * (ctx.lod || 1), visibleWardrobeRigs: 0, tier: ctx.tier ?? 2, lod: ctx.lod || 1 };
-      for (const av of all) { const u = av.userData; if (!av.parent || !u.wb) continue; if (av.visible) result.visibleWardrobeRigs++; if (u.wb.meshes[0].visible) result.lod0_lt_7++; }
+      const result = { lod0_lt_7: 0, selectedLod0: lod0Count, lod0Limit: lod0Limit(), lod0RangeM: 7, selectedWardrobeRigs: rigCount, rigLimit: rigLimit(), visibleWardrobeRigs: 0, tier: ctx.tier ?? 2, lod: ctx.lod || 1 };
+      for (const av of all) { const u = av.userData; if (!av.parent || !u.wb) continue; if (av.visible) result.visibleWardrobeRigs++; sph.center.copy(av.position).setY(0.9); if (av.visible && sph.center.distanceTo(ctx.cam.position) < 7 && u.wb.meshes[0].visible) result.lod0_lt_7++; }
       return result;
     };
     const CH = ctx.kit.chairs ? ctx.kit.chairs(ctx) : null, OFF = { tucked: 0.087, sat: 0.337, out: 0.48 }; this.CH = CH;
@@ -264,8 +268,8 @@ export default {
       // culling + distance LOD for the skeleton update
       sph.center.copy(av.position).setY(0.9); const d = sph.center.distanceTo(ctx.cam.position); u.acc += dt; u.frame++;
       const L = ctx.lod || 1, visible = d < 16 * L && frustum.intersectsSphere(sph), every = d < 8 * L ? 1 : d < 14 * L ? 2 : 6;   // far agents: hidden; mid: thinned updates
-      av.visible = d < 15 * Math.max(0.8, L) && frustum.intersectsSphere(sph);
-      if (u.wb) { const near = u.lod0Selected === true; if (u.wb.meshes[0].visible !== near) { u.wb.meshes[0].visible = near; u.wb.meshes[1].visible = !near; } u.far = !av.visible && d < 34 * L && frustum.intersectsSphere(sph) && !!av.parent; }   /* at most 6 LOD0 rigs globally (4 on tier 0); LOD1 to cull distance, LOD2 pawn beyond */
+      av.visible = u.wb ? u.rigSelected === true : d < 15 * Math.max(0.8, L) && frustum.intersectsSphere(sph);
+      if (u.wb) { const near = u.lod0Selected === true; if (u.wb.meshes[0].visible !== near) { u.wb.meshes[0].visible = near; u.wb.meshes[1].visible = !near; } u.far = !av.visible && d < 34 * L && frustum.intersectsSphere(sph) && !!av.parent; }   /* at most 6/12 wardrobe rigs globally (tier 0/other); excess rigs use the LOD2 pawn */
       if (!visible && u.frame % 90 === 0) { u.mixer.update(u.acc); u.acc = 0; }   // off-screen rigs still get a rare update so a state change never reveals a bind pose
       if (visible && u.frame % every === 0) { u.mixer.update(u.acc); u.acc = 0; if (u.layer && u.lw > 0.01 && d < 14) { u.lt = (u.lt || 0) + dt * every; av.updateMatrixWorld(true); pose(u.bones, u.layer, u.lt + u.phase, u.lw, av); } }
       const p = s.progress; u.bar.visible = u.bg.visible = visible && p != null && !!s.stage && !u.waitOn;   /* a maker waiting on its checker shows no copied bar */
