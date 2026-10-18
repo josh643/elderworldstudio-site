@@ -32,6 +32,31 @@ export function buildB1(ctx, core, ox) {
   add(new THREE.BoxGeometry(2.4, 0.04, 0.05), brass, cx, 1.1, fz + 10.75);
   const consoles = [[-6, 7, 'Bestla'], [6, 7, 'Nerthus'], [-6, 10, 'Fjörgyn']];
   for (const [dx, dz] of consoles) { add(new THREE.BoxGeometry(1.8, 0.8, 0.8), slate, cx + dx, 0.4, fz + dz, 0, true, 1.8, 0.8); add(new THREE.BoxGeometry(0.9, 0.55, 0.05), E(0x274a5a), cx + dx, 1.15, fz + dz - 0.2); }
+  // Sunna's lighting/visual-QA post: a compact read-only monitor, tied to the shared day/night state.
+  // It uses emissive materials only (no realtime light) and refreshes at most once per second.
+  const lightCanvas = document.createElement('canvas'); lightCanvas.width = 512; lightCanvas.height = 256;
+  const lightTexture = new THREE.CanvasTexture(lightCanvas);
+  const lightDeskX = cx - 6.35, lightDeskZ = fz + 13;
+  add(new THREE.BoxGeometry(1.35, 0.72, 0.78), walnut, lightDeskX, 0.36, lightDeskZ, 0, true, 1.35, 0.78);
+  add(new THREE.BoxGeometry(1.05, 0.78, 0.08), dark, cx - 7.13, 1.37, lightDeskZ, -Math.PI / 2);
+  add(new THREE.BoxGeometry(0.12, 0.36, 0.12), brass, cx - 7.04, 0.88, lightDeskZ);
+  const lightScreen = new THREE.Mesh(new THREE.PlaneGeometry(0.96, 0.68), new THREE.MeshBasicMaterial({ map: lightTexture, toneMapped: false, side: THREE.DoubleSide }));
+  lightScreen.position.set(cx - 7.18, 1.37, lightDeskZ); lightScreen.rotation.y = -Math.PI / 2; lightScreen.userData.noCollide = 1; g.add(lightScreen);
+  const drawLighting = () => {
+    const state = ctx.dayNight || window.__ewsOffice?.dayNight?.() || {};
+    const fps = window.__ewsOffice?.fps?.();
+    const c = lightCanvas.getContext('2d'); c.fillStyle = '#111820'; c.fillRect(0, 0, 512, 256);
+    c.strokeStyle = '#9b8050'; c.lineWidth = 3; c.strokeRect(8, 8, 496, 240);
+    c.fillStyle = '#d9c18f'; c.font = '600 24px system-ui, sans-serif'; c.fillText('SUNNA  ·  LIGHTING', 24, 42);
+    c.fillStyle = '#f2e4c3'; c.font = '600 42px system-ui, sans-serif'; c.fillText(String(state.look || 'sync').toUpperCase(), 24, 98);
+    c.fillStyle = '#b6d4df'; c.font = '20px system-ui, sans-serif';
+    c.fillText(`SKY / FOG  ·  ${state.time || 'sync'}`, 24, 139);
+    c.fillText(`SUN  ·  ${Number.isFinite(+state.el) ? `${(+state.el).toFixed(1)}°` : 'sync'}`, 24, 174);
+    c.fillText(`VISUAL CHECK  ·  ${fps ? `${Math.round(fps)} FPS` : 'LIVE'}`, 24, 209);
+    lightTexture.needsUpdate = true;
+    return { look: state.look || 'sync', time: state.time || null, elevation: Number.isFinite(+state.el) ? +(+state.el).toFixed(1) : null, fps: Number.isFinite(fps) ? Math.round(fps) : null };
+  };
+  let lightState = drawLighting(), lightAt = performance.now();
   for (const [dx, dz] of [[-8, 11], [-8, 13], [8, 11], [8, 13]]) add(new THREE.BoxGeometry(0.6, 0.45, 0.6), seat, cx + dx, 0.23, fz + dz);
   add(new THREE.BoxGeometry(4, 1.05, 0.7), walnut, X0 + 2.6, 0.52, fz - 3.8, 0, true, 4, 0.7);
   add(new THREE.BoxGeometry(0.5, 0.45, 0.4), brass, X0 + 1.5, 1.27, fz - 3.8);
@@ -61,14 +86,14 @@ export function buildB1(ctx, core, ox) {
   }
   // people: the world team at their posts + off-duty (paused) agents at the coffee bar. Same avatar maker as the team halls.
   (async () => { try { const A = ctx.use?.('avatar'); let teams = ctx.roster?.teams; if (!teams?.length) teams = (await (await fetch('/office/data/roster.json', { cache: 'no-store' })).json()).teams || [];
-    const posts = { 'world-ops': [0, 11.6, Math.PI], 'world-interiors': [-6, 7.6, Math.PI], 'world-exterior': [6, 7.6, Math.PI], 'world-life': [-6, 10.6, Math.PI], 'world-physics': [-8, 11, 0], 'world-light': [-8, 13, 0], 'world-qa': [8, 11, 0], 'world-character': [8, 13, 0] };
+    const posts = { 'world-ops': [0, 11.6, Math.PI], 'world-interiors': [-6, 7.6, Math.PI], 'world-exterior': [6, 7.6, Math.PI], 'world-life': [-6, 10.6, Math.PI], 'world-physics': [-8, 11, 0], 'world-light': [-8, 13, Math.PI / 2], 'world-qa': [8, 11, 0], 'world-character': [8, 13, 0] };
     const off = []; let k = 0;
     for (const t of teams) for (const m of t.members || []) {
       let p = posts[m.id]; if (!p && m.offDuty) { p = [-12 + 1.4 + (k++) * 1.1, -2.9, 0]; off.push(m.id); } if (!p || !A) continue;
       const av = A.make(m, t.floor === 'B1' ? 0x6a8fb0 : 0x8a7a6a, () => ctx.card(`<h3>${ctx.esc(m.name)}</h3><p>${ctx.esc(m.role)}${m.offDuty ? ' · off duty (paused)' : ''}</p>`));
       av.position.set(cx + p[0], 0, fz + p[1]); av.rotation.y = p[2]; av.userData.b1 = true; g.add(av); }
-    window.__ewsB1 = { offDuty: off, avatars: !!A, bar: [X0 + 2.6, fz - 3.8], room: [X0, Z0, X1, Z1], at: () => ({ cam: ctx.cam ? [ctx.cam.position.x, ctx.cam.position.z].map(v => +v.toFixed(1)) : null, people: g.children.filter(o => o.userData?.b1).map(o => [o.userData?.a?.id || '', +o.position.x.toFixed(1), +o.position.z.toFixed(1)]) }) };   // read-only test probe
+    window.__ewsB1 = { offDuty: off, avatars: !!A, bar: [X0 + 2.6, fz - 3.8], room: [X0, Z0, X1, Z1], lighting: () => ({ agent: 'world-light', station: [cx - 8, fz + 13], ...lightState }), at: () => ({ cam: ctx.cam ? [ctx.cam.position.x, ctx.cam.position.z].map(v => +v.toFixed(1)) : null, people: g.children.filter(o => o.userData?.b1).map(o => [o.userData?.a?.id || '', +o.position.x.toFixed(1), +o.position.z.toFixed(1)]) }) };   // read-only test probe
   } catch (e) { console.warn('b1 people', e); window.__ewsB1 = { err: String(e) }; } })();
   refresh();
-  return { group: g, bounds: { x0: X0 + 0.5, z0: Z0 + 0.5, x1: X1 - 0.5, z1: Z1 - 0.5 }, onFrame() { const t = performance.now(); if (t - last > 1000) { last = t; refresh(); } }, dispose() { alive = false; } };
+  return { group: g, bounds: { x0: X0 + 0.5, z0: Z0 + 0.5, x1: X1 - 0.5, z1: Z1 - 0.5 }, onFrame() { const t = performance.now(); if (t - last > 1000) { last = t; refresh(); } if (t - lightAt > 1000) { lightAt = t; lightState = drawLighting(); } }, dispose() { alive = false; } };
 }
