@@ -46,16 +46,24 @@ export function start(ctx, { hemi, sun, scene, THREE }) {
     const [hh, mm] = f.format(base).split(':').map(Number); return new Date(base.getTime() + (((+m[1] - hh) * 60 + (+m[2] - mm)) * 60e3)); };
   const base = new Map(); const remember = o => { if (!base.has(o)) base.set(o, { c: o.color?.clone(), op: o.opacity }); return base.get(o); };
   const apply = () => {
+    const applyStart = performance.now(); let sceneNodes = 0, avatarBranchesSkipped = 0, materialsUpdated = 0;
     const d = now(), el = sunElevation(d), P = blend(el);
     scene.background.set(P.st); scene.fog?.color.set(mixC(P.st, '#0b0716', 0.5)); hemi.intensity = P.hemi; sun.intensity = P.sun; sun.color.set(P.sc);
     try { ctx.exterior?.dayNight?.(P, el, d); } catch (e) { console.warn(e); }   /* real exterior (core/exterior.js) */
     const V = ctx.kit.viewTex(ctx); drawView(V.image.getContext('2d'), P); V.needsUpdate = true;
-    scene.traverse(o => { const t = o.userData?.dn; if (!t || !o.material) return; const mats = Array.isArray(o.material) ? o.material : [o.material];
+    const stack = [...scene.children];
+    while (stack.length) {
+      const o = stack.pop();
+      if (o.userData?.a) { avatarBranchesSkipped++; continue; }   /* avatar subtrees have no day/night tags, so prune the whole branch */
+      sceneNodes++;
+      for (let i = o.children.length - 1; i >= 0; i--) stack.push(o.children[i]);
+      const t = o.userData?.dn; if (!t || !o.material) continue; const mats = Array.isArray(o.material) ? o.material : [o.material];
       for (const mt of mats) { const b = remember(mt);
         if (t === 'glass') { mt.color.set(P.gl[0]); mt.opacity = P.gl[1]; }
         else if (b.c) mt.color.copy(b.c).multiplyScalar(t === 'ring' ? P.ring : t === 'halo' ? P.halo : t === 'server' ? P.srv : 1);
-        if (t === 'halo' && b.op != null) mt.opacity = Math.min(1, b.op * P.halo); } });
-    ctx.dayNight = { el: +el.toFixed(1), look: P.name, time: new Intl.DateTimeFormat('en-US', { timeZone: 'America/Chicago', hour: '2-digit', minute: '2-digit', hour12: false }).format(d) };
+        if (t === 'halo' && b.op != null) mt.opacity = Math.min(1, b.op * P.halo); materialsUpdated++; }
+    }
+    ctx.dayNight = { el: +el.toFixed(1), look: P.name, time: new Intl.DateTimeFormat('en-US', { timeZone: 'America/Chicago', hour: '2-digit', minute: '2-digit', hour12: false }).format(d), sceneNodes, avatarBranchesSkipped, materialsUpdated, applyMs: +(performance.now() - applyStart).toFixed(2) };
   };
   apply(); setTimeout(apply, 4000); setInterval(apply, 20e3);   // second pass picks up lazily-built rooms
   return { apply, sunElevation };
