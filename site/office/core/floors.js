@@ -86,7 +86,7 @@ function buildFloor(ctx, core, F, ox, go) {
     const R = (x0, z0, x1, z1) => { if (x1 - x0 > 0.01 && z1 - z0 > 0.01) B(x1 - x0, h, z1 - z0, m, (x0 + x1) / 2, y, (z0 + z1) / 2); };
     R(X0, Z0, X1, hz0); R(X0, hz1, X1, Z1); R(X0, hz0, hx0, hz1); R(hx1, hz0, X1, hz1); };
   holed(0.2, wood, -0.1, SH && SH.hole);
-  holed(0.1, new THREE.MeshBasicMaterial({ color: 0xd9d2c4 }), 4.05, SH && !top && SH.ceilHole);
+  holed(0.1, new THREE.MeshBasicMaterial({ color: 0xd9d2c4, transparent: false, depthTest: true, depthWrite: true, side: THREE.DoubleSide }), 4.05, SH && !top && SH.ceilHole);
   const lit = new THREE.MeshBasicMaterial({ color: 0xfff1dc, toneMapped: false });
   for (let x = X0 + 4; x < X1 - 2; x += 6) for (let z = Z0 + 4; z < Z1 - 2; z += 6) if (!(so && x > so.x - 1 && x < so.x + SH.W + 1 && z < so.z + 0.5 && z > so.z - SH.D - 0.5)) put(new THREE.PlaneGeometry(1.6, 0.6), lit, x, 3.99, z, 0, Math.PI / 2);
   // perimeter: solid back wall; sides + front are window walls (sill, mullions, head) with the day/night lake view outside
