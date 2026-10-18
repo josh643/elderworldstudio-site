@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="620" viewBox="0 0 1200 620" role="img" aria-labelledby="title desc">
+  <title id="title">Office navigation and collision fixture evidence</title>
+  <desc id="desc">Node fixture results: A-star routes around a wall, a closed door stops a moving capsule, and reciprocal separation maintains agent spacing.</desc>
+  <rect width="1200" height="620" fill="#101a24"/>
+  <text x="40" y="42" fill="#f5f2e9" font-family="sans-serif" font-size="25" font-weight="700">Navigation and collision fixture</text>
+  <text x="40" y="68" fill="#aebbc5" font-family="sans-serif" font-size="14">Schematic of the deterministic Node checks in HANDOFF.md; not a live office screenshot.</text>
+  <rect x="35" y="90" width="575" height="480" rx="12" fill="#172633" stroke="#314657"/>
+  <text x="58" y="122" fill="#f5f2e9" font-family="sans-serif" font-size="18" font-weight="700">A* detour and safe smoothing</text>
+  <path d="M 62 280 H 584 M 300 145 V 430" stroke="#30424f" stroke-width="1"/>
+  <rect x="274" y="154" width="50" height="252" rx="4" fill="#805b53" stroke="#e8a878" stroke-width="2"/>
+  <text x="283" y="288" fill="#fff2e5" font-family="sans-serif" font-size="14" transform="rotate(-90 283 288)">expanded wall collider</text>
+  <polyline points="132,280 230,118 368,118 460,257 468,280" fill="none" stroke="#68d9bd" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"/>
+  <circle cx="132" cy="280" r="8" fill="#79b7ff"/><circle cx="468" cy="280" r="8" fill="#ffd36a"/>
+  <text x="101" y="309" fill="#d8e5ee" font-family="sans-serif" font-size="14">start</text>
+  <text x="477" y="286" fill="#d8e5ee" font-family="sans-serif" font-size="14">goal</text>
+  <text x="58" y="525" fill="#c4d0d9" font-family="sans-serif" font-size="14">4 smoothed waypoints · every segment passed lineClear</text>
+  <text x="58" y="548" fill="#c4d0d9" font-family="sans-serif" font-size="14">Blocked goal stops at a clear cell; tested target gap: 0.87 m</text>
+  <rect x="630" y="90" width="535" height="480" rx="12" fill="#172633" stroke="#314657"/>
+  <text x="654" y="122" fill="#f5f2e9" font-family="sans-serif" font-size="18" font-weight="700">Door stop and agent spacing</text>
+  <text x="654" y="166" fill="#c4d0d9" font-family="sans-serif" font-size="14">Closed door fixture</text>
+  <path d="M 690 224 H 1110" stroke="#566b7a" stroke-width="3"/>
+  <rect x="1047" y="184" width="14" height="80" rx="3" fill="#e8a878"/>
+  <circle cx="998" cy="224" r="12" fill="#79b7ff"/>
+  <path d="M 1012 224 H 1037" stroke="#79b7ff" stroke-width="3" marker-end="url(#arrow)"/>
+  <text x="970" y="282" fill="#d8e5ee" font-family="sans-serif" font-size="13">capsule stops at x=0.798 m</text>
+  <text x="1058" y="175" fill="#d8e5ee" font-family="sans-serif" font-size="13">door</text>
+  <path d="M 654 309 H 1140" stroke="#30424f" stroke-width="1"/>
+  <text x="654" y="344" fill="#c4d0d9" font-family="sans-serif" font-size="14">Avoidance fixture · center spacing 0.65 m</text>
+  <circle cx="850" cy="420" r="23" fill="#79b7ff" fill-opacity=".82" stroke="#cce4ff" stroke-width="2"/>
+  <circle cx="902" cy="420" r="23" fill="#68d9bd" fill-opacity=".82" stroke="#d0fff3" stroke-width="2"/>
+  <path d="M 808 420 H 827" stroke="#79b7ff" stroke-width="3" marker-end="url(#arrow)"/>
+  <path d="M 944 420 H 925" stroke="#68d9bd" stroke-width="3" marker-end="url(#arrow)"/>
+  <text x="654" y="505" fill="#c4d0d9" font-family="sans-serif" font-size="14">Required personal-space radius: 0.58 m</text>
+  <text x="654" y="528" fill="#c4d0d9" font-family="sans-serif" font-size="14">Observed after move + separation: 0.65 m</text>
+  <defs><marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#d8e5ee"/></marker></defs>
+</svg>
