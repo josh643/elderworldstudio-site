@@ -5,7 +5,7 @@
 // body material; screens are ONE canvas atlas: only the 8 nearest tablets get a live screen, the rest a plain
 // emissive tint. Screens and the tap panel use the desk-screen source of truth (monitors' liveBar: same feed item,
 // same eased bar, same activity line). Field figures (world-live) can register with ctx.tablets.field(F, kind).
-import { FLOORS } from '../../core/floors.js?v=1';
+import { FLOORS } from '../../core/floors.js?v=2';
 const SLOTS = 8, SW = 256, SH = 176, AW = 1024, AH = 360, MAXT = 112;
 const NO_TAB = new Set(['receptionist', 'subceo']);
 const HOLD = new Set(['walk', 'stand', 'talk', 'greet', 'nod']);

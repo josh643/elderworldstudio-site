@@ -2,7 +2,7 @@
 // FAQ fallback) and the demo-request lead form (stored as a lead record; no email). Remove from modules.json to disable.
 import { openKiosk } from './kiosk-ui.js?v=3';
 import * as V from './voice.js?v=2';
-import { setupFloors } from '../../core/floors.js?v=2';
+import { setupFloors } from '../../core/floors.js?v=3';
 export default {
   setup(ctx, cfg, [x, z]) {
     const { box, mat, esc } = ctx, A = ctx.use('avatar');
