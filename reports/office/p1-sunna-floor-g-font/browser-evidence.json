@@ -1,0 +1,65 @@
+{
+  "total_ms": 18975,
+  "font_wait_ms": 3,
+  "capture_ms": 8009,
+  "screenshot_method": "cdp",
+  "prior_playwright_timeout_ms": 5000,
+  "prior_playwright_timeout_observed": true,
+  "screenshot": "/var/lib/ews-agent/work-coder1/20261018-014015-office-gir-world-ops-track-p1-sunna-0-build/reports/office/p1-sunna-floor-g-font/after-floor-g.jpg",
+  "bytes": 161111,
+  "fonts": [
+    {
+      "family": "Michroma",
+      "status": "loaded"
+    },
+    {
+      "family": "Rajdhani",
+      "status": "loaded"
+    },
+    {
+      "family": "Rajdhani",
+      "status": "loaded"
+    },
+    {
+      "family": "Rajdhani",
+      "status": "unloaded"
+    },
+    {
+      "family": "Cinzel",
+      "status": "loaded"
+    },
+    {
+      "family": "Inter",
+      "status": "loaded"
+    }
+  ],
+  "fontResources": [
+    {
+      "name": "/assets/fonts/michroma.woff",
+      "ms": 22,
+      "bytes": 33408
+    },
+    {
+      "name": "/assets/fonts/rajdhani-500.woff",
+      "ms": 29,
+      "bytes": 138364
+    },
+    {
+      "name": "/assets/fonts/rajdhani-600.woff",
+      "ms": 29,
+      "bytes": 141916
+    },
+    {
+      "name": "/assets/fonts/inter.woff2",
+      "ms": 19,
+      "bytes": 48556
+    },
+    {
+      "name": "/assets/fonts/cinzel.woff2",
+      "ms": 19,
+      "bytes": 26204
+    }
+  ],
+  "errors": [],
+  "prior_playwright_error": "page.screenshot: Timeout 5000ms exceeded while waiting for fonts to load; final log line said fonts loaded"
+}
