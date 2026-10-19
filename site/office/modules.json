@@ -10,6 +10,10 @@
    "src": "modules/base-avatar/index.js"
   },
   {
+   "id": "world-physics",
+   "src": "modules/world-physics/index.js"
+  },
+  {
    "id": "lobby",
    "src": "modules/lobby/index.js",
    "anchor": [
