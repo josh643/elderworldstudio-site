@@ -118,6 +118,14 @@ const PUBLIC = /(^|\.)elderworldstudio\.com$/.test(location.hostname) || /[?&]pu
   // player collision: 2D boxes (XZ) auto-built from mesh bounds of anything solid between ankle and head height,
   // plus circles for the avatars. Capsule radius 0.3 m; push out along the shallow axis so you slide along walls.
   const PR = 0.3, cols = []; const tmpB = new THREE.Box3();
+  const COL_CELL = 4, colGrid = new Map(), largeCols = [], seenCols = []; let indexedCols = 0, colQuery = 0;
+  const colCell = (x, z) => x + ',' + z;
+  function addColToGrid(i) { const c = cols[i], x0 = Math.floor(c[0] / COL_CELL), x1 = Math.floor(c[2] / COL_CELL), z0 = Math.floor(c[1] / COL_CELL), z1 = Math.floor(c[3] / COL_CELL);
+    if ((x1 - x0 + 1) * (z1 - z0 + 1) > 400) { largeCols.push(i); return; }
+    for (let x = x0; x <= x1; x++) for (let z = z0; z <= z1; z++) { const k = colCell(x, z); let cell = colGrid.get(k); if (!cell) colGrid.set(k, cell = []); cell.push(i); } }
+  function indexColliders(from = 0) { if (!from) { colGrid.clear(); largeCols.length = 0; seenCols.length = cols.length; indexedCols = 0; }
+    for (let i = from; i < cols.length; i++) { const c = cols[i]; if (Number.isFinite(c[0]) && Number.isFinite(c[1]) && Number.isFinite(c[2]) && Number.isFinite(c[3])) addColToGrid(i); }
+    indexedCols = cols.length; }
   const visChain = m => { if (window.__ewsColLegacy) return true; for (let p = m; p; p = p.parent) if (!p.visible && !p.userData?.colWhenHidden) return false; return true; };   /* hidden meshes never collide (no invisible walls) */
   const inScene = m => { for (let p = m; p; p = p.parent) if (p === scene) return true; return false; };
   const colAlive = c => { const m = c.mesh; if (!m) return true; const b = m.userData.batchedInto; return b ? inScene(b) && visChain(b) && !m.userData.colGone : inScene(m) && visChain(m); };   /* stale = mesh removed/hidden since the first pass */
@@ -134,14 +142,18 @@ const PUBLIC = /(^|\.)elderworldstudio\.com$/.test(location.hostname) || /[?&]pu
         const w = tmpB.max.x - tmpB.min.x, d = tmpB.max.z - tmpB.min.z; if ((w < 0.02 && d < 0.02) || (w > 20 && d > 20)) continue; const r = [tmpB.min.x, tmpB.min.z, tmpB.max.x, tmpB.max.z]; r.src = 'inst:' + (m.name || '?') + '#' + i; r.mesh = m; cols.push(r); } });
     if (baseCols) baseCols = cols.slice();   /* keep lazily-added colliders (they're marked colDone, so they'd vanish on the next pass); extras are re-added below, never copied into base (they used to duplicate every rebuild) */
     if (ctx.extraCols) for (const c of ctx.extraCols) { if (!c.src) c.src = 'extra'; if (!(Number.isFinite(c[0]) && Number.isFinite(c[1]) && Number.isFinite(c[2]) && Number.isFinite(c[3]))) { if (!c.warned) { c.warned = 1; console.warn('office: dropped non-finite collider', c.slice(0, 4)); } continue; } cols.push(c); }   /* a NaN edge collides along a whole axis = invisible wall */   /* explicit rects from merged floors (core/floors.js) */
-    ctx.colliders = cols; }
+    ctx.colliders = cols; indexColliders(); }
   ctx.rebuildColliders = () => buildColliders();
-  function collide(p, noAv, ignoreAv, allowCollider) { let worldHits = 0, agentHits = 0; for (let it = 0; it < 2; it++) {
-      for (const c of cols) { if (allowCollider?.(c)) continue; const [x0, z0, x1, z1] = c; if (p.x < x0 - PR || p.x > x1 + PR || p.z < z0 - PR || p.z > z1 + PR) continue;
+  function collide(p, noAv, ignoreAv, allowCollider) { if (indexedCols !== cols.length) indexColliders(indexedCols < cols.length ? indexedCols : 0);
+    let worldHits = 0, agentHits = 0; for (let it = 0; it < 2; it++) { let q = ++colQuery; if (q > 0x7ffffffe) { seenCols.fill(0); colQuery = q = 1; }
+      const visit = i => { if (seenCols[i] === q) return; seenCols[i] = q; const c = cols[i]; if (allowCollider?.(c)) return; const [x0, z0, x1, z1] = c; if (p.x < x0 - PR || p.x > x1 + PR || p.z < z0 - PR || p.z > z1 + PR) return;
         const l = p.x - (x0 - PR), r = (x1 + PR) - p.x, b = p.z - (z0 - PR), f = (z1 + PR) - p.z, m = Math.min(l, r, b, f);
-        if (m === l) p.x = x0 - PR; else if (m === r) p.x = x1 + PR; else if (m === b) p.z = z0 - PR; else p.z = z1 + PR; worldHits++; }
-      if (!noAv) for (const av of ctx.use('avatar')?.all || []) { if (av === ignoreAv || (!av.visible && !ignoreAv)) continue; let dx = p.x - av.position.x, dz = p.z - av.position.z, d2 = dx * dx + dz * dz; const R2 = 0.55;
-        if (d2 < R2 * R2) { let d = Math.sqrt(d2); if (d < 1e-3) { const id = String(ignoreAv?.userData?.a?.id || ''), seed = [...id].reduce((n, c) => n + c.charCodeAt(0), 0); const a = (seed % 360) * Math.PI / 180; dx = Math.cos(a); dz = Math.sin(a); d = 1; }
+        if (m === l) p.x = x0 - PR; else if (m === r) p.x = x1 + PR; else if (m === b) p.z = z0 - PR; else p.z = z1 + PR; worldHits++; };
+      const gx0 = Math.floor((p.x - PR) / COL_CELL), gx1 = Math.floor((p.x + PR) / COL_CELL), gz0 = Math.floor((p.z - PR) / COL_CELL), gz1 = Math.floor((p.z + PR) / COL_CELL);
+      for (const i of largeCols) visit(i); for (let x = gx0; x <= gx1; x++) for (let z = gz0; z <= gz1; z++) for (const i of colGrid.get(colCell(x, z)) || []) visit(i);
+      if (!noAv) for (const av of ctx.use('avatar')?.all || []) { if (av === ignoreAv || !av.visible) continue; let dx = p.x - av.position.x, dz = p.z - av.position.z, d2 = dx * dx + dz * dz; const R2 = 0.55;
+        if (d2 < R2 * R2) { let d = Math.sqrt(d2); if (d < 1e-3) { const aId = String(ignoreAv?.userData?.a?.id || ignoreAv?.uuid || ''), bId = String(av.userData?.a?.id || av.uuid || ''), pair = aId < bId ? aId + '\0' + bId : bId + '\0' + aId;
+          let seed = 7; for (const ch of pair) seed = (seed * 31 + ch.charCodeAt(0)) >>> 0; const a = seed % 360 * Math.PI / 180, sign = aId <= bId ? 1 : -1; dx = Math.cos(a) * sign; dz = Math.sin(a) * sign; d = 1; }
           p.x = av.position.x + dx / d * R2; p.z = av.position.z + dz / d * R2; agentHits++; } } }
     return { worldHits, agentHits }; }
   ctx.collide = collide;
