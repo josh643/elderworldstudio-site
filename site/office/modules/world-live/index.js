@@ -64,7 +64,7 @@ export default {
     for (const id of [...(this.sites?.keys() || [])]) this.drop(id);
     for (const P of [this.workers, this.archPool, this.secPool]) if (P) for (const m of [P.body, P.legs, P.arms]) { m.parent?.remove(m); m.dispose?.(); }
     this.toastEl?.remove?.();
-    if (this.post) this.post.parent?.remove(this.post); if (this.stand) this.stand.parent?.remove(this.stand);
+    if (this.post) this.post.parent?.remove(this.post); this.postSignMesh?.geometry?.dispose?.(); this.postSignMesh?.material?.dispose?.(); this.postSignMesh = null; this.postSignTex?.dispose?.(); this.postSignTex = null; if (this.stand) this.stand.parent?.remove(this.stand);
     for (const F of [...(this.figs?.values() || []), ...(this.cops?.values() || [])]) { F.tag?.parent?.remove(F.tag); if (F.av) { F.av.visible = false; F.av.parent?.remove(F.av); } }
   },
 
@@ -78,6 +78,7 @@ export default {
       steel: L({ color: '#a8432f' }), deck: L({ color: '#9c988f' }), glass: L({ color: '#8fb4c9', transparent: true, opacity: 0.55, emissive: '#000000' }),
       lawn: L({ color: '#6d9047', polygonOffset: true, polygonOffsetFactor: -2 }), pave: L({ color: '#c8c1b3', polygonOffset: true, polygonOffsetFactor: -3 }),
       scaffold: L({ color: '#c9ccd0' }), plank: L({ color: '#a77d4a' }), cone: L({ color: '#ff6a1a', emissive: '#331100' }), tape: new T.LineBasicMaterial({ color: '#ff5d8f' }),
+      postGlass: L({ color: '#ffffff', transparent: true, opacity: 0.72, depthWrite: false, side: T.DoubleSide }),
       form: L({ color: '#b98a54' }), cable: L({ color: '#222222' }) };
     const box = new T.BoxGeometry(1, 1, 1), boxB = new T.BoxGeometry(1, 1, 1).translate(0, 0.5, 0), plane = new T.PlaneGeometry(1, 1).rotateX(-Math.PI / 2), planeX0 = new T.PlaneGeometry(1, 1).rotateX(-Math.PI / 2).translate(0.5, 0, 0);
     // vertex-colour merge helper for machines + crews
@@ -106,7 +107,36 @@ export default {
       sbody: merge([part(B(0.36, 0.16, 0.22), '#1c2230', 0, 0.9, 0), part(B(0.42, 0.52, 0.25), '#1f2a3d', 0, 1.22, 0), part(B(0.43, 0.06, 0.26), '#d8e04a', 0, 1.16, 0), part(B(0.1, 0.07, 0.02), '#c9a24e', 0.11, 1.38, 0.13), part(B(0.12, 0.08, 0.12), '#a97e5f', 0, 1.51, 0), part(B(0.2, 0.22, 0.21), '#a97e5f', 0, 1.65, 0), part(C(0.12, 0.12, 0.08, 10), '#151b26', 0, 1.79, 0), part(B(0.2, 0.02, 0.12), '#151b26', 0, 1.755, 0.12), part(B(0.24, 0.32, 0.02), '#0e1014', -0.2, 1.08, 0.48, -0.9), part(B(0.21, 0.28, 0.005), '#5fb7d6', -0.2, 1.085, 0.493, -0.9)]),
       sleg: merge([part(B(0.15, 0.78, 0.16), '#1c2230', 0, -0.39, 0), part(B(0.16, 0.1, 0.26), '#0f0f10', 0, -0.83, 0.04)]),
       sarm: merge([part(B(0.12, 0.5, 0.13), '#1f2a3d', 0, -0.25, 0), part(B(0.1, 0.12, 0.1), '#a97e5f', 0, -0.56, 0)]),
-      post: merge([part(B(1.8, 0.12, 1.8), '#6b655b', 0, 0.06, 0), part(B(1.6, 1.0, 1.6), '#2a2f38', 0, 0.62, 0), part(B(1.62, 1.1, 1.62), '#9fc3d8', 0, 1.67, 0), part(B(0.08, 1.1, 0.08), '#2a2f38', 0.78, 1.67, 0.78), part(B(0.08, 1.1, 0.08), '#2a2f38', -0.78, 1.67, 0.78), part(B(0.08, 1.1, 0.08), '#2a2f38', 0.78, 1.67, -0.78), part(B(0.08, 1.1, 0.08), '#2a2f38', -0.78, 1.67, -0.78), part(B(2.1, 0.16, 2.1), '#1f2a3d', 0, 2.3, 0), part(B(1.2, 0.26, 0.04), '#d8e04a', 0, 2.05, 0.83), part(B(0.06, 0.06, 0.06), '#ffd58a', 0, 2.42, 0)]),
+      post: merge([
+        part(B(2.0, 0.16, 2.0), '#77736b', 0, 0.08, 0),                                      // stone plinth
+        part(B(1.82, 0.16, 0.12), '#c7bca7', 0, 0.21, 0.91), part(B(1.82, 0.16, 0.12), '#c7bca7', 0, 0.21, -0.91),
+        part(B(0.12, 0.16, 1.7), '#c7bca7', -0.91, 0.21, 0), part(B(0.12, 0.16, 1.7), '#c7bca7', 0.91, 0.21, 0),
+        part(B(0.14, 1.66, 0.14), '#34383b', -0.91, 1.12, 0.91), part(B(0.14, 1.66, 0.14), '#34383b', 0.91, 1.12, 0.91),
+        part(B(0.14, 1.66, 0.14), '#34383b', -0.91, 1.12, -0.91), part(B(0.14, 1.66, 0.14), '#34383b', 0.91, 1.12, -0.91),
+        part(B(1.82, 0.14, 0.14), '#34383b', 0, 1.88, 0.91), part(B(1.82, 0.14, 0.14), '#34383b', 0, 1.88, -0.91),
+        part(B(0.14, 0.14, 1.7), '#34383b', -0.91, 1.88, 0), part(B(0.14, 0.14, 1.7), '#34383b', 0.91, 1.88, 0),
+        part(B(1.82, 0.68, 0.1), '#bdb39f', -0.0, 0.54, -0.91),                        // enclosed rear wall
+        part(B(0.1, 0.62, 1.7), '#bdb39f', -0.91, 0.53, 0), part(B(0.1, 0.62, 1.7), '#bdb39f', 0.91, 0.53, 0),
+        part(B(0.09, 0.86, 0.08), '#b08d3c', 0, 1.31, 0.99),                            // front window / door divider
+        part(B(0.68, 1.58, 0.08), '#36515a', 0.49, 1.01, 1.0),                          // full-height visible door leaf
+        part(B(0.04, 1.58, 0.12), '#b08d3c', 0.49, 1.01, 1.03),                         // door stile
+        part(B(0.045, 0.045, 0.15), '#e0bd70', 0.77, 0.98, 1.08),                        // door handle
+        part(B(0.68, 0.07, 0.08), '#b08d3c', -0.47, 0.84, 1.0), part(B(0.68, 0.07, 0.08), '#b08d3c', -0.47, 1.62, 1.0),
+        part(B(0.07, 0.78, 0.08), '#b08d3c', -0.81, 1.23, 1.0), part(B(0.07, 0.78, 0.08), '#b08d3c', -0.13, 1.23, 1.0),
+        part(B(0.06, 0.72, 0.08), '#b08d3c', -0.47, 1.23, 1.0),                         // front window mullion
+        part(B(0.07, 0.78, 0.08), '#b08d3c', 0.49, 1.65, 1.0),                           // door head trim
+        part(B(0.14, 0.07, 0.8), '#b08d3c', 0.99, 0.84, -0.12), part(B(0.14, 0.07, 0.8), '#b08d3c', 0.99, 1.62, -0.12),
+        part(B(0.14, 0.78, 0.07), '#b08d3c', 0.99, 1.23, -0.52), part(B(0.14, 0.78, 0.07), '#b08d3c', 0.99, 1.23, 0.28),
+        part(B(2.32, 0.16, 2.3), '#292c31', 0, 2.04, 0),                                 // overhanging flat roof
+        part(B(2.22, 0.045, 0.06), '#b08d3c', 0, 1.94, 1.12),                            // brass roof edge
+        part(B(2.22, 0.045, 0.06), '#b08d3c', 0, 1.94, -1.12),
+        part(B(0.06, 0.045, 2.18), '#b08d3c', -1.12, 1.94, 0), part(B(0.06, 0.045, 2.18), '#b08d3c', 1.12, 1.94, 0),
+        part(B(0.62, 0.06, 0.12), '#393c40', 0.49, 1.82, 1.0)                           // door canopy lip
+      ]),
+      postGlass: merge([
+        part(B(0.6, 0.67, 0.035), '#8fb8c7', -0.47, 1.23, 0.99),
+        part(B(0.035, 0.67, 0.72), '#8fb8c7', 0.99, 1.23, -0.12)
+      ]),
       leg: merge([part(B(0.15, 0.78, 0.16), '#2d3340', 0, -0.39, 0), part(B(0.16, 0.1, 0.26), '#3b2a1d', 0, -0.83, 0.04)]),
       arm: merge([part(B(0.12, 0.5, 0.13), '#ff7a1a', 0, -0.25, 0), part(B(0.1, 0.12, 0.1), '#c99a78', 0, -0.56, 0)]),
       cone: merge([part(C(0.04, 0.17, 0.55, 8), '#ff6a1a', 0, 0.3, 0), part(C(0.1, 0.13, 0.08, 8), '#f4f4f4', 0, 0.3, 0), part(B(0.36, 0.04, 0.36), '#1a1a1a', 0, 0.02, 0)]),
@@ -416,8 +446,17 @@ export default {
   /* ---------------- Elderverse patrol (security team, CT119 agent.pose zone 'town', campus frame): on foot with tablets ---------------- */
   patrols(dt, t, onG) {
     const ctx = this.ctx, town = ctx.town; if (!town || !this.agents) return; const T = this.T;
-    if (!this.post) { const R = this.res(); this.post = new T.Mesh(R.geo.post, R.mat.vc); this.post.position.set(town.X0 + 4.6, 0, town.Z0 + 53.2 + 1.3); this.post.userData.noCollide = 1; this.post.userData.keep = 1; this.post.userData.noFarCull = 1; ctx.scene.add(this.post);
-      this.ctx.colliders?.push?.([town.X0 + 3.7, town.Z0 + 53.6, town.X0 + 5.5, town.Z0 + 55.4]); }
+    if (!this.post) {
+      const R = this.res(), booth = new T.Group(); booth.name = 'campus-guard-booth';
+      const shell = new T.Mesh(R.geo.post, R.mat.vc); shell.name = 'booth-roof-door-frame';
+      const glass = new T.Mesh(R.geo.postGlass, R.mat.postGlass); glass.name = 'booth-window-glazing';
+      this.postSignTex = this.textTex(['CAMPUS SECURITY', 'VISITOR CHECK-IN'], 512, 128, '#201b18', '#f3ead6', '#d9b45a');
+      const signMat = new T.MeshBasicMaterial({ map: this.postSignTex, side: T.DoubleSide, toneMapped: false });
+      const sign = new T.Mesh(new T.PlaneGeometry(1.5, 0.38), signMat); sign.name = 'booth-campus-security-sign'; sign.position.set(0, 2.02, 1.16); this.postSignMesh = sign;
+      for (const child of [shell, glass, sign]) { child.userData.noCollide = 1; child.userData.keep = 1; booth.add(child); }
+      booth.position.set(town.X0 + 4.6, 0, town.Z0 + 54.5); booth.userData.noCollide = 1; booth.userData.keep = 1; booth.userData.noFarCull = 1; this.post = booth; ctx.scene.add(booth);
+      this.ctx.colliders?.push?.([town.X0 + 3.55, town.Z0 + 53.45, town.X0 + 5.65, town.Z0 + 55.55]);
+    }
     this.post.visible = onG && (ctx.exterior?.root?.visible ?? true);
     const NAMES = { 'sec-lead': 'Hœnir', 'sec-vuln': 'Geri', 'sec-harden': 'Sigyn', 'sec-pentest': 'Skírnir', 'sec-watch': 'Freki' }, now = Date.now(), cops = (this.cops ||= new Map()), pool = this.crew('sec');
     const av = ctx.use('avatar'), cam = ctx.cam.position, seen = new Set();
