@@ -63,7 +63,13 @@
      "role": "store",
      "lead": false
     }
-   ]
+   ],
+   "lead": {
+    "id": "lead-games",
+    "name": "Freyr",
+    "role": "games lead",
+    "lead": true
+   }
   },
   {
    "key": "client",
@@ -99,7 +105,13 @@
      "role": "kiosk polish",
      "lead": false
     }
-   ]
+   ],
+   "lead": {
+    "id": "lead-client",
+    "name": "Frigg",
+    "role": "client sites lead",
+    "lead": true
+   }
   },
   {
    "key": "marketing",
@@ -143,7 +155,13 @@
      "offDuty": true,
      "status": "off duty (paused)"
     }
-   ]
+   ],
+   "lead": {
+    "id": "lead-marketing",
+    "name": "Bragi",
+    "role": "marketing lead",
+    "lead": true
+   }
   },
   {
    "key": "money",
@@ -179,7 +197,13 @@
      "role": "finance",
      "lead": false
     }
-   ]
+   ],
+   "lead": {
+    "id": "lead-money",
+    "name": "Njord",
+    "role": "money lead",
+    "lead": true
+   }
   },
   {
    "key": "ops",
@@ -233,7 +257,13 @@
      "role": "pipeline audit",
      "lead": false
     }
-   ]
+   ],
+   "lead": {
+    "id": "lead-ops",
+    "name": "Heimdall",
+    "role": "ops lead",
+    "lead": true
+   }
   },
   {
    "key": "callcenter",
@@ -275,7 +305,13 @@
      "role": "training data",
      "lead": false
     }
-   ]
+   ],
+   "lead": {
+    "id": "lead-callcenter",
+    "name": "Gná",
+    "role": "call center lead",
+    "lead": true
+   }
   },
   {
    "key": "design",
@@ -309,7 +345,13 @@
      "offDuty": true,
      "status": "off duty (paused)"
     }
-   ]
+   ],
+   "lead": {
+    "id": "lead-design",
+    "name": "Gerðr",
+    "role": "design lead",
+    "lead": true
+   }
   },
   {
    "key": "architecture",
@@ -340,6 +382,12 @@
      "lead": false
     }
    ],
+   "lead": {
+    "id": "lead-arch",
+    "name": "Máni",
+    "role": "architecture lead",
+    "lead": true
+   },
    "floor": "3",
    "seats": {
     "lead-arch": "f3-arch-lead-arch",
@@ -401,6 +449,12 @@
      "lead": false
     }
    ],
+   "lead": {
+    "id": "world-ops",
+    "name": "Ægir",
+    "role": "World Director",
+    "lead": true
+   },
    "floor": "B1",
    "restricted": true
   }
