@@ -24,6 +24,7 @@ usage: playtest_gate.py CANDIDATE_URL [--live URL] [--out DIR] [--no-vision] [--
 """
 import asyncio, json, os, sys, time, subprocess
 from playwright.async_api import async_playwright
+from probe_screenshot import capture_screenshot
 BASE = sys.argv[1].rstrip('/'); A = sys.argv[2:]
 def opt(k, d=None): return A[A.index(k) + 1] if k in A and A.index(k) + 1 < len(A) else d
 LIVE = opt('--live', 'https://office-3d.elderworldstudio.pages.dev').rstrip('/')
@@ -61,7 +62,7 @@ def jl(p, d):
 
 async def walk(b, url, out, full):
   """One walkthrough. full=False -> screenshots + perf + errors only (live builds may predate the debug API)."""
-  T0 = time.time(); W = {'url': url, 'det': [], 'floors': {}, 'regress': {}, 'views': {}, 'errs': []}
+  T0 = time.time(); W = {'url': url, 'det': [], 'floors': {}, 'regress': {}, 'views': {}, 'screenshots': {}, 'errs': []}
   ctxb = await b.new_context(viewport={'width': 1280, 'height': 720}); pg = await ctxb.new_page()
   pg.on('pageerror', lambda e: W['errs'].append(str(e)[:200]))
   await pg.goto(url + '/office/?time=13:00', wait_until='load', timeout=90000)
@@ -95,12 +96,16 @@ async def walk(b, url, out, full):
   for name, fl, args, lab in INDOOR:
     if time.time() - T0 > BUDGET - 60: W['skipped'] = W.get('skipped', []) + [name]; continue
     await pg.evaluate(f"__ewsOffice.floor('{fl}')"); await pg.wait_for_timeout(1500); await pg.evaluate(f"__ewsOffice.look({args})"); await pg.wait_for_timeout(1800)
-    await pg.screenshot(path=f'{out}/{name}.jpg', type='jpeg', quality=80); W['views'][name] = {'label': lab, 'zone': 'floor ' + fl}
+    shot_path = f'{out}/{name}.jpg'
+    W['screenshots'][name] = await capture_screenshot(pg, shot_path, image_type='jpeg', quality=80)
+    W['views'][name] = {'label': lab, 'zone': 'floor ' + fl}
   await pg.evaluate("__ewsOffice.floor('G')"); await pg.wait_for_timeout(1500)
   for name, args, lab in OUTDOOR:
     if time.time() - T0 > BUDGET - 45: W['skipped'] = W.get('skipped', []) + [name]; continue
     await pg.evaluate(f"window.__ewsFreeY=0;__ewsOffice.look({args})"); await pg.wait_for_timeout(2000)
-    await pg.screenshot(path=f'{out}/{name}.jpg', type='jpeg', quality=80); W['views'][name] = {'label': lab, 'zone': 'exterior', 'out': True}
+    shot_path = f'{out}/{name}.jpg'
+    W['screenshots'][name] = await capture_screenshot(pg, shot_path, image_type='jpeg', quality=80)
+    W['views'][name] = {'label': lab, 'zone': 'exterior', 'out': True}
   await pg.evaluate("__ewsOffice.look(0,6,0,-4)"); await pg.wait_for_timeout(1500)
   W['perf'] = await pg.evaluate("new Promise(r=>{let n=0;const t0=performance.now();const f=()=>{n++; if(performance.now()-t0<4000) requestAnimationFrame(f); else r({fps_swiftshader:+(n/4).toFixed(2), ...(__ewsOffice.info?__ewsOffice.info():{})})};requestAnimationFrame(f)})")
   json.dump(W['views'], open(f'{out}/views.json', 'w'), indent=1); W['secs'] = round(time.time() - T0, 1)
@@ -108,6 +113,7 @@ async def walk(b, url, out, full):
 
 async def reshoot(url, names, out):
   """Fresh page, 20 s settle (greeting bubbles/toasts gone), re-shoot only the views with an unclear NEW vision hit."""
+  shots = {}
   async with async_playwright() as p:
     b = await p.chromium.launch(executable_path='/usr/bin/google-chrome', args=['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'])
     pg = await (await b.new_context(viewport={'width': 1280, 'height': 720})).new_page()
@@ -116,13 +122,14 @@ async def reshoot(url, names, out):
     for name, fl, args, lab in INDOOR:
       if name not in names: continue
       await pg.evaluate(f"__ewsOffice.floor('{fl}')"); await pg.wait_for_timeout(1500); await pg.evaluate(f"__ewsOffice.look({args})"); await pg.wait_for_timeout(4000)
-      await pg.screenshot(path=f'{out}/{name}__cand.jpg', type='jpeg', quality=80)
+      shots[name + '__cand'] = await capture_screenshot(pg, f'{out}/{name}__cand.jpg', image_type='jpeg', quality=80)
     await pg.evaluate("__ewsOffice.floor('G')"); await pg.wait_for_timeout(1500)
     for name, args, lab in OUTDOOR:
       if name not in names: continue
       await pg.evaluate(f"window.__ewsFreeY=0;__ewsOffice.look({args})"); await pg.wait_for_timeout(4000)
-      await pg.screenshot(path=f'{out}/{name}__cand.jpg', type='jpeg', quality=80)
+      shots[name + '__cand'] = await capture_screenshot(pg, f'{out}/{name}__cand.jpg', image_type='jpeg', quality=80)
     await b.close()
+  return shots
 
 def judge(d, gid):
   """Ship a shot dir to CT111 and run the cheap vision judge (gatejudge, double-confirmed hits)."""
@@ -147,8 +154,8 @@ async def main():
     L = await walk(b, LIVE, OUT + '/live', full=True)    # baseline = what visitors have right now
     C = await walk(b, BASE, OUT, full=True)
     await b.close()
-  R['candidate_walk'] = {k: C[k] for k in ('secs', 'api', 'world_status', 'regress', 'reload', 'skipped') if k in C}
-  R['live_walk'] = {k: L[k] for k in ('secs', 'api', 'world_status', 'regress', 'reload', 'skipped') if k in L}
+  R['candidate_walk'] = {k: C[k] for k in ('secs', 'api', 'world_status', 'regress', 'reload', 'skipped', 'screenshots') if k in C}
+  R['live_walk'] = {k: L[k] for k in ('secs', 'api', 'world_status', 'regress', 'reload', 'skipped', 'screenshots') if k in L}
   R['floors'] = C['floors']; R['perf'] = {'candidate': C['perf'], 'live': L['perf']}
   if not C['api']: fail('debug_api', 'candidate', 'playtest helpers (wallAudit/reach/tryMove) missing: the gate cannot verify this build')
   if C['world_status'] != 200: fail('world_api', '/api/office/world', f"HTTP {C['world_status']}")
@@ -196,7 +203,7 @@ async def main():
         unclear.append(f)
       if unclear:   # targeted second look: LIVE shot (is it pre-existing?) + a fresh CANDIDATE re-shoot (is it persistent, not a transient bubble/toast?)
         sub = OUT + '/recheck'; os.makedirs(sub, exist_ok=True); vm = {}
-        try: await reshoot(BASE, {f['view'] for f in unclear}, sub)
+        try: R['recheck_screenshots'] = await reshoot(BASE, {f['view'] for f in unclear}, sub)
         except Exception as e: warn('reshoot', 'candidate', str(e)[:120])
         for f in unclear:
           for src, nm in ((f'{OUT}/live/{f["view"]}.jpg', f['view']), (f'{sub}/{f["view"]}__cand.jpg', f['view'] + '__cand')):
@@ -231,6 +238,6 @@ async def main():
     rp = f'/tmp/gate-{R["gate"]}.json'; json.dump(dict(R, fails=tofile), open(rp, 'w'), default=str)
     subprocess.run([os.path.expanduser('~/bin/ct111-put'), rp, rp], capture_output=True)
     subprocess.run([os.path.expanduser('~/bin/ct111'), f'python3 /opt/ews-agent/arch_seefix.py gatefile {rp}'], capture_output=True, timeout=60)
-  print(json.dumps({k: R.get(k) for k in ('result', 'fails', 'debt', 'warns', 'perf', 'view_diff', 'candidate_walk', 'live_walk', 'vision')}, default=str)[:9000])
+  print(json.dumps({k: R.get(k) for k in ('result', 'fails', 'debt', 'warns', 'perf', 'view_diff', 'candidate_walk', 'live_walk', 'vision')}, default=str)[:16000])
   sys.exit(1 if R['fails'] else 0)
 asyncio.run(main())
