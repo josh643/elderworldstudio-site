@@ -124,6 +124,9 @@ for tk, t in teams.items():
         if i in STAFF.get("unstaffed", []): m["unstaffed"] = True; m["status"] = "not staffed yet"; m["role"] = n["role"] + " (not staffed yet)"
         mem.append(m)
     row = {"key": tk, "name": t.get("name") or tk.title(), "members": mem}
+    if t.get("lead"):
+        lead = names.get(t["lead"]) or {"name": t["lead"].replace("-", " ").title(), "role": t["lead"].replace("-", " ")}
+        row["lead"] = {"id": t["lead"], "name": lead["name"], "role": lead["role"], "lead": True}
     if t.get("floor"): row["floor"] = t["floor"]
     if t.get("floor") == "B1": row["restricted"] = True   # 2026-10-17 world team: renders only inside the IP-locked B1 module            # 2026-10-16: upper-floor teams (architecture = Floor 3)
     if t.get("seats"): row["seats"] = t["seats"]            # assigned chair id per agent (one chair each)
