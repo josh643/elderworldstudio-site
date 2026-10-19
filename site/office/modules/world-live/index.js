@@ -416,8 +416,8 @@ export default {
   /* ---------------- Elderverse patrol (security team, CT119 agent.pose zone 'town', campus frame): on foot with tablets ---------------- */
   patrols(dt, t, onG) {
     const ctx = this.ctx, town = ctx.town; if (!town || !this.agents) return; const T = this.T;
-    if (!this.post) { const R = this.res(); this.post = new T.Mesh(R.geo.post, R.mat.vc); this.post.position.set(town.X0 + 4.6, 0, town.Z0 + 53.2 + 1.3); this.post.userData.noCollide = 1; this.post.userData.keep = 1; this.post.userData.noFarCull = 1; ctx.scene.add(this.post);
-      this.ctx.colliders?.push?.([town.X0 + 3.7, town.Z0 + 53.6, town.X0 + 5.5, town.Z0 + 55.4]); }
+    if (!this.post) { const R = this.res(), x = town.guardPostX ?? town.X0 + 4.6; this.post = new T.Mesh(R.geo.post, R.mat.vc); this.post.position.set(x, 0, town.Z0 + 53.2 + 1.3); this.post.userData.noCollide = 1; this.post.userData.keep = 1; this.post.userData.noFarCull = 1; ctx.scene.add(this.post);
+      this.ctx.colliders?.push?.([x - 0.9, town.Z0 + 53.6, x + 0.9, town.Z0 + 55.4]); }
     this.post.visible = onG && (ctx.exterior?.root?.visible ?? true);
     const NAMES = { 'sec-lead': 'Hœnir', 'sec-vuln': 'Geri', 'sec-harden': 'Sigyn', 'sec-pentest': 'Skírnir', 'sec-watch': 'Freki' }, now = Date.now(), cops = (this.cops ||= new Map()), pool = this.crew('sec');
     const av = ctx.use('avatar'), cam = ctx.cam.position, seen = new Set();
