@@ -410,7 +410,7 @@ export function build(ctx, shell) {
   const chunks = [];
   for (let k = 0; k < ZS.length - 1; k++) for (let j = 0; j < XS.length - 1; j++) chunks.push({ k, j, x0: XS[j], x1: XS[j + 1], z0: ZS[k], z1: ZS[k + 1], built: false, g: null });
   /* town layout for the live world (modules/world-live): lot n (1-based, same as the plates) -> centre, size, street side */
-  ctx.town = { AVE, XS, ZS, RW, SW, X0, Z0, guardPostX: X0 - 4.6, lots: [] };
+  ctx.town = { AVE, XS, ZS, RW, SW, X0, Z0, guardPostX: X0 - 6.5, lots: [] };
   for (const c of chunks) { const h = RW / 2, bx0 = c.x0 + h, bx1 = c.x1 - h, bz0 = c.z0 + h, bz1 = c.z1 - h, iw = (bx1 - bx0) - 2 * SW, idp = (bz1 - bz0) - 2 * SW, lw = (iw - 3) / 2, ld = (idp - 3) / 2;
     for (let a = 0; a < 2; a++) for (let b = 0; b < 2; b++) { const n = (c.k * (XS.length - 1) + c.j) * 4 + a * 2 + b; ctx.town.lots[n] = { n: n + 1, cx: bx0 + SW + 1 + lw / 2 + a * (lw + 1), cz: bz0 + SW + 1 + ld / 2 + b * (ld + 1), w: lw, d: ld, face: b === 0 ? -1 : 1, chunk: c }; } }
   function buildChunk(c) { const g = new T.Group(); g.userData.keep = 1; root.add(g); c.g = g; c.built = true; const B = Batch(), L = [], asph = '#34363b', walk = '#bdb7ab', curb = '#8f8a80', stone = '#6d6860', bronze = '#3a2f22';
