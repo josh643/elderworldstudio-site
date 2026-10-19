@@ -25,7 +25,7 @@ const capsule = {
     function animate(av, dt, t) {
       const u = av.userData, s = u.state || {}, ph = u.phase + t, [la, ra] = u.arms; let walking = false;
       if (u.target) { tmp.set(u.target.x - av.position.x, 0, u.target.z - av.position.z); const L = tmp.length();
-        if (L > 0.08) { walking = true; tmp.normalize(); av.position.addScaledVector(tmp, Math.min(L, dt * 1.6)); av.rotation.y = Math.atan2(tmp.x, tmp.z); }
+        if (L > 0.08) { tmp.normalize(); const step = Math.min(L, dt * 1.6), physics = ctx.use('worldPhysics'), result = physics?.move(av, tmp.x * step, tmp.z * step); walking = (result?.actual ?? step) > 0.001; av.rotation.y = Math.atan2(tmp.x, tmp.z); }
         else if (u.home && u.target.equals(u.home)) av.rotation.y = u.homeRot ?? Math.PI; }
       const pose = walking ? 'walk' : u.pose || STAGE_POSE[s.stage] || 'idle';
       la.rotation.set(0, 0, 0); ra.rotation.set(0, 0, 0); u.legs[0].rotation.x = u.legs[1].rotation.x = 0;

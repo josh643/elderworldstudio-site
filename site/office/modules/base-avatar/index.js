@@ -166,6 +166,10 @@ export default {
       for (const p of u.path) { for (const q of R(from, p)) out.push(q); out.push(p); from = p; } u.path = out;
     }
     function buildPath(av) { buildPath0(av); routed(av); }
+    function moveAgent(av, dx, dz, seat) {
+      const physics = ctx.use('worldPhysics'); if (physics) return physics.move(av, dx, dz, { seat });
+      av.position.x += dx; av.position.z += dz; return { actual: Math.hypot(dx, dz) };
+    }
     function buildPath0(av) {
       const u = av.userData, T = u.target; u.path = []; u.goalSeat = null; u.faceRot = T?.rot ?? null;
       if (!T) return; const last = u.lastSeat;
@@ -202,13 +206,13 @@ export default {
         if (u.repath) { u.repath = false; buildPath(av); }
         const P = u.path && u.path[0];
         if (P) { tmp.set(P.x - av.position.x, 0, P.z - av.position.z); const dist = tmp.length(), lastLeg = u.path.length === 1;
-          if (dist < 0.05) { av.position.x = P.x; av.position.z = P.z; u.path.shift(); }
+          if (dist < 0.05) { moveAgent(av, P.x - av.position.x, P.z - av.position.z, lastLeg ? u.goalSeat : null); if (Math.hypot(P.x - av.position.x, P.z - av.position.z) < 0.08) u.path.shift(); }
           else { moving = true; const carryNow = ['QA', 'ready', 'review'].includes(s.stage) && !u.siteJob, S3 = SPEED3[u.fem] || SPEED3[0];
             const want = Math.atan2(tmp.x, tmp.z), diff = wrap(want - av.rotation.y), turn = Math.min(Math.abs(diff), dt * 6.5) * Math.sign(diff); av.rotation.y = wrap(av.rotation.y + turn);
             /* speed = the clip's own ground speed (x height), slowed while turning sharply and on the final 0.5 m; the clip's
                playback rate follows the same factor, so feet never slide */
             const base = (carryNow ? S3.carry : S3.walk) * u.look.height, f = Math.max(0.3, Math.cos(Math.min(Math.abs(diff), 1.4))) * (lastLeg ? Math.max(0.45, Math.min(1, dist / 0.5)) : 1);
-            sp = base * f; tmp.normalize(); av.position.addScaledVector(tmp, Math.min(dist, dt * sp)); k = carryNow ? 'carry' : 'walk'; u.rate = f;
+            sp = base * f; tmp.normalize(); const step = Math.min(dist, dt * sp), result = moveAgent(av, tmp.x * step, tmp.z * step, lastLeg ? u.goalSeat : null); moving = (result?.actual ?? step) > 0.001; k = carryNow ? 'carry' : 'walk'; u.rate = f;
             /* chair rolls out and swivels toward the agent as they walk up to it */
             const g = u.goalSeat; if (g && Math.hypot(av.position.x - g.root.x, av.position.z - g.root.z) < 1.8) { g.c.tOff = OFF.out; const sx = Math.cos(g.rot) * (av.position.x - g.root.x) - Math.sin(g.rot) * (av.position.z - g.root.z); g.c.tSw = Math.sign(sx || 1) * 0.5; } } }
         if (!moving) {

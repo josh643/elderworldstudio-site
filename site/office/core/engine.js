@@ -136,12 +136,14 @@ const PUBLIC = /(^|\.)elderworldstudio\.com$/.test(location.hostname) || /[?&]pu
     if (ctx.extraCols) for (const c of ctx.extraCols) { if (!c.src) c.src = 'extra'; if (!(Number.isFinite(c[0]) && Number.isFinite(c[1]) && Number.isFinite(c[2]) && Number.isFinite(c[3]))) { if (!c.warned) { c.warned = 1; console.warn('office: dropped non-finite collider', c.slice(0, 4)); } continue; } cols.push(c); }   /* a NaN edge collides along a whole axis = invisible wall */   /* explicit rects from merged floors (core/floors.js) */
     ctx.colliders = cols; }
   ctx.rebuildColliders = () => buildColliders();
-  function collide(p, noAv) { for (let it = 0; it < 2; it++) {
-      for (const [x0, z0, x1, z1] of cols) { if (p.x < x0 - PR || p.x > x1 + PR || p.z < z0 - PR || p.z > z1 + PR) continue;
+  function collide(p, noAv, ignoreAv, allowCollider) { let worldHits = 0, agentHits = 0; for (let it = 0; it < 2; it++) {
+      for (const c of cols) { if (allowCollider?.(c)) continue; const [x0, z0, x1, z1] = c; if (p.x < x0 - PR || p.x > x1 + PR || p.z < z0 - PR || p.z > z1 + PR) continue;
         const l = p.x - (x0 - PR), r = (x1 + PR) - p.x, b = p.z - (z0 - PR), f = (z1 + PR) - p.z, m = Math.min(l, r, b, f);
-        if (m === l) p.x = x0 - PR; else if (m === r) p.x = x1 + PR; else if (m === b) p.z = z0 - PR; else p.z = z1 + PR; }
-      if (!noAv) for (const av of ctx.use('avatar')?.all || []) { if (!av.visible) continue; const dx = p.x - av.position.x, dz = p.z - av.position.z, d2 = dx * dx + dz * dz, R2 = 0.55;
-        if (d2 < R2 * R2 && d2 > 1e-6) { const d = Math.sqrt(d2); p.x = av.position.x + dx / d * R2; p.z = av.position.z + dz / d * R2; } } } }
+        if (m === l) p.x = x0 - PR; else if (m === r) p.x = x1 + PR; else if (m === b) p.z = z0 - PR; else p.z = z1 + PR; worldHits++; }
+      if (!noAv) for (const av of ctx.use('avatar')?.all || []) { if (av === ignoreAv || (!av.visible && !ignoreAv)) continue; let dx = p.x - av.position.x, dz = p.z - av.position.z, d2 = dx * dx + dz * dz; const R2 = 0.55;
+        if (d2 < R2 * R2) { let d = Math.sqrt(d2); if (d < 1e-3) { const id = String(ignoreAv?.userData?.a?.id || ''), seed = [...id].reduce((n, c) => n + c.charCodeAt(0), 0); const a = (seed % 360) * Math.PI / 180; dx = Math.cos(a); dz = Math.sin(a); d = 1; }
+          p.x = av.position.x + dx / d * R2; p.z = av.position.z + dz / d * R2; agentHits++; } } }
+    return { worldHits, agentHits }; }
   ctx.collide = collide;
   // shell: floor + outer walls sized to whatever the modules built
   const { minX, maxX, minZ, maxZ } = bounds; const fx = minX - 2, fX = maxX + 2, fz = minZ - 2, fZ = maxZ;
@@ -308,7 +310,7 @@ const PUBLIC = /(^|\.)elderworldstudio\.com$/.test(location.hostname) || /[?&]pu
   ctx.state = s => mods.forEach(m => { try { m.onState?.(s); } catch (e) { console.warn(e); } });
 
   // loop with FPS watchdog
-  const clock = new THREE.Clock(); const T0 = performance.now(); let cullT = 0, running = true, fa = 0, fn = 0, slow = false, lowFor = 0, fps1 = 0, fpsN = 0; const fpsEl = new URLSearchParams(location.search).has('fps') ? (() => { const d = document.createElement('div'); d.className = 'office-fps'; d.style.cssText = 'position:absolute;right:8px;top:8px;z-index:9;font:12px monospace;color:#0f0;background:#000a;padding:3px 6px;pointer-events:none'; root.append(d); return d; })() : null; const fwd = new THREE.Vector3(), right = new THREE.Vector3();
+  const clock = new THREE.Clock(); const T0 = performance.now(); const performanceMetrics = ctx.performanceMetrics = { fps: 0, sampledAt: 0 }; let cullT = 0, running = true, fa = 0, fn = 0, slow = false, lowFor = 0, fps1 = 0, fpsN = 0; const fpsEl = new URLSearchParams(location.search).has('fps') ? (() => { const d = document.createElement('div'); d.className = 'office-fps'; d.style.cssText = 'position:absolute;right:8px;top:8px;z-index:9;font:12px monospace;color:#0f0;background:#000a;padding:3px 6px;pointer-events:none'; root.append(d); return d; })() : null; const fwd = new THREE.Vector3(), right = new THREE.Vector3();
   function resize() { const w = root.clientWidth, h = root.clientHeight; R.setSize(w, h, false); cam.aspect = w / h; const a = w / h; cam.fov = a >= 1 ? 62 : Math.min(78, Math.max(62, 2 * Math.atan(Math.tan(Math.PI / 8) / a) * 180 / Math.PI)); cam.updateProjectionMatrix(); }   // portrait phones get a wider view
   addEventListener('resize', resize); resize();
   function frame() {
@@ -316,7 +318,7 @@ const PUBLIC = /(^|\.)elderworldstudio\.com$/.test(location.hostname) || /[?&]pu
     const rdt = clock.getDelta(), dt = Math.min(rdt, 0.05), t = clock.elapsedTime;
     fa += rdt; fn++; fps1 += rdt; fpsN++; if (fpsEl && fps1 > 0.5) { fpsEl.textContent = `${Math.round(fpsN / fps1)} fps · tier ${tier} · ${R.getPixelRatio().toFixed(2)}x · ${R.info.render.calls} calls${igpu ? ' · iGPU' : ''}`; fps1 = fpsN = 0; }
     if (fa > 2 && performance.now() - T0 < 6000) { fa = fn = 0; }   // ignore the load spike
-    if (fa > 2) { const fps = fn / fa; fa = fn = 0;   // step quality down first; only offer classic after sustained <20 fps for 10 s at the lowest level
+    if (fa > 2) { const fps = fn / fa; performanceMetrics.fps = fps; performanceMetrics.sampledAt = performance.now(); fa = fn = 0;   // step quality down first; only offer classic after sustained <20 fps for 10 s at the lowest level
       if (fps < 40 && ctx.lod > 0.5) { ctx.lod = Math.max(0.5, ctx.lod - 0.15); lowFor = 0; }
       else if (fps < 40 && (dstep < DSCALE.length - 1 || tier > 0)) { if (dstep < DSCALE.length - 1) dstep++; else { tier--; dstep = 0; ctx.tierChanged?.(tier); } applyRatio(); resize(); lowFor = 0; }
       else lowFor = 0; }   /* no 'running slowly' popup: quality steps down silently */
