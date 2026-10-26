@@ -220,17 +220,36 @@ export function build(ctx, shell) {
   { const rings = [0, 0.3, 0.55, 0.72, 0.84, 0.92, 0.97, 1], N = 96, pos = [], ed = [], idx = [];
     for (let r = 0; r < rings.length; r++) for (let i = 0; i < N; i++) { const a = i / N * Math.PI * 2, k = lakeR(a) * rings[r]; pos.push(lake.x + Math.cos(a) * lake.rx * k, 0, lake.z + Math.sin(a) * lake.rz * k); ed.push(1 - rings[r]); }
     for (let r = 0; r < rings.length - 1; r++) for (let i = 0; i < N; i++) { const a = r * N + i, b = r * N + (i + 1) % N, c = a + N, d = b + N; idx.push(a, c, b, b, c, d); }
+    // A seamless tangent-space normal tile: low-cost, generated once, and shared by every water fragment.
+    const normalSize = 128, normalData = new Uint8Array(normalSize * normalSize * 4), tau = Math.PI * 2, eps = tau / normalSize;
+    const waterHeight = (x, y) => Math.sin(x * 3 + y * 2) * 0.48 + Math.cos(y * 5 - x * 1.5) * 0.32 + Math.sin((x + y) * 7) * 0.2;
+    for (let y = 0; y < normalSize; y++) for (let x = 0; x < normalSize; x++) {
+      const u = x / normalSize * tau, v = y / normalSize * tau;
+      const dx = (waterHeight(u + eps, v) - waterHeight(u - eps, v)) / (2 * eps) * 0.24;
+      const dy = (waterHeight(u, v + eps) - waterHeight(u, v - eps)) / (2 * eps) * 0.24;
+      const inv = 1 / Math.hypot(dx, dy, 1), i = (y * normalSize + x) * 4;
+      normalData[i] = Math.round((0.5 - dx * inv * 0.5) * 255); normalData[i + 1] = Math.round((0.5 - dy * inv * 0.5) * 255);
+      normalData[i + 2] = Math.round((0.5 + inv * 0.5) * 255); normalData[i + 3] = 255;
+    }
+    const waterNormal = new T.DataTexture(normalData, normalSize, normalSize, T.RGBAFormat, T.UnsignedByteType);
+    waterNormal.wrapS = waterNormal.wrapT = T.RepeatWrapping; waterNormal.magFilter = T.LinearFilter; waterNormal.minFilter = T.LinearMipmapLinearFilter;
+    waterNormal.generateMipmaps = true; waterNormal.colorSpace = T.NoColorSpace; waterNormal.needsUpdate = true;
     const g = new T.BufferGeometry(); g.setAttribute('position', new T.Float32BufferAttribute(pos, 3)); g.setAttribute('aEdge', new T.Float32BufferAttribute(ed, 1)); g.setIndex(idx);
-    const wm = new T.ShaderMaterial({ uniforms: { ...U, uBld: { value: new T.Vector3(X0, 6, Z0) } }, fog: false, side: T.DoubleSide, defines: tier > 0 ? { WAVES4: 1 } : {},
+    const wm = new T.ShaderMaterial({ uniforms: { ...U, uBld: { value: new T.Vector3(X0, 6, Z0) }, uWaterNormal: { value: waterNormal } }, fog: false, side: T.DoubleSide, defines: tier > 0 ? { WAVES4: 1 } : {},
       vertexShader: 'attribute float aEdge; varying vec3 vW; varying float vE; void main(){ vE = aEdge; vec4 w = modelMatrix * vec4(position,1.0); vW = w.xyz; gl_Position = projectionMatrix * viewMatrix * w; }',
-      fragmentShader: glsl.haze + `uniform vec3 uSkyT, uSkyH, uSunDir, uSunC, uLakeT, uLakeB, uBld; uniform float uTime, uNight, uLights; varying vec3 vW; varying float vE;
+      fragmentShader: glsl.haze + `uniform vec3 uSkyT, uSkyH, uSunDir, uSunC, uLakeT, uLakeB, uBld; uniform float uTime, uNight, uLights; uniform sampler2D uWaterNormal; varying vec3 vW; varying float vE;
         void main(){ vec2 p = vW.xz; float t = uTime;
           vec2 gr = vec2(cos(p.x * 0.9 + p.y * 0.3 + t * 0.9), 0.0) * 0.045 + vec2(0.0, cos(p.y * 1.3 - p.x * 0.2 - t * 0.7)) * 0.035;
+          vec2 uvA = p * 0.12 + vec2(t * 0.018, -t * 0.013);
+          vec3 mapA = texture2D(uWaterNormal, uvA).xyz * 2.0 - 1.0;
+          vec2 micro = mapA.xy * 0.24;
           #ifdef WAVES4
           gr += vec2(cos(dot(p, vec2(2.1, 1.7)) + t * 1.5)) * vec2(2.1, 1.7) * 0.011 + vec2(cos(dot(p, vec2(-3.3, 2.9)) - t * 2.1)) * vec2(-3.3, 2.9) * 0.006
               + vec2(cos(dot(p, vec2(6.1, -4.7)) + t * 2.9)) * vec2(6.1, -4.7) * 0.0025;
+          vec3 mapB = texture2D(uWaterNormal, p * vec2(-0.23, 0.19) + vec2(-t * 0.011, t * 0.016)).xyz * 2.0 - 1.0;
+          micro += vec2(-mapB.x, mapB.y) * 0.16;
           #endif
-          vec3 n = normalize(vec3(-gr.x, 1.0, -gr.y)), V = normalize(cameraPosition - vW); float ndv = max(dot(n, V), 0.0), fr = 0.03 + 0.6 * pow(1.0 - ndv, 5.0);
+          vec3 n = normalize(vec3(-gr.x + micro.x, 1.0, -gr.y + micro.y)), V = normalize(cameraPosition - vW); float ndv = max(dot(n, V), 0.0), fr = 0.035 + 0.68 * pow(1.0 - ndv, 5.0);
           vec3 R = reflect(-V, n); vec3 refl = mix(uSkyH, uSkyT, clamp(pow(max(R.y, 0.0), 0.6), 0.0, 1.0));
           refl = mix(refl, mix(vec3(0.1, 0.15, 0.1), vec3(0.02, 0.03, 0.04), uNight), smoothstep(0.12, 0.0, R.y) * 0.75);         // far-shore treeline darkens the low reflection
           refl = mix(refl, refl * 0.55, smoothstep(0.3, 0.0, vE) * 0.5);
