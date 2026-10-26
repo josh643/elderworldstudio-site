@@ -251,14 +251,14 @@ export function build(ctx, shell) {
           #endif
           vec3 n = normalize(vec3(-gr.x + micro.x, 1.0, -gr.y + micro.y)), V = normalize(cameraPosition - vW); float ndv = max(dot(n, V), 0.0), fr = 0.035 + 0.68 * pow(1.0 - ndv, 5.0);
           vec3 R = reflect(-V, n); vec3 refl = mix(uSkyH, uSkyT, clamp(pow(max(R.y, 0.0), 0.6), 0.0, 1.0));
-          refl = mix(refl, mix(vec3(0.1, 0.15, 0.1), vec3(0.02, 0.03, 0.04), uNight), smoothstep(0.12, 0.0, R.y) * 0.75);         // far-shore treeline darkens the low reflection
-          refl = mix(refl, refl * 0.55, smoothstep(0.3, 0.0, vE) * 0.5);
+          refl = mix(refl, mix(vec3(0.1, 0.15, 0.1), vec3(0.02, 0.03, 0.04), uNight), (1.0 - smoothstep(0.0, 0.12, R.y)) * 0.75); // far-shore treeline darkens the low reflection
+          refl = mix(refl, refl * 0.55, (1.0 - smoothstep(0.0, 0.3, vE)) * 0.5);
           vec3 deep = mix(uLakeT, uLakeB, smoothstep(0.05, 0.6, vE)); vec3 c = mix(deep, refl, fr);
           c += uSunC * pow(max(dot(R, uSunDir), 0.0), 220.0) * 3.0 * smoothstep(-0.05, 0.1, uSunDir.y);
           c += vec3(0.8, 0.85, 1.0) * pow(max(dot(R, -uSunDir), 0.0), 260.0) * 1.6 * uNight;                                  // moon glint
           vec3 toB = normalize(uBld - vW); c += vec3(1.0, 0.78, 0.5) * pow(max(dot(R, toB), 0.0), 18.0) * 0.35 * uLights;          // lit facade shimmering on the water
           c += vec3(1.0, 0.82, 0.55) * pow(max(dot(R, normalize(vec3(uBld.x - vW.x, 2.0, uBld.z + 30.0 - vW.z))), 0.0), 60.0) * 0.18 * uLights;
-          c = mix(c, vec3(0.55, 0.58, 0.52) * (1.0 - 0.8 * uNight), smoothstep(0.03, 0.0, vE) * 0.5 * (0.6 + 0.4 * sin(t * 1.3 + p.x * 0.7 + p.y * 0.5)));   // lapping shoreline
+          c = mix(c, vec3(0.55, 0.58, 0.52) * (1.0 - 0.8 * uNight), (1.0 - smoothstep(0.0, 0.03, vE)) * 0.5 * (0.6 + 0.4 * sin(t * 1.3 + p.x * 0.7 + p.y * 0.5))); // lapping shoreline
           c = hazeIt(c, length(cameraPosition - vW)); gl_FragColor = vec4(c, 1.0);
           #include <colorspace_fragment>
         }` });
