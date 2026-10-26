@@ -25,9 +25,9 @@ usage: playtest_gate.py CANDIDATE_URL [--live URL] [--out DIR] [--state-dir DIR]
 import asyncio, json, os, sys, time, subprocess
 from playwright.async_api import async_playwright
 try:
-  from .gate_rules import MIN_FPS, VISUAL_RULES, http_error, is_pve_mini_3070, meets_perf_floor
+  from .gate_rules import MIN_FPS, VISUAL_RULES, http_error, is_pve_mini_3070, meets_perf_floor, missing_views
 except ImportError:  # direct execution: Python puts tools/office on sys.path
-  from gate_rules import MIN_FPS, VISUAL_RULES, http_error, is_pve_mini_3070, meets_perf_floor
+  from gate_rules import MIN_FPS, VISUAL_RULES, http_error, is_pve_mini_3070, meets_perf_floor, missing_views
 BASE = sys.argv[1].rstrip('/'); A = sys.argv[2:]
 def opt(k, d=None): return A[A.index(k) + 1] if k in A and A.index(k) + 1 < len(A) else d
 LIVE = opt('--live', 'https://office-3d.elderworldstudio.pages.dev').rstrip('/')
@@ -62,6 +62,7 @@ INDOOR = [  # name, floor, js look args, label
   ('f2-hall', '2', '400,-4.5,408,-10', 'Floor 2 hall'),
 ]
 OUTDOOR = [('front-road', '0,74,0,30', 'Campus front entrance from the road'), ('front-lawn', '0,40,0,0', 'Front lawn toward the office'), ('gate', '10,70,4.6,63', 'Gate / guard booth')]
+REQUIRED_VIEWS = tuple(v[0] for v in INDOOR) + tuple(v[0] for v in OUTDOOR)
 R = {'gate': os.path.basename(OUT), 'base': BASE, 'live': LIVE, 'mode': 'baseline-diff', 'fails': [], 'warns': [], 'debt': [], 'floors': {}, 'perf': {}}
 def fail(code, where, detail=''): R['fails'].append({'code': code, 'where': where, 'detail': detail}); print('FAIL', code, where, detail, flush=True)
 def warn(code, where, detail=''): R['warns'].append({'code': code, 'where': where, 'detail': detail}); print('warn', code, where, detail, flush=True)
@@ -191,7 +192,11 @@ async def main():
   for e in C['http_errors']:
     fail('http_error', e['url'], f"HTTP {e['status']} ({e['method']} {e['type']})")
   for e in L['http_errors']:
-    R['debt'].append({'code': 'http_error', 'where': e['url'], 'detail': f"live HTTP {e['status']} ({e['method']} {e['type']})"})
+    fail('http_error_live', e['url'], f"live HTTP {e['status']} ({e['method']} {e['type']})")
+  for name, walk_result in (('candidate', C), ('live', L)):
+    missing = missing_views(REQUIRED_VIEWS, walk_result['views'])
+    if missing:
+      fail('visual_coverage', name, 'missing required screenshots: ' + ', '.join(missing))
   if C.get('walk_error'): fail('walk_error', 'candidate', C['walk_error'])
   if L.get('walk_error'): fail('live_walk_error', 'live', L['walk_error'])
   if not C['api']: fail('debug_api', 'candidate', 'playtest helpers (wallAudit/reach/tryMove) missing: the gate cannot verify this build')

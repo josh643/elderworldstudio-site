@@ -25,6 +25,11 @@ def http_error(status, url, method, resource_type):
     }
 
 
+def missing_views(required, captured):
+    """Return sorted required screenshot names that were not captured."""
+    return sorted(set(required) - set(captured))
+
+
 def meets_perf_floor(fps):
     """Fail closed when the FPS sample is missing, invalid, or below target."""
     try:
