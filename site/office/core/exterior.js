@@ -246,8 +246,7 @@ export function build(ctx, shell) {
           #ifdef WAVES4
           gr += vec2(cos(dot(p, vec2(2.1, 1.7)) + t * 1.5)) * vec2(2.1, 1.7) * 0.011 + vec2(cos(dot(p, vec2(-3.3, 2.9)) - t * 2.1)) * vec2(-3.3, 2.9) * 0.006
               + vec2(cos(dot(p, vec2(6.1, -4.7)) + t * 2.9)) * vec2(6.1, -4.7) * 0.0025;
-          vec3 mapB = texture2D(uWaterNormal, p * vec2(-0.23, 0.19) + vec2(-t * 0.011, t * 0.016)).xyz * 2.0 - 1.0;
-          micro += vec2(-mapB.x, mapB.y) * 0.16;
+          // Keep the same single normal-map fetch at every tier; analytic waves add higher-tier detail.
           #endif
           vec3 n = normalize(vec3(-gr.x + micro.x, 1.0, -gr.y + micro.y)), V = normalize(cameraPosition - vW); float ndv = max(dot(n, V), 0.0), fr = 0.035 + 0.68 * pow(1.0 - ndv, 5.0);
           vec3 R = reflect(-V, n); vec3 refl = mix(uSkyH, uSkyT, clamp(pow(max(R.y, 0.0), 0.6), 0.0, 1.0));
