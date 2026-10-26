@@ -71,7 +71,7 @@ def jl(p, d):
 
 async def walk(b, url, out, full):
   """One walkthrough. full=False -> screenshots + perf + errors only (live builds may predate the debug API)."""
-  T0 = time.time(); W = {'url': url, 'det': [], 'floors': {}, 'regress': {}, 'views': {}, 'errs': [], 'http_errors': []}
+  T0 = time.time(); W = {'url': url, 'det': [], 'floors': {}, 'regress': {}, 'views': {}, 'errs': [], 'http_errors': [], 'api': False, 'world_status': None, 'perf': {}}
   ctxb = await b.new_context(viewport={'width': 1280, 'height': 720}); pg = await ctxb.new_page()
   pg.on('pageerror', lambda e: W['errs'].append(str(e)[:200]))
   def record_response(response):
@@ -79,8 +79,23 @@ async def walk(b, url, out, full):
     item = http_error(response.status, response.url, req.method, req.resource_type)
     if item and item not in W['http_errors']: W['http_errors'].append(item)
   pg.on('response', record_response)
-  await pg.goto(url + '/office/?time=13:00', wait_until='load', timeout=90000)
-  await pg.wait_for_function("!!(window.__ewsOffice && __ewsOffice.pos && __ewsOffice.floor && __ewsOffice.look)", timeout=90000); await pg.wait_for_timeout(5000)
+  try:
+    response = await pg.goto(url + '/office/?time=13:00', wait_until='load', timeout=90000)
+    if response:
+      item = http_error(response.status, response.url, response.request.method, response.request.resource_type)
+      if item and item not in W['http_errors']: W['http_errors'].append(item)
+      if response.status >= 400:
+        W['walk_error'] = f"office page returned HTTP {response.status}"
+        W['secs'] = round(time.time() - T0, 1)
+        await ctxb.close()
+        return W
+    await pg.wait_for_function("!!(window.__ewsOffice && __ewsOffice.pos && __ewsOffice.floor && __ewsOffice.look)", timeout=90000)
+  except Exception as e:
+    W['walk_error'] = f"office page/bootstrap failed: {type(e).__name__}: {str(e)[:160]}"
+    W['secs'] = round(time.time() - T0, 1)
+    await ctxb.close()
+    return W
+  await pg.wait_for_timeout(5000)
   W['api'] = await pg.evaluate("typeof __ewsOffice.wallAudit === 'function' && typeof __ewsOffice.tryMove === 'function'")
   full = full and W['api']
   W['world_status'] = await pg.evaluate("fetch('/api/office/world?op=state').then(r=>r.status)")
@@ -166,8 +181,8 @@ async def main():
     L = await walk(b, LIVE, OUT + '/live', full=True)    # baseline = what visitors have right now
     C = await walk(b, BASE, OUT, full=True)
     await b.close()
-  R['candidate_walk'] = {k: C[k] for k in ('secs', 'api', 'world_status', 'regress', 'reload', 'skipped') if k in C}
-  R['live_walk'] = {k: L[k] for k in ('secs', 'api', 'world_status', 'regress', 'reload', 'skipped') if k in L}
+  R['candidate_walk'] = {k: C[k] for k in ('secs', 'api', 'world_status', 'regress', 'reload', 'skipped', 'walk_error') if k in C}
+  R['live_walk'] = {k: L[k] for k in ('secs', 'api', 'world_status', 'regress', 'reload', 'skipped', 'walk_error') if k in L}
   R['candidate_walk']['http_errors'] = C['http_errors']
   R['live_walk']['http_errors'] = L['http_errors']
   R['floors'] = C['floors']; R['perf'] = {'candidate': C['perf'], 'live': L['perf']}
@@ -177,6 +192,8 @@ async def main():
     fail('http_error', e['url'], f"HTTP {e['status']} ({e['method']} {e['type']})")
   for e in L['http_errors']:
     R['debt'].append({'code': 'http_error', 'where': e['url'], 'detail': f"live HTTP {e['status']} ({e['method']} {e['type']})"})
+  if C.get('walk_error'): fail('walk_error', 'candidate', C['walk_error'])
+  if L.get('walk_error'): fail('live_walk_error', 'live', L['walk_error'])
   if not C['api']: fail('debug_api', 'candidate', 'playtest helpers (wallAudit/reach/tryMove) missing: the gate cannot verify this build')
   if C['world_status'] != 200: fail('world_api', '/api/office/world', f"HTTP {C['world_status']}")
   # Joshua-reported regressions: absolute on the candidate
