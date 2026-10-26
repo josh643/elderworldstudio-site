@@ -13,23 +13,33 @@ BLOCKS (exit 1):
   - invisible walls / unreachable floors: any on the candidate that the last promoted deterministic baseline did not have
     (no baseline yet -> absolute: 0 invisible walls, >= 40 m2 reachable); reachable area shrinking > 10 % vs that baseline
   - page errors not seen on live
-  - perf worse than live: SwiftShader fps < 85 % of live (same box, back-to-back; noise margin), draw calls > live*1.15+10, triangles > live*1.25
+  - performance: the candidate must measure >= 45 fps on an identified pve-mini-3070 GPU, must not regress >15% vs live, draw calls > live*1.15+10, triangles > live*1.25
   - vision (gpt-4o-mini, gatejudge on CT111, each hit already double-confirmed): a candidate hit is NEW (blocks) unless
       a) the same view looks unchanged vs live (mean pixel diff < SAME_PX), or
       b) the live judge in this run, or a targeted re-check of the live shot for that code, shows the same code at that view, or
       c) the code@view is in the reviewed ledger baseline.json, or a single-object code (dome_opaque) is already known in that zone, or
       d) a fresh candidate re-shoot (20 s settle) does not reproduce it (transient greeting bubble/toast/agent; logged as warn)
     -> half-built / placeholder geometry introduced by the candidate still blocks.
-usage: playtest_gate.py CANDIDATE_URL [--live URL] [--out DIR] [--no-vision] [--no-file] [--make-baseline]
+usage: playtest_gate.py CANDIDATE_URL [--live URL] [--out DIR] [--state-dir DIR] [--no-vision] [--no-file] [--make-baseline]
 """
 import asyncio, json, os, sys, time, subprocess
 from playwright.async_api import async_playwright
+try:
+  from .gate_rules import MIN_FPS, VISUAL_RULES, http_error, is_pve_mini_3070, meets_perf_floor
+except ImportError:  # direct execution: Python puts tools/office on sys.path
+  from gate_rules import MIN_FPS, VISUAL_RULES, http_error, is_pve_mini_3070, meets_perf_floor
 BASE = sys.argv[1].rstrip('/'); A = sys.argv[2:]
 def opt(k, d=None): return A[A.index(k) + 1] if k in A and A.index(k) + 1 < len(A) else d
 LIVE = opt('--live', 'https://office-3d.elderworldstudio.pages.dev').rstrip('/')
-OUT = opt('--out', f'/workspace/shots/gate/{time.strftime("%Y%m%d-%H%M%S")}'); os.makedirs(OUT + '/live', exist_ok=True)
-GD = '/workspace/shots/gate'; DET_BL = f'{GD}/det-baseline.json'; LEDGER = f'{GD}/baseline.json'; DEBT = f'{GD}/debt.json'
+GD = opt('--state-dir', '/workspace/shots/gate').rstrip('/')
+OUT = opt('--out', f'{GD}/{time.strftime("%Y%m%d-%H%M%S")}'); os.makedirs(OUT + '/live', exist_ok=True)
+os.makedirs(GD, exist_ok=True)
+DET_BL = f'{GD}/det-baseline.json'; LEDGER = f'{GD}/baseline.json'; DEBT = f'{GD}/debt.json'
 VISION = '--no-vision' not in A; BUDGET = 170; SAME_PX = 4.0
+# Passed to the vision judge with every view so Joshua's visual rules stay part of
+# each pre-deploy review, including exterior trees, lamps, and poles.
+VISUAL_RULES = ('stylized-realistic look', 'no billboard trees', 'no bare poles',
+                'real lamps', 'nothing floating', 'no pointless animation')
 # codes that name ONE specific object (there is one campus dome): already-known anywhere in the same zone = the same defect, even from another viewpoint
 UNIQUE_OBJ = {'dome_opaque'}
 FLOORS = ['G', '2', '3', '4', '5']
@@ -61,9 +71,14 @@ def jl(p, d):
 
 async def walk(b, url, out, full):
   """One walkthrough. full=False -> screenshots + perf + errors only (live builds may predate the debug API)."""
-  T0 = time.time(); W = {'url': url, 'det': [], 'floors': {}, 'regress': {}, 'views': {}, 'errs': []}
+  T0 = time.time(); W = {'url': url, 'det': [], 'floors': {}, 'regress': {}, 'views': {}, 'errs': [], 'http_errors': []}
   ctxb = await b.new_context(viewport={'width': 1280, 'height': 720}); pg = await ctxb.new_page()
   pg.on('pageerror', lambda e: W['errs'].append(str(e)[:200]))
+  def record_response(response):
+    req = response.request
+    item = http_error(response.status, response.url, req.method, req.resource_type)
+    if item and item not in W['http_errors']: W['http_errors'].append(item)
+  pg.on('response', record_response)
   await pg.goto(url + '/office/?time=13:00', wait_until='load', timeout=90000)
   await pg.wait_for_function("!!(window.__ewsOffice && __ewsOffice.pos && __ewsOffice.floor && __ewsOffice.look)", timeout=90000); await pg.wait_for_timeout(5000)
   W['api'] = await pg.evaluate("typeof __ewsOffice.wallAudit === 'function' && typeof __ewsOffice.tryMove === 'function'")
@@ -95,21 +110,21 @@ async def walk(b, url, out, full):
   for name, fl, args, lab in INDOOR:
     if time.time() - T0 > BUDGET - 60: W['skipped'] = W.get('skipped', []) + [name]; continue
     await pg.evaluate(f"__ewsOffice.floor('{fl}')"); await pg.wait_for_timeout(1500); await pg.evaluate(f"__ewsOffice.look({args})"); await pg.wait_for_timeout(1800)
-    await pg.screenshot(path=f'{out}/{name}.jpg', type='jpeg', quality=80); W['views'][name] = {'label': lab, 'zone': 'floor ' + fl}
+    await pg.screenshot(path=f'{out}/{name}.jpg', type='jpeg', quality=80); W['views'][name] = {'label': lab + '; visual rules: ' + ', '.join(VISUAL_RULES), 'zone': 'floor ' + fl, 'checks': list(VISUAL_RULES)}
   await pg.evaluate("__ewsOffice.floor('G')"); await pg.wait_for_timeout(1500)
   for name, args, lab in OUTDOOR:
     if time.time() - T0 > BUDGET - 45: W['skipped'] = W.get('skipped', []) + [name]; continue
     await pg.evaluate(f"window.__ewsFreeY=0;__ewsOffice.look({args})"); await pg.wait_for_timeout(2000)
-    await pg.screenshot(path=f'{out}/{name}.jpg', type='jpeg', quality=80); W['views'][name] = {'label': lab, 'zone': 'exterior', 'out': True}
+    await pg.screenshot(path=f'{out}/{name}.jpg', type='jpeg', quality=80); W['views'][name] = {'label': lab + '; visual rules: ' + ', '.join(VISUAL_RULES), 'zone': 'exterior', 'out': True, 'checks': list(VISUAL_RULES)}
   await pg.evaluate("__ewsOffice.look(0,6,0,-4)"); await pg.wait_for_timeout(1500)
-  W['perf'] = await pg.evaluate("new Promise(r=>{let n=0;const t0=performance.now();const f=()=>{n++; if(performance.now()-t0<4000) requestAnimationFrame(f); else r({fps_swiftshader:+(n/4).toFixed(2), ...(__ewsOffice.info?__ewsOffice.info():{})})};requestAnimationFrame(f)})")
+  W['perf'] = await pg.evaluate("new Promise(async resolve=>{const samples=[];for(let s=0;s<3;s++){let n=0,t0=performance.now();await new Promise(done=>{const f=()=>{n++;if(performance.now()-t0<4000)requestAnimationFrame(f);else done()};requestAnimationFrame(f)});samples.push(+(n/4).toFixed(2))}const sorted=[...samples].sort((a,b)=>a-b),c=document.querySelector('canvas'),gl=c&&(c.getContext('webgl2')||c.getContext('webgl')),ext=gl&&gl.getExtension('WEBGL_debug_renderer_info'),gpu=ext?gl.getParameter(ext.UNMASKED_RENDERER_WEBGL):'';resolve({fps:sorted[1],fps_samples:samples,gpu_renderer:String(gpu),...(__ewsOffice.info?__ewsOffice.info():{})})})")
   json.dump(W['views'], open(f'{out}/views.json', 'w'), indent=1); W['secs'] = round(time.time() - T0, 1)
   await ctxb.close(); return W
 
 async def reshoot(url, names, out):
   """Fresh page, 20 s settle (greeting bubbles/toasts gone), re-shoot only the views with an unclear NEW vision hit."""
   async with async_playwright() as p:
-    b = await p.chromium.launch(executable_path='/usr/bin/google-chrome', args=['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'])
+    b = await p.chromium.launch(args=['--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'])
     pg = await (await b.new_context(viewport={'width': 1280, 'height': 720})).new_page()
     await pg.goto(url + '/office/?time=13:00', wait_until='load', timeout=90000)
     await pg.wait_for_function("!!(window.__ewsOffice && __ewsOffice.pos && __ewsOffice.floor && __ewsOffice.look)", timeout=90000); await pg.wait_for_timeout(20000)
@@ -127,10 +142,14 @@ async def reshoot(url, names, out):
 def judge(d, gid):
   """Ship a shot dir to CT111 and run the cheap vision judge (gatejudge, double-confirmed hits)."""
   rd = f'/var/lib/ews-agent/arch/seefix/gate/{gid}'; tar = f'/tmp/{gid}.tgz'
-  subprocess.run(['tar', '-C', d, '--exclude=live', '-czf', tar, '.'], check=True)
-  subprocess.run([os.path.expanduser('~/bin/ct111-put'), tar, tar], check=True, capture_output=True)
-  try: v = subprocess.run([os.path.expanduser('~/bin/ct111'), f'mkdir -p {rd} && tar -C {rd} -xzf {tar} && rm -f {tar} && python3 /opt/ews-agent/arch_seefix.py gatejudge {rd}'], capture_output=True, text=True, timeout=330)
-  except subprocess.TimeoutExpired: warn('vision', gid, 'gatejudge timed out (330 s)'); return None   # candidate: None -> vision_unavailable FAIL (fail closed)
+  try:
+    subprocess.run(['tar', '-C', d, '--exclude=live', '-czf', tar, '.'], check=True, capture_output=True)
+    subprocess.run([os.path.expanduser('~/bin/ct111-put'), tar, tar], check=True, capture_output=True)
+    v = subprocess.run([os.path.expanduser('~/bin/ct111'), f'mkdir -p {rd} && tar -C {rd} -xzf {tar} && rm -f {tar} && python3 /opt/ews-agent/arch_seefix.py gatejudge {rd}'], capture_output=True, text=True, timeout=330)
+  except subprocess.TimeoutExpired:
+    warn('vision', gid, 'vision transfer or gatejudge timed out'); return None
+  except (OSError, subprocess.CalledProcessError) as e:
+    warn('vision', gid, f'vision judge unavailable: {str(e)[:180]}'); return None
   try: return json.loads([l for l in v.stdout.splitlines() if l.startswith('{')][-1])
   except Exception: warn('vision', gid, (v.stdout + v.stderr)[-300:]); return None
 
@@ -143,13 +162,21 @@ def pxdiff(a, b):
 
 async def main():
   async with async_playwright() as p:
-    b = await p.chromium.launch(executable_path='/usr/bin/google-chrome', args=['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'])
+    b = await p.chromium.launch(args=['--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'])
     L = await walk(b, LIVE, OUT + '/live', full=True)    # baseline = what visitors have right now
     C = await walk(b, BASE, OUT, full=True)
     await b.close()
   R['candidate_walk'] = {k: C[k] for k in ('secs', 'api', 'world_status', 'regress', 'reload', 'skipped') if k in C}
   R['live_walk'] = {k: L[k] for k in ('secs', 'api', 'world_status', 'regress', 'reload', 'skipped') if k in L}
+  R['candidate_walk']['http_errors'] = C['http_errors']
+  R['live_walk']['http_errors'] = L['http_errors']
   R['floors'] = C['floors']; R['perf'] = {'candidate': C['perf'], 'live': L['perf']}
+  # A response error must never be interpreted as a missing regression. This
+  # also catches bad module/assets routes and HTTP 404s from API probes.
+  for e in C['http_errors']:
+    fail('http_error', e['url'], f"HTTP {e['status']} ({e['method']} {e['type']})")
+  for e in L['http_errors']:
+    R['debt'].append({'code': 'http_error', 'where': e['url'], 'detail': f"live HTTP {e['status']} ({e['method']} {e['type']})"})
   if not C['api']: fail('debug_api', 'candidate', 'playtest helpers (wallAudit/reach/tryMove) missing: the gate cannot verify this build')
   if C['world_status'] != 200: fail('world_api', '/api/office/world', f"HTTP {C['world_status']}")
   # Joshua-reported regressions: absolute on the candidate
@@ -173,7 +200,11 @@ async def main():
   for e in [e for e in C['errs'] if e in le][:3]: R['debt'].append({'code': 'page_error', 'where': 'office', 'detail': e})
   # perf: not worse than live (same box, back-to-back)
   cp, lp = C['perf'], L['perf']
-  if lp.get('fps_swiftshader') and cp.get('fps_swiftshader', 0) < 0.85 * lp['fps_swiftshader']: fail('fps_regressed', 'lobby', f"{cp.get('fps_swiftshader')} vs live {lp['fps_swiftshader']} fps (SwiftShader)")
+  if not is_pve_mini_3070(cp.get('gpu_renderer')):
+    fail('fps_tier_unverified', 'lobby', f"GPU renderer {cp.get('gpu_renderer') or 'unknown'}; >= {MIN_FPS:g} FPS must be measured on the pve-mini-3070 tier")
+  elif not meets_perf_floor(cp.get('fps')):
+    fail('fps_floor', 'lobby', f"{cp.get('fps')} fps; pve-mini-3070 requires >= {MIN_FPS:g} fps")
+  if lp.get('fps') and cp.get('fps', 0) < 0.85 * lp['fps']: fail('fps_regressed', 'lobby', f"{cp.get('fps')} vs live {lp['fps']} fps (same renderer)")
   if lp.get('calls') and cp.get('calls', 0) > lp['calls'] * 1.15 + 10: fail('draw_calls_regressed', 'lobby', f"{cp.get('calls')} vs live {lp['calls']}")
   if lp.get('tris') and cp.get('tris', 0) > lp['tris'] * 1.25: fail('tris_regressed', 'lobby', f"{cp.get('tris')} vs live {lp['tris']}")
   if cp.get('calls', 0) > 400: warn('draw_calls', 'lobby', f"{cp['calls']} calls")
@@ -215,6 +246,8 @@ async def main():
           fail(f['code'], f['where'], f"NEW vs live: vision conf {f.get('confidence')} ({f['view']}.jpg, px diff {R['view_diff'].get(f['view'])})")
       if '--make-baseline' in A:
         json.dump({**ledger, **{f"{x['code']}@{x['view']}": {'where': x['where'], 'at': time.strftime('%Y-%m-%d %H:%M')} for x in JL.get('fails', [])}}, open(LEDGER, 'w'), indent=1)
+  elif C['views']:
+    fail('visual_unchecked', 'vision', 'vision checks were disabled; Joshua visual rules cannot be verified')
   R['result'] = 'FAIL' if R['fails'] else 'PASS'
   # debt ledger (pre-existing, non-blocking); filed once to the world-team queues
   D = jl(DEBT, {}); newdebt = []
