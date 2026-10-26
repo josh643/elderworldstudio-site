@@ -1,6 +1,6 @@
 import unittest
 
-from tools.office.gate_rules import VISUAL_RULES, http_error, is_pve_mini_3070, meets_perf_floor
+from tools.office.gate_rules import VISUAL_RULES, http_error, is_pve_mini_3070, meets_perf_floor, missing_views
 
 
 class PlaytestGateRulesTest(unittest.TestCase):
@@ -17,6 +17,11 @@ class PlaytestGateRulesTest(unittest.TestCase):
 
     def test_successful_http_response_is_not_an_error(self):
         self.assertIsNone(http_error(200, 'https://preview.test/office/', 'GET', 'document'))
+
+    def test_missing_required_screenshots_are_reported(self):
+        self.assertEqual(missing_views(('lobby', 'gate'), {}), ['gate', 'lobby'])
+        self.assertEqual(missing_views(('lobby', 'gate'), {'lobby': {}}), ['gate'])
+        self.assertEqual(missing_views(('lobby',), {'lobby': {}}), [])
 
     def test_fps_floor_fails_closed_and_accepts_45(self):
         self.assertFalse(meets_perf_floor(None))
