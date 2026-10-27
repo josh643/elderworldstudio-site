@@ -3,6 +3,7 @@
 import { openKiosk } from './kiosk-ui.js?v=3';
 import * as V from './voice.js?v=2';
 import { setupFloors } from '../../core/floors.js?v=2';
+import { registerSlidingDoors } from '../../core/doors.mjs';
 export default {
   setup(ctx, cfg, [x, z]) {
     const { box, mat, esc } = ctx, A = ctx.use('avatar');
@@ -95,16 +96,17 @@ export default {
        through the RIGHT-side doorway. Same position on floors 2-5. Kept out of the entrance sightline (fully hidden by the wall). */
     { const T = ctx.THREE, cz = z - 3.2 - 2.5, W = 4.6, D = 3.0, stone = mat.stone || mat.wall, metal = mat.trim;
       const fz = cz, bz = cz - D;                                                   // front face (doors) and back face
-      box(1.0, 4.0, 0.25, stone, x - W / 2 + 0.5, 2.0, fz); box(1.0, 4.0, 0.25, stone, x + W / 2 - 0.5, 2.0, fz); box(0.4, 4.0, 0.25, stone, x, 2.0, fz);   // pillars between doors
+      box(1.0, 4.0, 0.25, stone, x - W / 2 + 0.5, 2.0, fz); box(1.0, 4.0, 0.25, stone, x + W / 2 - 0.5, 2.0, fz);   // side pillars leave the elevator doorway clear
       box(W, 1.6, 0.25, stone, x, 3.2, fz);                                         // lintel above the doors (door height 2.4 m)
       box(W, 4.0, 0.25, stone, x, 2.0, bz); for (const sx of [-1, 1]) box(0.25, 4.0, D, stone, x + sx * W / 2, 2.0, cz - D / 2);
-      const doors = []; for (const sx of [-0.65, 0.65]) { const d = box(1.25, 2.38, 0.06, metal, x + sx * 1.1, 1.19, fz + 0.02); doors.push(d);
-        box(0.02, 2.38, 0.07, mat.dark, x + sx * 1.1, 1.19, fz + 0.03); }          // brushed brass doors with a centre seam
+      const doors = [], doorPanels = []; for (const sx of [-1, 1]) { const leaf = new T.Group(); leaf.position.set(x + sx * 0.625, 0, fz + 0.02); ctx.scene.add(leaf);
+        const panel = box(1.25, 2.38, 0.06, metal, 0, 1.19, 0, leaf); const seam = box(0.02, 2.38, 0.07, mat.dark, 0, 1.19, 0.01, leaf);
+        panel.userData.noCollide = seam.userData.noCollide = 1; doors.push(leaf); doorPanels.push(panel); }  // brushed brass leaves slide apart together
       for (const sx of [-1, 1]) { const ind = ctx.panel(ctx.textCanvas(['G'], { w: 128, h: 96, size: 64, bg: '#0b1626', fg: '#9fe8ff' }), 0.24, 0.18, x + sx * 1.1 * 0.65 * 2 / 1.3, 2.65, fz + 0.14, 0); ind.material.toneMapped = false; }
-      const btn = box(0.08, 0.18, 0.04, mat.dark, x, 1.15, fz + 0.15); 
+      const btn = box(0.08, 0.18, 0.04, mat.dark, x + 1.8, 1.15, fz + 0.15); // call control beside the doorway, clear of the passage
       const plate = ctx.panel(ctx.textCanvas([ctx.t ? ctx.t('Elevator') : 'Elevator', ctx.t ? ctx.t('Floors G to 5') : 'Floors G to 5'], { w: 640, h: 200, size: 64, body: 40 }), 1.3, 0.4, x, 3.25, fz + 0.14, 0); plate.userData.plate = 'Elevator';
-      ctx.core = { x, fz, W, D }; this.floors = setupFloors(ctx, ctx.core); const call = () => this.floors.panel(); ctx.provide('floorPanel', call);
-      [...doors, btn, plate].forEach(o => ctx.onClick(o, call));
+      ctx.core = { x, fz, W, D }; ctx.groundElevatorDoors = doors; this.floors = setupFloors(ctx, ctx.core); const call = () => this.floors.panel(); ctx.provide('floorPanel', call);
+      [...doorPanels, btn, plate].forEach(o => ctx.onClick(o, call));
       /* the old stepped blocks beside the core (a flight that went nowhere) are gone: the real stairs are modules/stairs (Joshua 2026-10-16 11:51 PM) */
       /* small elevator sign beside the right-side doorway, visible from the red carpet (faces the entrance) */
       const sg = ctx.panel(ctx.textCanvas([(ctx.t ? ctx.t('Elevator') : 'Elevator') + ' · ' + (ctx.t ? ctx.t('Stairs') : 'Stairs') + '  ›', ctx.t ? ctx.t('Floors 2 to 5') : 'Floors 2 to 5'], { w: 512, h: 200, size: 66, body: 42 }), 1.4, 0.55, x + 4.0, 3.2, z - 3.2 + 0.12, 0); sg.material.toneMapped = false; sg.userData.plate = 'Elevator';   /* on the lintel over the right-hand doorway (layout v2) */
