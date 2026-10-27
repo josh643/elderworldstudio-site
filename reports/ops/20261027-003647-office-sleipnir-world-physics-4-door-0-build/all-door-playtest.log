@@ -1,0 +1,9 @@
+Local static browser preview; B1 API response mocked as HTTP 403.
+B1 locked message visible: true
+[office] B1 access attempt denied (HTTP 403)
+Floor proximity and collision checks (0.55 m beyond doorway):
+G: doorColliders=2, openGap=1.36 m, pass=true, endpoint=0,-8.15
+2: doorColliders=2, openGap=0.98 m, pass=true, endpoint=400,-8.25
+3: doorColliders=2, openGap=0.64 m, pass=true, endpoint=800,-8.25
+4: doorColliders=2, openGap=0.98 m, pass=true, endpoint=1200,-8.25
+5: doorColliders=2, openGap=0.98 m, pass=true, endpoint=1600,-8.25

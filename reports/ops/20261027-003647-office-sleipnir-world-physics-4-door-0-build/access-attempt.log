@@ -1,0 +1,4 @@
+Local static browser preview; B1 API response mocked as HTTP 403.
+B1 locked message visible: true
+[office] B1 access attempt denied (HTTP 403)
+Backend code records each access attempt and denied request in KV (`functions/api/office/b1/[[op]].js:20-24`; verified by source inspection; live KV not exercised).

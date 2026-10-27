@@ -3,6 +3,7 @@
 // Same core position on every floor: you step out of the elevator facing the floor. Static parts are merged per material;
 // colliders are explicit rects (ctx.extraCols) because merged meshes have floor-sized bounds.
 import { mergeGeometries } from '../vendor/jsm/utils/BufferGeometryUtils.js?v=169';
+import { registerSlidingDoors } from './doors.mjs';
 export const FLOORS = [
   { n: 'G', name: 'Lobby', sub: 'Reception, merch store, studio' },
   { n: '2', name: 'Games', sub: 'Games team', floor: 0x5a4632 },
@@ -22,13 +23,21 @@ export function setupFloors(ctx, core) {
   const offX = n => (n === 'G' ? 0 : n === 'B1' ? -400 : (+n - 1) * 400);
   // B1 is IP-locked server-side (functions/office/b1/_middleware.js + /api/office/b1/*): the room module and its data are only served to
   // allowlisted IPs, so a visitor can't build or teleport there. They see the locked staff door message instead.
-  let b1Ok = null; const b1Check = async () => { if (b1Ok !== null) return b1Ok; try { const r = await fetch('/api/office/b1/access', { cache: 'no-store' }); b1Ok = r.ok; } catch { b1Ok = false; } return b1Ok; };
-  b1Check();
+  const b1Check = async () => {
+    try {
+      const r = await fetch('/api/office/b1/access', { cache: 'no-store' });
+      if (!r.ok) console.info(`[office] B1 access attempt denied (HTTP ${r.status})`);
+      return r.ok;
+    } catch {
+      console.info('[office] B1 access attempt denied (network error)');
+      return false;
+    }
+  };
   const b1Locked = () => ctx.card(`<h3>${esc(T('Restricted: World Operations'))}</h3><p>${esc(T('This level is for Elder World Studio staff only. Sorry, the door is locked.'))}</p>`);
   async function go(n) {
     if (n === cur) { ctx.closeCard(); return; }
     if (n === 'B1') { if (!(await b1Check())) { b1Locked(); return; }
-      if (!built.B1) { try { const m = await import('/office/b1/b1.js?v=3'); built.B1 = m.buildB1(ctx, core, offX('B1')); } catch { b1Ok = false; b1Locked(); return; } } }
+      if (!built.B1) { try { const m = await import('/office/b1/b1.js?v=3'); built.B1 = m.buildB1(ctx, core, offX('B1')); } catch { console.info('[office] B1 access attempt denied (restricted room unavailable)'); b1Locked(); return; } } }
     ctx.closeCard(); fade.style.opacity = 1;
     setTimeout(() => {
       if (n !== 'G' && n !== 'B1' && !built[n]) built[n] = buildFloor(ctx, core, FLOORS.find(f => f.n === n), offX(n), go);
@@ -58,7 +67,7 @@ export function setupFloors(ctx, core) {
     ctx.teleport(core.x + ox, core.fz + 1.6, core.x + ox, core.fz + 8); return 'elevator'; };
   const settle = n => { cur = n; ctx.curFloor = n; ctx.curBounds = n === 'G' ? null : built[n].bounds; ctx.rebuildColliders(); ctx.daynight?.apply?.(); };
   const restore = (n, at) => { n = n && (n === 'B1' || n === 'G' || FLOORS.some(f => f.n === n)) ? n : at ? floorOfX(at.x) : 'G';
-    if (n === 'B1') { place('G', null); (async () => { if (!(await b1Check())) return; try { if (!built.B1) { const m = await import('/office/b1/b1.js?v=2'); built.B1 = m.buildB1(ctx, core, offX('B1')); } settle('B1'); place('B1', at); } catch { b1Ok = false; } })(); return 'B1-pending'; }
+    if (n === 'B1') { place('G', null); (async () => { if (!(await b1Check())) { b1Locked(); return; } try { if (!built.B1) { const m = await import('/office/b1/b1.js?v=2'); built.B1 = m.buildB1(ctx, core, offX('B1')); } settle('B1'); place('B1', at); } catch { console.info('[office] B1 access attempt denied (restricted room unavailable)'); b1Locked(); } })(); return 'B1-pending'; }
     if (n !== 'G' && !built[n]) { const F = FLOORS.find(f => f.n === n); if (!F) { place('G', null); return 'lobby'; } built[n] = buildFloor(ctx, core, F, offX(n), go); }
     settle(n); return n + ':' + place(n, at); };
   ctx.floorRestore = restore; ctx.floorOfX = floorOfX;
@@ -66,7 +75,8 @@ export function setupFloors(ctx, core) {
   /* stairs (modules/stairs): build the floors next to the one you are on before you reach them, and switch frames with no fade */
   const ensure = n => { if (n !== 'G' && !built[n] && FLOORS.some(f => f.n === n)) built[n] = buildFloor(ctx, core, FLOORS.find(f => f.n === n), offX(n), go); };
   const hop = n => { ensure(n); cur = n; ctx.curFloor = n; ctx.curBounds = n === 'G' ? null : built[n].bounds; ctx.rebuildColliders(); ctx.daynight?.apply?.(); ctx.announce?.(`${T('Floor')} ${n}: ${T(FLOORS.find(f => f.n === n).name)}`); };
-  const api = { panel, go, ensure, hop, tick: dt => built[cur]?.onFrame?.(dt) }; ctx.floorsApi = api; return api;
+  const groundDoors = ctx.groundElevatorDoors ? registerSlidingDoors(ctx, ctx.groundElevatorDoors, { centerX: core.x, centerZ: core.fz, width: 1.25 }) : null;
+  const api = { panel, go, ensure, hop, tick: dt => { groundDoors?.update(dt); built[cur]?.onFrame?.(dt); } }; ctx.floorsApi = api; return api;
 }
 
 function buildFloor(ctx, core, F, ox, go) {
@@ -102,16 +112,18 @@ function buildFloor(ctx, core, F, ox, go) {
   winWall(X0, Z0, X0, Z1, -1, 0); winWall(X1, Z0, X1, Z1, 1, 0); winWall(X0, Z1, X1, Z1, 0, 1);
   // elevator core (same footprint as the lobby core), doors face +z
   const W = core.W, D = core.D, bz = fz - D;
-  B(1.0, 4, 0.25, stone, cx - W / 2 + 0.5, 2, fz, 0, true); B(1.0, 4, 0.25, stone, cx + W / 2 - 0.5, 2, fz, 0, true); B(0.4, 4, 0.25, stone, cx, 2, fz, 0, true); B(W, 1.6, 0.25, stone, cx, 3.2, fz);
+  B(1.0, 4, 0.25, stone, cx - W / 2 + 0.5, 2, fz, 0, true); B(1.0, 4, 0.25, stone, cx + W / 2 - 0.5, 2, fz, 0, true); B(W, 1.6, 0.25, stone, cx, 3.2, fz);
   B(W, 4, 0.25, stone, cx, 2, bz, 0, true); for (const sx of [-1, 1]) B(0.25, 4, D, stone, cx + sx * W / 2, 2, fz - D / 2, 0, true);
-  const brass = M(0xb8924a); const doors = []; for (const sx of [-0.65, 0.65]) { const d = new THREE.Mesh(new THREE.BoxGeometry(1.25, 2.38, 0.06), brass); d.position.set(cx + sx * 1.1, 1.19, fz + 0.02); g.add(d); doors.push(d); cols.push([cx + sx * 1.1 - 0.63, fz - 0.05, cx + sx * 1.1 + 0.63, fz + 0.05]); }
+  const brass = M(0xb8924a); const doors = [], doorPanels = []; for (const sx of [-1, 1]) { const leaf = new THREE.Group(); leaf.position.set(cx + sx * 0.625, 0, fz + 0.02); g.add(leaf);
+    const d = new THREE.Mesh(new THREE.BoxGeometry(1.25, 2.38, 0.06), brass); d.position.y = 1.19; leaf.add(d); doors.push(leaf); doorPanels.push(d); }
+  const slidingDoors = registerSlidingDoors(ctx, doors, { centerX: cx, centerZ: fz, width: 1.25 });
   const ind = ctx.panel(ctx.textCanvas([F.n], { w: 128, h: 96, size: 64, bg: '#0b1626', fg: '#9fe8ff' }), 0.24, 0.18, cx, 2.65, fz + 0.14, 0); ind.material.toneMapped = false; g.attach?.(ind);
   const btn = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.22, 0.04), dark); btn.position.set(cx + W / 2 - 0.5, 1.15, fz + 0.15); g.add(btn);
   const call = () => ctx.use?.('floorPanel')?.();
-  [...doors, btn].forEach(o => ctx.onClick(o, call));
+  [...doorPanels, btn].forEach(o => ctx.onClick(o, call));
   // floor directory sign facing the arrivals
   const sign = ctx.panel(ctx.textCanvas([`${F.n} · ${T(F.name)}`, T(F.sub)], { w: 1024, h: 220, size: 78, body: 44 }), 2.6, 0.56, cx, 3.35, fz + 0.15, 0); sign.material.toneMapped = false; sign.userData.plate = F.name;
-  const res = { bounds: [X0, X1, Z0, Z1], group: g };
+  const res = { bounds: [X0, X1, Z0, Z1], group: g, onFrame: dt => slidingDoors.update(dt) };
   /* 2026-10-17 (Joshua 12:10 AM): no arcade anywhere in the campus building. The Arcade lives on its own town lot (world lot 11,
      'Elder Arcade'); buildArcade stays below only as the cabinet design reference for that lot. tools/office/removed_guard.py fails the
      deploy if it is called again or game-showrooms returns to modules.json. */
