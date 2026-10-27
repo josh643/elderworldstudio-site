@@ -26,8 +26,13 @@ export function setupFloors(ctx, core) {
   const b1Check = async () => {
     try {
       const r = await fetch('/api/office/b1/access', { cache: 'no-store' });
-      if (!r.ok) console.info(`[office] B1 access attempt denied (HTTP ${r.status})`);
-      return r.ok;
+      let result = null;
+      if (r.status === 200) {
+        try { result = await r.json(); } catch {}
+      }
+      const allowed = r.status === 200 && result?.allowed === true;
+      if (!allowed) console.info(`[office] B1 access attempt denied (HTTP ${r.status})`);
+      return allowed;
     } catch {
       console.info('[office] B1 access attempt denied (network error)');
       return false;

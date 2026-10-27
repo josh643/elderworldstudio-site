@@ -38,6 +38,31 @@ if (nextDoorOpen(0, true, 1) !== 1) throw new Error('large frame step must clamp
 if (nextDoorOpen(1, false, 1) !== 0) throw new Error('large frame step must clamp at fully closed');
 """)
 
+    def test_b1_access_denial_is_returned_and_logged(self):
+        endpoint = Path(__file__).resolve().parents[1] / 'functions' / 'api' / 'office' / 'b1' / '[[op]].js'
+        script = f"""
+import {{ onRequest }} from {endpoint.as_uri()!r};
+const data = new Map();
+const OFFICE_KV = {{ get: async key => data.get(key) ?? null, put: async (key, value) => data.set(key, value) }};
+const env = {{ B1_ALLOW_IPS: '192.0.2.9', OFFICE_KV }};
+const request = ip => new Request('https://office.test/api/office/b1/access', {{ headers: {{ 'cf-connecting-ip': ip, 'user-agent': 'door-regression' }} }});
+const denied = await onRequest({{ request: request('192.0.2.8'), env, params: {{ op: ['access'] }} }});
+if (denied.status !== 403) throw new Error(`outsider got HTTP ${{denied.status}}`);
+if ((await denied.json()).allowed !== false) throw new Error('denial response did not mark access false');
+const seen = JSON.parse(data.get('b1:seen') || '[]');
+const log = JSON.parse(data.get('b1:denied') || '[]');
+if (seen.length !== 1 || seen[0].ip !== '192.0.2.8' || seen[0].ok !== false) throw new Error('access attempt missing from seen log');
+if (log.length !== 1 || log[0].what !== 'access' || log[0].ip !== '192.0.2.8') throw new Error('denial missing from denied log');
+const allowed = await onRequest({{ request: request('192.0.2.9'), env, params: {{ op: ['access'] }} }});
+if (allowed.status !== 200 || (await allowed.json()).allowed !== true) throw new Error('allowlisted visitor was denied');
+"""
+        subprocess.run(
+            ['node', '--input-type=module', '-e', script],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+
 
 if __name__ == '__main__':
     unittest.main()
