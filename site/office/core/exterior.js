@@ -357,7 +357,7 @@ export function build(ctx, shell) {
     const bl = new T.InstancedMesh(new T.PlaneGeometry(1, 1).rotateX(-Math.PI / 2), mats.blob, trees.length); trees.forEach(([x, z, sp, S, , , Sp, y], i) => { const r = Math.min(S * 0.5, Sp.h[1] * 0.45); bl.setMatrixAt(i, m4.compose(v3.set(x, y + 0.03, z), q4.identity(), s3.set(r, 1, r))); });
     bl.userData.noCollide = 1; bl.renderOrder = 2; root.add(bl); treeMesh.blob = bl; }
   /* 3D tree LODs */
-  const T3 = { R: [16, 32, 82], ready: 0, want: 0, parts: [], mats: new Map() };   // parts: { sp, lvl, im }
+  const T3 = { R: [12, 24, 40], ready: 0, want: 0, parts: [], mats: new Map() };   // near, mid, and far 3D tree ranges; beyond 40 m use the baked 8-angle atlas
   const treeMat = (M0, leaf) => { const key = M0.uuid; if (T3.mats.has(key)) return T3.mats.get(key);
     const m = LM({ map: M0.map, color: M0.color, alphaTest: leaf ? 0.5 : 0, side: leaf ? T.DoubleSide : T.FrontSide }); m.onBeforeCompile = ((ob) => sh => { ob(sh); sh.uniforms.uTint = U.uTint;
       sh.fragmentShader = 'uniform vec3 uTint;\n' + sh.fragmentShader.replace('#include <map_fragment>', '#include <map_fragment>\ndiffuseColor.rgb *= mix(vec3(1.0), uTint / max(uLit, 0.2), 0.5);'); })(m.onBeforeCompile);
@@ -372,7 +372,7 @@ export function build(ctx, shell) {
             root.add(im); T3.parts.push({ sp, lvl, im }); }); T3.ready++; T3.dirty = 1; },
           undefined, () => { T3.ready++; T3.missing = (T3.missing || 0) + 1; T3.miss = T3.miss || {}; T3.miss[sp + ':' + lvl] = 1; T3.dirty = 1; }); } } }
   const tLvl = new Int8Array(trees.length).fill(-1);
-  function treeLOD(lp) { if (!T3.want || T3.ready < T3.want) return; const R = tier > 0 ? T3.R : [0, 12, 82], has = (sp, l) => !T3.miss?.[sp + ':' + l] && T3.parts.some(p => p.sp === sp && p.lvl === l);
+  function treeLOD(lp) { if (!T3.want || T3.ready < T3.want) return; const R = tier > 1 ? T3.R : tier === 1 ? [8, 16, 28] : [0, 8, 22], has = (sp, l) => !T3.miss?.[sp + ':' + l] && T3.parts.some(p => p.sp === sp && p.lvl === l);
     let changed = T3.dirty; T3.dirty = 0;
     for (let i = 0; i < trees.length; i++) { const t = trees[i], d = Math.hypot(t[0] - lp.x, t[1] - lp.z); let l = d < R[0] ? 0 : d < R[1] ? 1 : d < R[2] ? 2 : 3;
       if (l === 2 && !has(t[2], 2)) l = 1; if (l === 0 && !has(t[2], 0)) l = 1; if (l === 1 && !has(t[2], 1)) l = has(t[2], 2) ? 2 : 3;
