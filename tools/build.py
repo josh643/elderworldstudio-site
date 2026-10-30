@@ -27,7 +27,7 @@ def page(path, title, desc, body, canonical, current="", noindex=False):
     depth = path.count("/")  # e.g. "privacy-policy/index.html" -> 1
     P = "../" * depth
     nav = [("index.html", "Home", "home"), ("games/index.html", "Games", "games"),
-           ("index.html#tools", "Assets", "tools"), ("testers/index.html", "Testers", "testers"), ("merch/index.html", "Merch", "merch"), ("services/index.html", "Services", "services"), ("contact/index.html", "Contact", "contact"),
+           ("index.html#tools", "Assets", "tools"), ("testers/index.html", "Testers", "testers"), ("merch/index.html", "Merch", "merch"), ("services/index.html", "Services", "services"), ("build/index.html", "Build a Site", "build"), ("contact/index.html", "Contact", "contact"),
            ("privacy-policy/index.html", "Privacy Policy", "privacy")]
     navhtml = "".join(f'<a href="{P}{h}"{" aria-current=\"page\"" if k == current else ""}>{t}</a>' for h, t, k in nav)
     robots = '<meta name="robots" content="noindex">' if noindex else '<meta name="robots" content="index,follow">'
@@ -258,6 +258,9 @@ POLICY = f"""
   <p>If you email us, we receive your email address, your name if you include it, and whatever you choose to write (for example a bug report). We use this only to reply and help you.</p>
   <h3>This website</h3>
   <p>This website is a static site. It uses no cookies, no analytics and no advertising, and its fonts and images are served from this site itself. Like any website, our hosting provider automatically processes basic technical request data (such as IP address, browser type and the page requested) in order to deliver pages and protect the site from abuse. We do not use this data to identify or track you. If you use the request form on our Services page, the details you enter (name, email, optional phone, business, and your message) are emailed to us and used only to reply to your request; the form uses Cloudflare Turnstile to block spam. Ask us any time and we&rsquo;ll delete it.</p>
+
+  <h3>Website builder</h3>
+  <p>If you use our website builder at <a href="{{P}}build/index.html">/build/</a>, the details and description you type are sent to our server so our AI designer (run on Cloudflare Workers AI) can draft a design. Logos and photos you add stay in your browser for the preview. To limit abuse we keep a one-way hash of your IP address for up to a day. If you request a site, we store your name, email, phone and draft so we can contact you about it. If you tick &ldquo;Help improve our AI designer&rdquo;, we keep an anonymous copy of your design session (your description, the designs, your change requests and whether you requested a site) with names, emails, phone numbers and street addresses removed, and your business name replaced by a placeholder unless you also allow it. We use this only to improve the builder; email us to have it deleted.</p>
 
   <h2 id="use">5. How we use information</h2>
   <ul>
@@ -611,6 +614,35 @@ GAMES = f"""
 </section>
 """
 page("games/index.html", f"Games | {STUDIO}", f"Games by {STUDIO}: Astro Dodge and Star Wayfarer on Google Play, Omnivael and Chronicles of the Realm on Steam, and casual mobile games coming soon.", GAMES, "/games/", "games")
+# Website builder: web version of the EWS in-store kiosk "Custom Website" flow. Prices approved by Joshua 2026-10-29.
+BUILD = f"""
+<div class="page"><div class="wrap">
+ <div class="page-head"><h1>See your website before you pay</h1><p class="meta"><b class="from-price">From $349</b> · The draft preview costs nothing. When you like it, the real build starts at $349 + $19/mo, and nothing is charged online. Made in Memphis by {STUDIO}.</p></div>
+ <link rel="stylesheet" href="{{P}}build/builder.css?v=3">
+ <div id="builder" class="bld">
+  <div class="panel"><ol class="steps" id="steps"></ol><div id="panel"></div>
+   <div class="nav-btns"><button type="button" class="btn btn-ghost" id="back">&larr; Back</button><button type="button" class="btn btn-primary" id="next">Next &rarr;</button></div>
+   <p class="exp">Your draft is saved in this browser so you can come back to it.</p></div>
+  <div class="stage">
+   <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px"><strong>Live preview <span class="tag" id="rev-badge">v1</span></strong>
+    <span><button type="button" class="tab on" data-device="desktop">Desktop</button> <button type="button" class="tab" data-device="mobile">Phone</button></span></div>
+   <div class="tabs" id="tabs"></div>
+   <div id="frame-wrap" class="frame desktop"><div class="chrome"><span>&#9679; &#9679; &#9679;</span><span class="u" id="url">yourbusiness.com</span></div>
+    <iframe id="preview" title="Live preview of your draft website" sandbox=""></iframe></div>
+  </div>
+ </div>
+ <h2 style="margin-top:40px">How it works</h2>
+ <div class="grid contact-grid">
+  <div class="panel"><h3>1. Design it here</h3><p>Tell us about your business and our AI designer drafts a layout, colors, fonts and copy made for you. Regenerate it or ask for changes in plain words.</p></div>
+  <div class="panel"><h3>2. We build it</h3><p>We add your real photos, menu or services and make it fast on phones.</p></div>
+  <div class="panel"><h3>3. Go live on your domain</h3><p>We set up your domain and hosting and keep it running. Plans from <b>$349 + $19/mo</b>. Nothing is charged online; we confirm a quote first.</p></div>
+ </div>
+ <p class="lead" style="margin-top:24px">Prefer to try it in person? Look for an Elder World Studio website kiosk at participating local shops.</p>
+ <script src="{{P}}build/samples.js?v=2" defer></script>
+ <script src="{{P}}build/builder.js?v=7" defer></script>
+</div></div>
+"""
+page("build/index.html", f"See Your Website Before You Pay | {STUDIO}", "Preview a draft of your small business website at no cost, then have Elder World Studio build it on your own domain from $349 + $19/mo. Memphis, TN.", BUILD, "/build/", "build")
 # 404 uses root-absolute links (served for any missing path)
 page("404.html", f"Page not found | {STUDIO}", "Page not found.", NOTFOUND, "/404.html", noindex=True)
 p404 = ROOT / "404.html"
