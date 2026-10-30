@@ -26,8 +26,8 @@ STEAM_COTR = utm("https://store.steampowered.com/app/2559510/", "chronicles")
 def page(path, title, desc, body, canonical, current="", noindex=False):
     depth = path.count("/")  # e.g. "privacy-policy/index.html" -> 1
     P = "../" * depth
-    nav = [("index.html", "Home", "home"), ("games/index.html", "Games", "games"),
-           ("index.html#tools", "Assets", "tools"), ("testers/index.html", "Testers", "testers"), ("merch/index.html", "Merch", "merch"), ("services/index.html", "Services", "services"), ("contact/index.html", "Contact", "contact"),
+    nav = [("index.html", "Home", "home"), ("developer-assets/index.html", "Assets", "assets"),
+           ("services/index.html#pos-kiosk", "POS &amp; Kiosks", "poskiosk"), ("services/index.html", "Web Services", "services"), ("games/index.html", "Past Releases", "games"), ("merch/index.html", "Merch", "merch"), ("contact/index.html", "Contact", "contact"),
            ("privacy-policy/index.html", "Privacy Policy", "privacy")]
     navhtml = "".join(f'<a href="{P}{h}"{" aria-current=\"page\"" if k == current else ""}>{t}</a>' for h, t, k in nav)
     robots = '<meta name="robots" content="noindex">' if noindex else '<meta name="robots" content="index,follow">'
@@ -68,7 +68,7 @@ def page(path, title, desc, body, canonical, current="", noindex=False):
 <footer class="site-footer">
  <div class="wrap">
   <div>&copy; 2026 {STUDIO}. All rights reserved.</div>
-  <nav aria-label="Footer"><a href="{P}games/index.html">Games</a><a href="{P}testers/index.html">Testers</a><a href="{P}services/index.html">Services</a><a href="{P}merch/index.html">Merch</a><a href="{P}contact/index.html">Contact</a><a href="{P}privacy-policy/index.html">Privacy Policy</a><a href="mailto:{EMAIL}">{EMAIL}</a></nav>
+  <nav aria-label="Footer"><a href="{P}developer-assets/index.html">Assets</a><a href="{P}services/index.html">Services</a><a href="{P}games/index.html">Past Releases</a><a href="{P}merch/index.html">Merch</a><a href="{P}contact/index.html">Contact</a><a href="{P}privacy-policy/index.html">Privacy Policy</a><a href="mailto:{EMAIL}">{EMAIL}</a></nav>
  </div>
 </footer>
 </body>
@@ -83,58 +83,50 @@ HOME = f"""
  <div class="wrap">
   <img class="logo" src="{{P}}assets/img/brand/ews-mark.svg?v=4" width="256" height="256" alt="Elder World Studio logo">
   <h1>Forging Digital Realms</h1>
-  <p>{STUDIO} is a game development studio that blends the enchanting aesthetics of medieval worlds with the power of modern technology. We make PC and mobile games, and assets for other developers.</p>
-  <div class="btns"><a class="btn btn-primary" href="#games">View Our Games</a><a class="btn btn-ghost" href="{{P}}contact/index.html">Get in Touch</a></div>
+  <p>{STUDIO} makes game-ready assets for other developers, and builds point-of-sale systems, customer kiosks and websites for small businesses.</p>
+  <div class="btns"><a class="btn btn-primary" href="{{P}}developer-assets/index.html">Browse Our Assets</a><a class="btn btn-ghost" href="{{P}}services/index.html#pos-kiosk">POS &amp; Kiosks for Small Shops</a></div>
  </div>
 </section>
 
-<section class="block" id="games">
- <div class="wrap">
-  <div class="center"><h2>Our Games</h2><p class="lead">Immersive worlds for PC and mobile. <a class="link" href="{{P}}games/index.html">See all our games</a></p></div>
-  <div class="grid cards">
-   <article class="card">
-    <img class="thumb" src="{{P}}assets/img/star-wayfarer.jpg" width="1024" height="576" alt="Star Wayfarer title screen with a starship in space" loading="lazy">
-    <div class="body">
-     <span class="tag live">Out now on Google Play</span>
-     <h3>Star Wayfarer</h3>
-     <p>An open space adventure built for mobile. Fly, trade, mine and fight across the stars, walk your own ship, land on planets, and build your crew, fleet and empire. Free to play, with no pay-to-win.</p>
-     <div class="actions"><a class="btn btn-primary" href="{PLAY_SW}" rel="noopener">Get it on Google Play</a><a class="link" href="{{P}}star-wayfarer/privacy/index.html">Privacy</a></div>
-    </div>
-   </article>
-   <article class="card">
-    <img class="thumb" src="{{P}}assets/img/omnivael.jpg" width="920" height="430" alt="Omnivael: Wayfarers Life key art over a medieval village" loading="lazy">
-    <div class="body">
-     <span class="tag soon">Early Access &middot; Nov 2026</span>
-     <h3>Omnivael: Wayfarers Life</h3>
-     <p>&ldquo;No Chosen One. No war to win. Just a world to live in.&rdquo; A living sandbox RPG where your legacy unfolds through trade, exploration, relationships and time itself, in a medieval frontier whose economy runs on its people. Coming to Steam Early Access.</p>
-     <div class="actions"><a class="btn btn-primary" href="{STEAM_OMNI}" rel="noopener">View on Steam</a></div>
-    </div>
-   </article>
-   <article class="card">
-    <img class="thumb" src="{{P}}assets/img/chronicles-of-the-realm.jpg" width="1024" height="576" alt="Chronicles of the Realm: fighting slimes in a torch-lit cave arena" loading="lazy">
-    <div class="body">
-     <span class="tag soon">Free &middot; Coming to Steam</span>
-     <h3>Chronicles of the Realm</h3>
-     <p>A free first-person dungeon game set in the world of Omnivael, coming to Steam. Take up sword and shield, survive wave after wave of slimes and goblins in a torch-lit cave, and pick a boon between waves.</p>
-     <div class="actions"><a class="btn btn-primary" href="{STEAM_COTR}" rel="noopener">View on Steam</a></div>
-    </div>
-   </article>
-  </div>
- </div>
-</section>
-
-<section class="block alt" id="tools">
+<section class="block" id="tools">
  <div class="wrap grid two">
   <div>
-   <h2>Developer Assets</h2>
-   <p class="lead">We publish game-ready assets on the Unity Asset Store as <strong>Elder Worlds Publishing</strong>, built from the same pipeline we use for our own games.</p>
+   <h2>Assets for Game Developers</h2>
+   <p class="lead">Asset packs are now our main focus. We publish game-ready assets on the Unity Asset Store as <strong>Elder Worlds Publishing</strong>, built in the same pipeline we used for our own games.</p>
    <div class="panel">
     <span class="tag review">In review</span>
     <h3>Medieval Village Props</h3>
-    <p>A pack of medieval village and market props: barrels, baskets, bread, bottles, crates, tools and more, with modular crate and liquid fills. Submitted to the Unity Asset Store and currently in review.</p>
+    <p>A pack of medieval village and market props: barrels, baskets, bread, bottles, crates, tools and more, with modular crate and liquid fills. Submitted to the Unity Asset Store.</p>
+    <div class="actions"><a class="btn btn-primary" href="{{P}}developer-assets/index.html">See all assets</a></div>
    </div>
   </div>
   <img src="{{P}}assets/img/medieval-village-props.jpg" width="1200" height="800" alt="Renders of props from the Medieval Village Props pack: a barrel, basket, bread, bottle, barrel tap and axe" loading="lazy" style="border-radius:16px;border:1px solid var(--line)">
+ </div>
+</section>
+
+<section class="block alt" id="small-business">
+ <div class="wrap">
+  <div class="center"><h2>For Small Businesses</h2><p class="lead">Tools for small shops, set up by us.</p></div>
+  <div class="grid cards">
+   <article class="card"><div class="body">
+    <span class="tag soon">In development</span>
+    <h3>Point of Sale</h3>
+    <p>Our own POS system, running on a dedicated register OS. We supply and set it up for you. Ask us about a setup for your shop.</p>
+    <div class="actions"><a class="btn btn-primary" href="{{P}}services/index.html#pos-kiosk">Learn more</a></div>
+   </div></article>
+   <article class="card"><div class="body">
+    <span class="tag soon">In development</span>
+    <h3>Customer Kiosks</h3>
+    <p>Self-service kiosks for small shops, with their own kiosk OS and app store, plus the website and domain to go with them.</p>
+    <div class="actions"><a class="btn btn-primary" href="{{P}}services/index.html#pos-kiosk">Learn more</a></div>
+   </div></article>
+   <article class="card"><div class="body">
+    <span class="tag live">Available</span>
+    <h3>Websites</h3>
+    <p>New sites, refreshes and fixes for small businesses. We start with a free demo so you can see it working first.</p>
+    <div class="actions"><a class="btn btn-primary" href="{{P}}services/index.html#request">Request a free demo</a></div>
+   </div></article>
+  </div>
  </div>
 </section>
 
@@ -142,20 +134,36 @@ HOME = f"""
  <div class="wrap grid two">
   <div>
    <h2>About Elder World Studio</h2>
-   <p class="lead">Founded with a passion for immersive storytelling and robust engineering, Elder World Studio began by creating medieval-style RPGs.</p>
-   <p class="lead">As we built our own tools to solve hard development problems, we realized we could help other creators too. Today we make games for PC and mobile, and assets for the developers who make theirs.</p>
+   <p class="lead">Elder World Studio began by making medieval-style RPGs and mobile games. Building our own tools taught us how to help other creators, so today we focus on assets for game developers and on practical technology for small businesses.</p>
+   <p class="lead">Our earlier games are still available. <a class="link" href="{{P}}games/index.html">See our past releases</a>.</p>
   </div>
   <div class="panel center">
-   <h3>Join Our Journey</h3>
-   <p>Questions, feedback, bug reports or business enquiries? We read every message.</p>
+   <h3>Get in Touch</h3>
+   <p>Questions about our assets, a POS or kiosk setup, or a website? We read every message.</p>
    <a class="btn btn-primary" href="{{P}}contact/index.html">Contact Us</a>
   </div>
-  <div class="panel center">
-   <h3>Need a Website or AI Tool?</h3>
-   <p>We also build websites, AI chat assistants, automations and custom software for small businesses. We start with a free demo.</p>
-   <a class="btn btn-primary" href="{{P}}services/index.html">See Services</a>
-  </div>
  </div>
+</section>
+"""
+
+ASSETS = f"""
+<section class="hero">
+ <div class="wrap">
+  <h1>Developer Assets</h1>
+  <p>Game-ready asset packs for Unity developers, published on the Unity Asset Store as <strong>Elder Worlds Publishing</strong>.</p>
+  <div class="btns"><a class="btn btn-primary" href="#packs">See the packs</a><a class="btn btn-ghost" href="{{P}}contact/index.html">Ask about assets</a></div>
+ </div>
+</section>
+<section class="block" id="packs">
+ <div class="wrap grid two">
+  <div class="panel">
+   <span class="tag review">In review</span>
+   <h3>Medieval Village Props</h3>
+   <p>A pack of medieval village and market props: barrels, baskets, bread, bottles, crates, tools and more, with modular crate and liquid fills. Submitted to the Unity Asset Store.</p>
+  </div>
+  <img src="{{P}}assets/img/medieval-village-props.jpg" width="1200" height="800" alt="Renders of props from the Medieval Village Props pack" loading="lazy" style="border-radius:16px;border:1px solid var(--line)">
+ </div>
+ <div class="wrap center" style="margin-top:32px"><p class="lead">More packs are in production. Questions or licensing enquiries: <a class="link" href="mailto:{EMAIL}">{EMAIL}</a></p></div>
 </section>
 """
 
@@ -170,7 +178,7 @@ CONTACT = f"""
    <p class="meta">Please include the game name and your device or platform for support requests.</p>
   </div>
   <div class="panel">
-   <h3>Websites, AI tools &amp; software</h3>
+   <h3>POS, kiosks, websites &amp; software</h3>
    <p>Want us to build something for your business? Tell us about it on our <a class="link" href="{{P}}services/index.html#request">Services page</a> and we&rsquo;ll start with a free demo.</p>
   </div>
   <div class="panel">
@@ -178,10 +186,9 @@ CONTACT = f"""
    <p>To ask what data we hold about you or to have it deleted, email us with the subject &ldquo;Privacy request&rdquo;. Details are in our <a href="{{P}}privacy-policy/index.html">Privacy Policy</a>.</p>
   </div>
   <div class="panel">
-   <h3>Find our games</h3>
-   <p><a class="link" href="{PLAY_SW}" rel="noopener">Star Wayfarer: out now on Google Play</a><br>
-   <a class="link" href="{STEAM_OMNI}" rel="noopener">Omnivael: Wayfarers Life on Steam</a><br>
-   <a class="link" href="{STEAM_COTR}" rel="noopener">Chronicles of the Realm on Steam</a></p>
+   <h3>Our past releases</h3>
+   <p><a class="link" href="{PLAY_SW}" rel="noopener">Star Wayfarer on Google Play</a><br>
+   <a class="link" href="{PLAY_ASTRO}" rel="noopener">Astro Dodge on Google Play</a></p>
   </div>
  </div>
 </div></div>
@@ -336,16 +343,24 @@ NOTFOUND = """
 """
 
 PDESC = f"Privacy Policy for {STUDIO} and its games, including Star Wayfarer on Google Play: what data our games store, collect and share (none), retention, deletion and contact."
-page("index.html", f"{STUDIO} | Games and Developer Assets", f"{STUDIO} makes PC and mobile games, including Star Wayfarer on Google Play and Omnivael: Wayfarers Life on Steam, and Unity assets for developers.", HOME, "/", "home")
+page("index.html", f"{STUDIO} | Assets for Game Developers, POS and Kiosks for Small Business", f"{STUDIO} makes game-ready Unity assets for developers and builds point-of-sale systems, customer kiosks and websites for small businesses.", HOME, "/", "home")
+page("developer-assets/index.html", f"Developer Assets | {STUDIO}", f"Game-ready Unity asset packs from {STUDIO}, published on the Unity Asset Store as Elder Worlds Publishing.", ASSETS, "/developer-assets/", "assets")
 page("contact/index.html", f"Contact | {STUDIO}", f"Contact {STUDIO} for support, privacy requests and business enquiries.", CONTACT, "/contact/", "contact")
 for p in ["privacy-policy/index.html", "privacy/index.html", "privacy-policy.html", "privacy.html", "star-wayfarer/privacy/index.html", "star-wayfarer/privacy-policy/index.html"]:
     page(p, f"Privacy Policy | {STUDIO}", PDESC, POLICY, "/privacy-policy/", "privacy")
 
 SERVICES = f"""
 <div class="page"><div class="wrap">
- <div class="page-head"><h1>Services</h1><p class="meta">Websites, AI tools and custom software for small businesses &middot; based in Memphis, TN</p></div>
+ <div class="page-head"><h1>Services</h1><p class="meta">POS systems, customer kiosks, websites and custom software for small businesses &middot; based in Memphis, TN</p></div>
  <div class="panel" style="margin-bottom:24px"><h3 style="color:var(--accent)">Free demo first</h3>
   <p>Tell us what you need. We build a quick, free demo of it for your business and share it by link. You only decide on anything after you&rsquo;ve seen it working. No pressure and no obligation.</p></div>
+ <h2 id="pos-kiosk">POS &amp; kiosks for small shops</h2>
+ <div class="grid contact-grid" style="margin-bottom:32px">
+  <div class="panel"><span class="tag soon">In development</span><h3>Point of sale</h3><p>Our own point-of-sale system on a dedicated register OS, supplied and set up by us for your shop.</p></div>
+  <div class="panel"><span class="tag soon">In development</span><h3>Customer kiosks</h3><p>Self-service kiosks with their own kiosk OS and app store, plus a matching kiosk website and domain.</p></div>
+ </div>
+ <p class="lead" style="margin-bottom:32px">Interested? Use the form below and pick POS system or Customer kiosk. We&rsquo;ll talk through what your shop needs.</p>
+ <h2>Websites &amp; software</h2>
  <div class="grid contact-grid">
   <div class="panel"><h3>Websites</h3><p>New sites, refreshes and fixes: mobile-friendly pages, online booking, menus, quote forms and simple online stores.</p></div>
   <div class="panel"><h3>AI tools &amp; chat assistants</h3><p>A chat assistant on your site that answers questions from your hours, menu and prices 24/7, takes requests and emails real leads to you.</p><p><a class="link" href="https://ews-ai-assistant.pages.dev/" target="_blank" rel="noopener">Try a live demo &rarr;</a> <small>(sample businesses)</small></p></div>
@@ -359,7 +374,7 @@ SERVICES = f"""
   <label>Email *<input name="email" type="email" required maxlength="200" autocomplete="email"></label>
   <label>Phone (optional)<input name="phone" type="tel" maxlength="40" autocomplete="tel"></label>
   <label>Business name *<input name="business" required maxlength="150" autocomplete="organization"></label>
-  <label>What do you need? *<select name="type" required><option>Website</option><option>AI tool</option><option>Custom software</option><option selected>Not sure</option></select></label>
+  <label>What do you need? *<select name="type" required><option>POS system</option><option>Customer kiosk</option><option>Website</option><option>AI tool</option><option>Custom software</option><option selected>Not sure</option></select></label>
   <label>Tell us about it *<textarea name="description" required maxlength="4000" rows="6" placeholder="What does your business do, and what would you like to fix or build?"></textarea></label>
   <label>Budget (optional)<input name="budget" maxlength="60" placeholder="e.g. under $500, not sure yet"></label>
   <label class="sms-opt"><input type="checkbox" name="sms_optin" value="yes"> <span>By checking this box, I agree to receive text messages from Elder World Studio about my service request (confirmations, project questions, and demo scheduling). Up to 4 msgs per request. Message and data rates may apply. Reply STOP to opt out and HELP for help. Optional &mdash; not required to get a demo. <a class="link" href="{{P}}sms-terms/index.html">SMS Terms</a> &middot; <a class="link" href="{{P}}privacy-policy/index.html#sms">Privacy Policy</a></span></label>
@@ -397,7 +412,7 @@ SMSTERMS = f"""
 """
 page("sms-terms/index.html", f"SMS Terms | {STUDIO}", f"SMS terms for {STUDIO} project-update texts: opt-in, frequency, STOP and HELP, privacy.", SMSTERMS, "/sms-terms/", "sms")
 page("terms/index.html", f"Terms and Conditions (SMS) | {STUDIO}", f"SMS terms and conditions for {STUDIO} project-update texts.", SMSTERMS, "/sms-terms/", "sms")
-page("services/index.html", f"Services: Websites, AI Tools and Custom Software | {STUDIO}", f"{STUDIO} builds websites, AI chat assistants, automation and custom software for small businesses in Memphis and beyond. Start with a free demo.", SERVICES, "/services/", "services")
+page("services/index.html", f"Services: POS, Kiosks, Websites and Software | {STUDIO}", f"{STUDIO} builds point-of-sale systems, customer kiosks, websites, AI chat assistants and custom software for small businesses in Memphis and beyond.", SERVICES, "/services/", "services")
 
 
 # ---- Public Android testers (Google Play closed/open testing) ----
@@ -490,7 +505,7 @@ TESTERS = f"""
  </div>
 </section>
 """
-page("testers/index.html", f"Public Testers | {STUDIO}", f"Join Elder World Studio's free public Android testers. Opt in on Google Play for Astro Dodge, Stack Tower, and more EWS games.", TESTERS, "/testers/", "testers")
+page("testers/index.html", f"Public Testers | {STUDIO}", f"Join Elder World Studio's free public Android testers. Opt in on Google Play for Astro Dodge, Stack Tower, and more EWS games.", TESTERS, "/testers/", "testers", noindex=True)
 
 # ---- Merch page (store links live in tools/merch_config.py) ----
 import html as _h, sys as _sys
@@ -534,7 +549,7 @@ def _merch_body():
  <div class="wrap">
   <img class="logo" src="{{P}}assets/img/brand/ews-mark.svg?v=4" width="256" height="256" alt="Elder World Studio logo">
   <h1>Studio Merch</h1>
-  <p>Wear the worlds we build. Every order helps fund development of Omnivael, Star Wayfarer and Chronicles of the Realm.</p>
+  <p>Wear the Elder World Studio crest. Every order supports the studio.</p>
   {top}
  </div>
 </section>
@@ -578,39 +593,21 @@ CASUAL = [
 GAMES = f"""
 <section class="hero games-hero">
  <div class="wrap">
-  <h1>Our Games</h1>
-  <p>PC and mobile games made by {STUDIO}.</p>
-  <div class="btns"><a class="btn btn-ghost" href="#live">Out now</a><a class="btn btn-ghost" href="#bigger">Bigger games</a><a class="btn btn-ghost" href="#casual">Casual games</a></div>
+  <h1>Past Releases</h1>
+  <p>Games {STUDIO} released before we moved our focus to developer assets and small-business technology. They&rsquo;re still available on Google Play.</p>
+  <div class="btns"><a class="btn btn-primary" href="{{P}}developer-assets/index.html">See our assets</a></div>
  </div>
 </section>
 <section class="block" id="live">
  <div class="wrap">
-  <div class="center"><h2>Out Now</h2></div>
   <div class="grid cards">
 {_gcard("Astro Dodge", '<span class="tag live">On Google Play</span>', "Steer your ship through an endless field of asteroids, grab power-ups and chase your best score.", "astro-dodge-icon.png", "icon", f'<a class="btn btn-primary" href="{PLAY_ASTRO}" rel="noopener">Get it on Google Play</a>', "Astro Dodge app icon")}
 {_gcard("Star Wayfarer", '<span class="tag live">On Google Play</span>', "An open space adventure built for mobile. Fly, trade, mine and fight across the stars, land on planets, and build your crew, fleet and empire.", "../star-wayfarer.jpg", "wide", f'<a class="btn btn-primary" href="{PLAY_SW}" rel="noopener">Get it on Google Play</a><a class="link" href="{{P}}star-wayfarer/privacy/index.html">Privacy</a>', "Star Wayfarer title screen")}
   </div>
  </div>
 </section>
-<section class="block alt" id="bigger">
- <div class="wrap">
-  <div class="center"><h2>Bigger Games</h2></div>
-  <div class="grid cards">
-{_gcard("Omnivael: Wayfarer's Life", '<span class="tag soon">Early Access &middot; Coming to Steam</span>', "A living sandbox RPG where your legacy unfolds through trade, exploration, relationships and time itself, in a medieval frontier whose economy runs on its people.", "../omnivael.jpg", "wide", f'<a class="btn btn-primary" href="{STEAM_OMNI}" rel="noopener">View on Steam</a>', "Omnivael key art")}
-{_gcard("Chronicles of the Realm", '<span class="tag soon">Free &middot; Coming to Steam</span>', "A free first-person dungeon game set in the world of Omnivael. Take up sword and shield, survive wave after wave of slimes and goblins in a torch-lit cave, and pick a boon between waves.", "../chronicles-of-the-realm.jpg", "wide", f'<a class="btn btn-primary" href="{STEAM_COTR}" rel="noopener">View on Steam</a>', "Chronicles of the Realm: fighting slimes in a torch-lit cave arena")}
-  </div>
- </div>
-</section>
-<section class="block" id="casual">
- <div class="wrap">
-  <div class="center"><h2>Casual Games</h2><p class="lead">Quick, free arcade and puzzle games for Android. Coming soon to Google Play.</p></div>
-  <div class="grid cards casual">
-{chr(10).join(_gcard(n, SOON, d, i, k, alt=f"{n} screenshot" if k=="shot" else f"{n} app icon") for n,i,k,d in CASUAL)}
-  </div>
- </div>
-</section>
 """
-page("games/index.html", f"Games | {STUDIO}", f"Games by {STUDIO}: Astro Dodge and Star Wayfarer on Google Play, Omnivael and Chronicles of the Realm on Steam, and casual mobile games coming soon.", GAMES, "/games/", "games")
+page("games/index.html", f"Past Releases | {STUDIO}", f"Past game releases by {STUDIO}: Astro Dodge and Star Wayfarer on Google Play.", GAMES, "/games/", "games")
 # 404 uses root-absolute links (served for any missing path)
 page("404.html", f"Page not found | {STUDIO}", "Page not found.", NOTFOUND, "/404.html", noindex=True)
 p404 = ROOT / "404.html"

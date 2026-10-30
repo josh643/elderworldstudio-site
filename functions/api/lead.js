@@ -1,7 +1,7 @@
 // POST /api/lead — services request form. Emails annaews@agentmail.to with subject "[inbound-lead] <id> ..."
 // CT 111 inbox_watch turns that into needs-anna/*-inbound-lead-*.md (route: joshua). Secrets: AGENTMAIL_SEND_KEY, TURNSTILE_SECRET (optional).
 const INBOX = 'annaews@agentmail.to';
-const TYPES = ['Website', 'AI tool', 'Custom software', 'Not sure'];
+const TYPES = ['POS system', 'Customer kiosk', 'Website', 'AI tool', 'Custom software', 'Not sure'];
 const clean = (v, n) => String(v || '').replace(/[\u0000-\u0008\u000b-\u001f]/g, '').trim().slice(0, n);
 const back = (ok, msg, status = 303) => new Response(null, { status, headers: { Location: `/services/?sent=${ok ? 1 : 0}${msg ? '&e=' + encodeURIComponent(msg) : ''}#request` } });
 

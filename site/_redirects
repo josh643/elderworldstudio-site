@@ -7,7 +7,7 @@
 /privacy_policy       /privacy-policy/  301
 # Old single-page-app routes from the previous site
 /about     /#about    301
-/games     /#games    301
+/games     /games/    301
 /tools     /#tools    301
 /services  /          301
 /schedule  /contact/  301
