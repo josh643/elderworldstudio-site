@@ -1,0 +1,158 @@
+// Site spec for the AI website builder: schema, sanitizer/validator, preset fallback, rate limit + daily cost cap.
+// Everything the model returns passes through validateSpec() before it reaches a browser; the browser escapes again on render.
+export const KINDS = ['services', 'menu', 'gallery', 'testimonials', 'about', 'map', 'booking', 'hours', 'faq', 'stats', 'story'];
+export const HERO = ['split', 'center', 'full', 'minimal', 'banner'];
+export const VARIANTS = ['cards', 'list', 'grid', 'strip', 'columns', 'quote', 'band'];
+export const FONTS = { // id -> [Google family for headings, CSS stack]
+  playfair: ['Playfair Display', '"Playfair Display", Georgia, serif'], fraunces: ['Fraunces', 'Fraunces, Georgia, serif'],
+  bebas: ['Bebas Neue', '"Bebas Neue", Impact, sans-serif'], oswald: ['Oswald', 'Oswald, "Arial Narrow", sans-serif'],
+  poppins: ['Poppins', 'Poppins, Arial, sans-serif'], inter: ['Inter', 'Inter, Arial, sans-serif'], lora: ['Lora', 'Lora, Georgia, serif'],
+  dmserif: ['DM Serif Display', '"DM Serif Display", Georgia, serif'], archivo: ['Archivo Black', '"Archivo Black", Arial Black, sans-serif'],
+  pacifico: ['Pacifico', 'Pacifico, cursive'], space: ['Space Grotesk', '"Space Grotesk", Arial, sans-serif'], nunito: ['Nunito', 'Nunito, Arial, sans-serif'],
+  cormorant: ['Cormorant Garamond', '"Cormorant Garamond", Georgia, serif'], worksans: ['Work Sans', '"Work Sans", Arial, sans-serif'] };
+export const SCHEMA = { type: 'object', required: ['palette', 'fonts', 'hero', 'headline', 'subhead', 'about', 'cta', 'sections', 'imagery', 'tone'], properties: {
+  palette: { type: 'object', required: ['bg', 'surface', 'ink', 'accent', 'accent2'], properties: { bg: { type: 'string' }, surface: { type: 'string' }, ink: { type: 'string' }, accent: { type: 'string' }, accent2: { type: 'string' } } },
+  fonts: { type: 'object', required: ['head', 'body'], properties: { head: { type: 'string', enum: Object.keys(FONTS) }, body: { type: 'string', enum: Object.keys(FONTS) } } },
+  hero: { type: 'string', enum: HERO }, headline: { type: 'string' }, subhead: { type: 'string' }, about: { type: 'string' }, tone: { type: 'string' }, imagery: { type: 'string' },
+  radius: { type: 'integer' }, cta: { type: 'object', required: ['label'], properties: { label: { type: 'string' }, note: { type: 'string' } } },
+  sections: { type: 'array', items: { type: 'object', required: ['kind', 'title'], properties: { kind: { type: 'string', enum: KINDS }, variant: { type: 'string', enum: VARIANTS }, title: { type: 'string' }, intro: { type: 'string' },
+    items: { type: 'array', items: { type: 'object', properties: { name: { type: 'string' }, text: { type: 'string' }, price: { type: 'string' } } } } } } } } };
+
+const CTRL = /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f\u200b-\u200f\u2028\u2029\ufeff]/g;
+// Plain text only: strip tags, script-ish URLs and event handlers, angle brackets; cap length.
+export function cleanText(v, n = 200) {
+  let s = String(v ?? '').replace(CTRL, '').replace(/<[^>]*>/g, '').replace(/[<>]/g, '');
+  s = s.replace(/\b(javascript|vbscript|data)\s*:/gi, '').replace(/\bon[a-z]+\s*=/gi, '').replace(/\s+/g, ' ').trim();
+  return s.length > n ? s.slice(0, n - 1).replace(/\s+\S*$/, '') + '…' : s;
+}
+const hex = (v, d) => (/^#[0-9a-f]{6}$/i.test(String(v || '').trim()) ? String(v).trim().toLowerCase() : d);
+const pick = (v, list, d) => (list.includes(v) ? v : d);
+function lum(h) { const n = parseInt(h.slice(1), 16), c = [n >> 16, (n >> 8) & 255, n & 255].map(x => { x /= 255; return x <= 0.03928 ? x / 12.92 : ((x + 0.055) / 1.055) ** 2.4; }); return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]; }
+export function contrast(a, b) { const x = lum(a), y = lum(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); }
+
+// Returns { ok, spec, errors }. Unknown keys are dropped, enums forced, text sanitized, readable ink enforced.
+export function validateSpec(raw) {
+  const errors = [];
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return { ok: false, errors: ['not an object'] };
+  const p = raw.palette || {}, f = raw.fonts || {};
+  const palette = { bg: hex(p.bg, '#ffffff'), surface: hex(p.surface, '#f4f4f6'), ink: hex(p.ink, '#1a1a1a'), accent: hex(p.accent, '#2f6df6'), accent2: hex(p.accent2, '#111111') };
+  if (contrast(palette.ink, palette.bg) < 4.5) palette.ink = lum(palette.bg) > 0.4 ? '#141414' : '#f7f7f7';
+  for (const k of ['palette', 'fonts', 'headline', 'sections']) if (!raw[k]) errors.push('missing ' + k);
+  const sections = (Array.isArray(raw.sections) ? raw.sections : []).filter(s => s && KINDS.includes(s.kind)).slice(0, 8).map(s => ({
+    kind: s.kind, variant: pick(s.variant, VARIANTS, 'cards'), title: cleanText(s.title, 60) || s.kind, intro: cleanText(s.intro, 240),
+    items: (Array.isArray(s.items) ? s.items : []).slice(0, 8).map(i => ({ name: cleanText(i && i.name, 60), text: cleanText(i && i.text, 220), price: cleanText(i && i.price, 16) })).filter(i => i.name || i.text) }));
+  if (!sections.length) errors.push('no valid sections');
+  const headline = cleanText(raw.headline, 90);
+  if (!headline) errors.push('empty headline');
+  const spec = { palette, fonts: { head: pick(f.head, Object.keys(FONTS), 'inter'), body: pick(f.body, Object.keys(FONTS), 'inter') }, hero: pick(raw.hero, HERO, 'center'),
+    radius: Math.max(0, Math.min(32, parseInt(raw.radius, 10) || 8)), headline, subhead: cleanText(raw.subhead, 200), about: cleanText(raw.about, 700),
+    tone: cleanText(raw.tone, 80), imagery: cleanText(raw.imagery, 240), cta: { label: cleanText(raw.cta && raw.cta.label, 30) || 'Get in touch', note: cleanText(raw.cta && raw.cta.note, 120) }, sections };
+  return { ok: errors.length === 0, spec, errors };
+}
+
+// Input from the browser (business details). All free text cleaned and capped.
+export function parseInput(b) {
+  b = b && typeof b === 'object' ? b : {};
+  return { name: cleanText(b.name, 80), type: cleanText(b.type, 30), story: cleanText(b.story, 1200), vibe: cleanText(b.vibe, 60), style: cleanText(b.style, 30),
+    location: cleanText(b.address, 120), hours: cleanText(b.hours, 80), phone: cleanText(b.phone, 40), tagline: cleanText(b.tagline, 120), hasPhoto: !!b.hasPhoto, hasLogo: !!b.hasLogo,
+    seed: Math.abs(parseInt(b.seed, 10) || 0) % 100000 };
+}
+
+// Preset fallback used when the model fails or the budget is spent.
+const PRESET = { bakery: ['#fbf6ef', '#f3e3cc', '#3a2418', '#c0662b', '#7a4524', 'fraunces', 'lora', 'menu'], restaurant: ['#fffaf3', '#f1e6d6', '#2a1d14', '#b23a2a', '#3d2a1e', 'dmserif', 'worksans', 'menu'],
+  salon: ['#111114', '#1d1d22', '#f4f1ea', '#d4a24c', '#8c6a2c', 'bebas', 'inter', 'services'], retail: ['#ffffff', '#f2f0ff', '#1d1033', '#7c3aed', '#ff2bd6', 'space', 'inter', 'services'],
+  auto: ['#f5f6f7', '#e4e7ea', '#14181c', '#e4572e', '#2b3a42', 'oswald', 'inter', 'services'], pro: ['#f7fbff', '#e6f0fa', '#13263a', '#1f7a5a', '#244a73', 'poppins', 'nunito', 'services'],
+  other: ['#ffffff', '#f4f4f6', '#1a1a1a', '#2f6df6', '#111111', 'inter', 'inter', 'services'] };
+export function fallbackSpec(inp) {
+  const t = PRESET[inp.type] || PRESET.other, name = inp.name || 'Your Business';
+  return validateSpec({ palette: { bg: t[0], surface: t[1], ink: t[2], accent: t[3], accent2: t[4] }, fonts: { head: t[5], body: t[6] }, hero: 'center', radius: 10,
+    headline: name, subhead: inp.tagline || 'Proudly serving ' + (inp.location || 'Memphis'), about: inp.story || name + ' is a local business serving our neighbors.', tone: 'friendly', imagery: 'Photos of your work and space',
+    cta: { label: 'Get in touch' }, sections: [{ kind: t[7], title: t[7] === 'menu' ? 'Menu' : 'What we do', items: [{ name: 'Your first offering', text: 'Describe it here' }, { name: 'Your second offering', text: 'Describe it here' }] },
+      { kind: 'about', title: 'About us' }, { kind: 'map', title: 'Find us' }] }).spec;
+}
+
+export const MODEL = '@cf/meta/llama-3.3-70b-instruct-fp8-fast';
+export const NEURON_USD = 0.011 / 1000;                       // Workers AI list price
+export function costUSD(usage) {
+  if (!usage) return 0.003;
+  if (usage.neurons) return usage.neurons * NEURON_USD;
+  return (usage.prompt_tokens || 0) * 0.29e-6 + (usage.completion_tokens || 0) * 2.25e-6;
+}
+export function prompt(inp, current, request) {
+  const sys = 'You are the senior designer at Elder World Studio, a Memphis web studio. You design ONE distinctive small-business website as JSON matching the schema. ' +
+    'Make it feel made for this exact business: choose hero layout, section mix and ORDER, palette (hex colors, readable contrast), and a font pair that fit its personality. ' +
+    'Write real copy in the owner\'s voice: specific headline (not just the name), subhead, about (2-4 sentences), 3-6 realistic items per services/menu section with short descriptions, testimonials as short quotes with first names. ' +
+    'Prices only if typical and clearly plausible, formatted like "$12". 4-7 sections. imagery = one sentence of photo art direction. Never include HTML, scripts, URLs or emails. Plain text only.';
+  const biz = `Business: ${inp.name}\nType: ${inp.type}\nLocation: ${inp.location || 'Memphis, TN'}\nVibe: ${inp.vibe || inp.style || 'owner did not say'}\nTagline idea: ${inp.tagline}\nHours: ${inp.hours}\nAbout (owner's words): ${inp.story || '(none)'}\nHas own logo: ${inp.hasLogo}; has own photo: ${inp.hasPhoto}\nVariation seed: ${inp.seed}`;
+  const user = current ? `${biz}\n\nCurrent design JSON:\n${JSON.stringify(current).slice(0, 6000)}\n\nChange request from the owner: "${request}"\nReturn the full updated design JSON. Change only what the request implies; keep the rest.` : `${biz}\n\nDesign the site.`;
+  return [{ role: 'system', content: sys }, { role: 'user', content: user }];
+}
+
+// D1-backed limits. Per IP: 8 generations / 10 min and 40 / day. Global: DAILY_CAP_USD (default $3).
+export const LIMITS = { burst: 8, burstWindowMin: 10, perDay: 40 };
+export async function ensureTables(db) {
+  await db.batch([db.prepare('CREATE TABLE IF NOT EXISTS ai_rl (k TEXT PRIMARY KEY, n INTEGER NOT NULL, exp INTEGER NOT NULL)'),
+    db.prepare('CREATE TABLE IF NOT EXISTS ai_cost (day TEXT PRIMARY KEY, usd REAL NOT NULL DEFAULT 0, calls INTEGER NOT NULL DEFAULT 0)')]);
+}
+async function bump(db, k, ttlMs, now) {
+  const r = await db.prepare('INSERT INTO ai_rl (k,n,exp) VALUES (?,1,?) ON CONFLICT(k) DO UPDATE SET n = CASE WHEN exp < ? THEN 1 ELSE n + 1 END, exp = CASE WHEN exp < ? THEN excluded.exp ELSE exp END RETURNING n')
+    .bind(k, now + ttlMs, now, now).first();
+  return r ? r.n : 1;
+}
+export async function ipKey(ip) { const h = await crypto.subtle.digest('SHA-256', new TextEncoder().encode('ews-ai:' + ip)); return [...new Uint8Array(h)].slice(0, 12).map(b => b.toString(16).padStart(2, '0')).join(''); }
+export async function checkLimits(db, ip, capUSD, now = Date.now()) {
+  const k = await ipKey(ip || 'unknown'), day = new Date(now).toISOString().slice(0, 10);
+  const spent = await db.prepare('SELECT usd FROM ai_cost WHERE day = ?').bind(day).first();
+  if (spent && spent.usd >= capUSD) return { ok: false, reason: 'budget' };
+  const w = LIMITS.burstWindowMin * 60000;
+  const nb = await bump(db, `b:${k}:${Math.floor(now / w)}`, w, now), nd = await bump(db, `d:${k}:${day}`, 86400000, now);
+  if (nb > LIMITS.burst || nd > LIMITS.perDay) return { ok: false, reason: 'rate' };
+  if (Math.random() < 0.02) await db.prepare('DELETE FROM ai_rl WHERE exp < ?').bind(now).run();
+  return { ok: true, day };
+}
+export async function addCost(db, day, usd) {
+  await db.prepare('INSERT INTO ai_cost (day,usd,calls) VALUES (?,?,1) ON CONFLICT(day) DO UPDATE SET usd = usd + excluded.usd, calls = calls + 1').bind(day, usd).run();
+}
+
+// ---- Training-data log (opt-in only). No name, email or phone is ever stored; business name is replaced unless name consent is given.
+export function stripPII(text, bizName) {
+  let s = String(text ?? '');
+  s = s.replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, '[email]');
+  s = s.replace(/(?:\+?1[\s.-]?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}\b/g, '[phone]');
+  s = s.replace(/\bhttps?:\/\/\S+|\bwww\.\S+/gi, '[url]');
+  s = s.replace(/\b\d{1,6}\s+(?:[A-Z][a-z]+\s){0,3}(?:St|Street|Ave|Avenue|Rd|Road|Dr|Drive|Blvd|Ln|Lane|Way|Pkwy|Hwy|Ct|Cv|Cove)\b\.?/g, '[street]');
+  if (bizName && bizName.trim().length > 1) s = s.split(bizName.trim()).join('{{BUSINESS}}').replace(new RegExp(bizName.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'), '{{BUSINESS}}');
+  return s;
+}
+export function anonInput(inp, nameConsent) {
+  const name = nameConsent ? inp.name : '';
+  const sc = s => (nameConsent ? stripPII(s, '') : stripPII(s, inp.name));
+  const city = (inp.location.match(/[A-Za-z .'-]+(?:,\s*[A-Z]{2})?$/) || [''])[0].trim();
+  return { business: name || '{{BUSINESS}}', type: inp.type, vibe: inp.vibe, style: inp.style, city: stripPII(city, inp.name), story: sc(inp.story), tagline: sc(inp.tagline), hasPhoto: inp.hasPhoto, hasLogo: inp.hasLogo };
+}
+export function anonSpec(spec, inp, nameConsent) { return nameConsent ? JSON.parse(stripPII(JSON.stringify(spec), '')) : JSON.parse(stripPII(JSON.stringify(spec), inp.name)); }
+export function specDiff(a, b, path = '') {
+  const out = [];
+  if (JSON.stringify(a) === JSON.stringify(b)) return out;
+  if (a && b && typeof a === 'object' && typeof b === 'object' && !Array.isArray(a) && !Array.isArray(b)) {
+    for (const k of new Set([...Object.keys(a), ...Object.keys(b)])) out.push(...specDiff(a[k], b[k], path ? path + '.' + k : k));
+    return out;
+  }
+  return [{ path: path || '.', from: a, to: b }];
+}
+export const TRAIN_SCHEMA = 'CREATE TABLE IF NOT EXISTS train_events (id INTEGER PRIMARY KEY AUTOINCREMENT, created TEXT NOT NULL, session TEXT NOT NULL, event TEXT NOT NULL, name_consent INTEGER NOT NULL DEFAULT 0, input TEXT, request TEXT, spec TEXT, diff TEXT, outcome TEXT, source TEXT DEFAULT \'web\', generator TEXT)';
+// consent gating: returns null (nothing stored) unless consent === true
+export function trainRow({ consent, nameConsent, session, event, inp, request, spec, prev, outcome, source }) {
+  if (consent !== true) return null;
+  if (!/^[a-z0-9-]{8,40}$/i.test(String(session || ''))) return null;
+  const nc = nameConsent === true;
+  return { session, event, name_consent: nc ? 1 : 0, input: JSON.stringify(anonInput(inp, nc)), request: request ? stripPII(cleanText(request, 300), nc ? '' : inp.name) : '',
+    spec: spec ? JSON.stringify(anonSpec(spec, inp, nc)) : '', diff: prev && spec ? JSON.stringify(anonSpec(specDiff(prev, spec), inp, nc)) : '', outcome: outcome || '', source: 'web', generator: source || '' };
+}
+export async function logTrain(db, row) {
+  if (!db || !row) return false;
+  await db.prepare(TRAIN_SCHEMA).run();
+  await db.prepare('INSERT INTO train_events (created,session,event,name_consent,input,request,spec,diff,outcome,source,generator) VALUES (?,?,?,?,?,?,?,?,?,?,?)')
+    .bind(new Date().toISOString(), row.session, row.event, row.name_consent, row.input, row.request, row.spec, row.diff, row.outcome, row.source, row.generator).run();
+  return true;
+}

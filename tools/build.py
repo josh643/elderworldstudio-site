@@ -259,6 +259,9 @@ POLICY = f"""
   <h3>This website</h3>
   <p>This website is a static site. It uses no cookies, no analytics and no advertising, and its fonts and images are served from this site itself. Like any website, our hosting provider automatically processes basic technical request data (such as IP address, browser type and the page requested) in order to deliver pages and protect the site from abuse. We do not use this data to identify or track you. If you use the request form on our Services page, the details you enter (name, email, optional phone, business, and your message) are emailed to us and used only to reply to your request; the form uses Cloudflare Turnstile to block spam. Ask us any time and we&rsquo;ll delete it.</p>
 
+  <h3>Website builder</h3>
+  <p>If you use our free website builder at <a href="{{P}}build/index.html">/build/</a>, the details and description you type are sent to our server so our AI designer (run on Cloudflare Workers AI) can draft a design. Logos and photos you add stay in your browser for the preview. To limit abuse we keep a one-way hash of your IP address for up to a day. If you request a site, we store your name, email, phone and draft so we can contact you about it. If you tick &ldquo;Help improve our AI designer&rdquo;, we keep an anonymous copy of your design session (your description, the designs, your change requests and whether you requested a site) with names, emails, phone numbers and street addresses removed, and your business name replaced by a placeholder unless you also allow it. We use this only to improve the builder; email us to have it deleted.</p>
+
   <h2 id="use">5. How we use information</h2>
   <ul>
    <li>Data stored on your device is used only by the game on that device, to save your progress and settings.</li>
@@ -615,7 +618,7 @@ page("games/index.html", f"Games | {STUDIO}", f"Games by {STUDIO}: Astro Dodge a
 BUILD = f"""
 <div class="page"><div class="wrap">
  <div class="page-head"><h1>Design your website free</h1><p class="meta">Pick a style, add your details and watch a live draft of your site appear. When you like it, we build it for real. Made in Memphis by {STUDIO}.</p></div>
- <link rel="stylesheet" href="{{P}}build/builder.css?v=1">
+ <link rel="stylesheet" href="{{P}}build/builder.css?v=2">
  <div id="builder" class="bld">
   <div class="panel"><ol class="steps" id="steps"></ol><div id="panel"></div>
    <div class="nav-btns"><button type="button" class="btn btn-ghost" id="back">&larr; Back</button><button type="button" class="btn btn-primary" id="next">Next &rarr;</button></div>
@@ -630,12 +633,12 @@ BUILD = f"""
  </div>
  <h2 style="margin-top:40px">How it works</h2>
  <div class="grid contact-grid">
-  <div class="panel"><h3>1. Design it here</h3><p>Choose your business type and style. Your draft updates as you type.</p></div>
+  <div class="panel"><h3>1. Design it here</h3><p>Tell us about your business and our AI designer drafts a layout, colors, fonts and copy made for you. Regenerate it or ask for changes in plain words.</p></div>
   <div class="panel"><h3>2. We build it</h3><p>We add your real photos, menu or services and make it fast on phones.</p></div>
   <div class="panel"><h3>3. Go live on your domain</h3><p>We set up your domain and hosting and keep it running. Plans from <b>$349 + $19/mo</b>. Nothing is charged online; we confirm a quote first.</p></div>
  </div>
  <p class="lead" style="margin-top:24px">Prefer to try it in person? Look for the Elder World Studio kiosk at The Cap Bar in Memphis.</p>
- <script src="{{P}}build/builder.js?v=3" defer></script>
+ <script src="{{P}}build/builder.js?v=4" defer></script>
 </div></div>
 """
 page("build/index.html", f"Free Website Builder for Small Businesses | {STUDIO}", "Design a website for your small business free, see a live draft instantly, then have Elder World Studio build it on your own domain. Memphis, TN.", BUILD, "/build/", "build")

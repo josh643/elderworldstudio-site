@@ -11,7 +11,7 @@ export function parseLead(b) {
   if (!d.business) err.push('business');
   if (d.domain && !/^[a-z0-9-]+(\.[a-z0-9-]+)*$/.test(d.domain)) err.push('domain');
   let draft = '{}';
-  try { draft = JSON.stringify(typeof b.draft === 'object' && b.draft ? b.draft : {}).slice(0, 8000); } catch {}
+  try { const o = typeof b.draft === 'object' && b.draft ? b.draft : {}; draft = JSON.stringify(o); if (draft.length > 16000) { delete o.spec; draft = JSON.stringify(o).slice(0, 16000); } } catch {}
   return { d, err, draft };
 }
 export async function onRequestPost({ request, env }) {
