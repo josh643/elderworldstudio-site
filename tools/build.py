@@ -614,7 +614,7 @@ GAMES = f"""
 </section>
 """
 page("games/index.html", f"Games | {STUDIO}", f"Games by {STUDIO}: Astro Dodge and Star Wayfarer on Google Play, Omnivael and Chronicles of the Realm on Steam, and casual mobile games coming soon.", GAMES, "/games/", "games")
-# Website builder: web version of the Cap Bar kiosk "Custom Website" flow. Prices approved by Joshua 2026-10-29.
+# Website builder: web version of the EWS in-store kiosk "Custom Website" flow. Prices approved by Joshua 2026-10-29.
 BUILD = f"""
 <div class="page"><div class="wrap">
  <div class="page-head"><h1>Design your website free</h1><p class="meta">Pick a style, add your details and watch a live draft of your site appear. When you like it, we build it for real. Made in Memphis by {STUDIO}.</p></div>
@@ -637,7 +637,7 @@ BUILD = f"""
   <div class="panel"><h3>2. We build it</h3><p>We add your real photos, menu or services and make it fast on phones.</p></div>
   <div class="panel"><h3>3. Go live on your domain</h3><p>We set up your domain and hosting and keep it running. Plans from <b>$349 + $19/mo</b>. Nothing is charged online; we confirm a quote first.</p></div>
  </div>
- <p class="lead" style="margin-top:24px">Prefer to try it in person? Look for the Elder World Studio kiosk at The Cap Bar in Memphis.</p>
+ <p class="lead" style="margin-top:24px">Prefer to try it in person? Look for an Elder World Studio website kiosk at participating local shops.</p>
  <script src="{{P}}build/builder.js?v=4" defer></script>
 </div></div>
 """

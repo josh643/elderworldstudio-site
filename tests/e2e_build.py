@@ -8,8 +8,8 @@ OUT = '/workspace/ews-web-builder/e2e/'; os.makedirs(OUT, exist_ok=True)
 LOGO = os.path.join(os.path.dirname(__file__), 'fixture-logo.png')
 REGRESS = ['', 'services/', 'contact/', 'merch/', 'games/', 'testers/', 'privacy-policy/']
 BIZ = [
-  dict(slug='barbershop', type='salon', style='bold', name='Summer Ave Fades', phone='(901) 555-0142', address='Summer Ave, Memphis, TN', vibes=['Old-school', 'Bold'],
-       story='Old-school family barbershop since 1998 on Summer Ave. Hot towel shaves, sharp fades, Grizzlies on the TV and fair prices.', logo=True, consent=True),
+  dict(slug='barbershop', type='salon', style='bold', name='Riverside Fades', phone='(901) 555-0142', address='Memphis, TN', vibes=['Old-school', 'Bold'],
+       story='Old-school family barbershop since 1998 on the riverside. Hot towel shaves, sharp fades, Grizzlies on the TV and fair prices.', logo=True, consent=True),
   dict(slug='bakery', type='bakery', style='rustic', name='Broad Ave Bread Co', phone='', address='Broad Ave, Memphis, TN', vibes=['Cozy', 'Classic'],
        story='Small sourdough bakery in the Broad Ave arts district. Naturally leavened loaves, cardamom buns, local coffee. Sells out by noon on Saturdays.', logo=False, consent=False),
   dict(slug='capshop', type='retail', style='minimal', name='Midsouth Lids', phone='', address='Cooper-Young, Memphis, TN', vibes=['Bold', 'Modern'],
