@@ -1,0 +1,13 @@
+{
+  "name": "elderworldstudio-site",
+  "private": true,
+  "description": "Static website for Elder World Studio Inc",
+  "scripts": {
+    "test": "playwright test",
+    "test:audit": "node tools/audit-mobile.mjs"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.56.1",
+    "playwright": "^1.56.1"
+  }
+}

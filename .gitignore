@@ -5,3 +5,7 @@ node_modules/
 .wrangler/
 dns-backup-*.json
 __pycache__/
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
