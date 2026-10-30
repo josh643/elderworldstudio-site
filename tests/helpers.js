@@ -1,6 +1,7 @@
 const PAGES = [
   { name: "home", path: "/" },
   { name: "services", path: "/services/" },
+  { name: "build", path: "/build/" },
   { name: "contact", path: "/contact/" },
   { name: "merch", path: "/merch/" },
   { name: "games", path: "/games/" },

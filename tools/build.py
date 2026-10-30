@@ -27,7 +27,7 @@ def page(path, title, desc, body, canonical, current="", noindex=False, abs_urls
     depth = path.count("/")  # e.g. "privacy-policy/index.html" -> 1
     P = "/" if abs_urls else "../" * depth
     nav = [("index.html", "Home", "home"), ("games/index.html", "Games", "games"),
-           ("index.html#tools", "Assets", "tools"), ("testers/index.html", "Testers", "testers"), ("merch/index.html", "Merch", "merch"), ("services/index.html", "Services", "services"), ("contact/index.html", "Contact", "contact"),
+           ("index.html#tools", "Assets", "tools"), ("build/index.html", "Web Builder", "build"), ("merch/index.html", "Merch", "merch"), ("services/index.html", "Services", "services"), ("contact/index.html", "Contact", "contact"),
            ("privacy-policy/index.html", "Privacy Policy", "privacy")]
     navhtml = "".join(f'<a href="{P}{h}"{" aria-current=\"page\"" if k == current else ""}>{t}</a>' for h, t, k in nav)
     robots = '<meta name="robots" content="noindex">' if noindex else '<meta name="robots" content="index,follow">'

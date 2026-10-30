@@ -157,3 +157,4 @@ h1{text-shadow:0 0 28px rgba(255,43,214,.45)}
  .nav-toggle-text{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
  .nav-toggle{position:relative;padding:10px}
 }
+.price-mo{color:var(--muted,#bbb);margin-top:-6px}.tier .btn{margin-top:8px}.services-grid{grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr))}

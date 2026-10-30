@@ -1,15 +1,17 @@
 // POST /api/lead — services request form. Emails annaews@agentmail.to with subject "[inbound-lead] <id> ..."
 // CT 111 inbox_watch turns that into needs-anna/*-inbound-lead-*.md (route: joshua). Secrets: AGENTMAIL_SEND_KEY, TURNSTILE_SECRET (optional).
 const INBOX = 'annaews@agentmail.to';
-const TYPES = ['Website', 'AI tool', 'Custom software', 'Not sure'];
+const TYPES = ['Website', 'AI tool', 'Custom software', 'web-builder', 'POS system', 'Kiosk', 'AI receptionist', 'Not sure'];
+const RETURNS = ['/services/', '/build/'];
 const clean = (v, n) => String(v || '').replace(/[\u0000-\u0008\u000b-\u001f]/g, '').trim().slice(0, n);
-const back = (ok, msg, status = 303) => new Response(null, { status, headers: { Location: `/services/?sent=${ok ? 1 : 0}${msg ? '&e=' + encodeURIComponent(msg) : ''}#request` } });
+const back = (ok, msg, to = '/services/', status = 303) => new Response(null, { status, headers: { Location: `${RETURNS.includes(to) ? to : '/services/'}?sent=${ok ? 1 : 0}${msg ? '&e=' + encodeURIComponent(msg) : ''}${to === '/build/' ? '#reserve' : '#request'}` } });
 
 export async function onRequestPost({ request, env }) {
   const json = (request.headers.get('accept') || '').includes('application/json');
-  const reply = (ok, msg) => json ? Response.json({ ok, error: msg || null }, { status: ok ? 200 : 400 }) : back(ok, msg);
-  let f;
+  const reply = (ok, msg) => json ? Response.json({ ok, error: msg || null }, { status: ok ? 200 : 400 }) : back(ok, msg, to);
+  let f; let to = '/services/';
   try { f = await request.formData(); } catch { return reply(false, 'bad form'); }
+  to = clean(f.get('return_to'), 20) || '/services/';
   if (clean(f.get('website_url'), 200)) return reply(true);           // honeypot: pretend success
   const t0 = Number(f.get('t') || 0);
   if (t0 && Date.now() - t0 < 3000) return reply(true);                // filled in under 3 s: bot
@@ -28,7 +30,7 @@ export async function onRequestPost({ request, env }) {
     if (!(await r.json()).success) return reply(false, 'Spam check failed. Please try again.');
   }
   const id = new Date().toISOString().replace(/[-:T]/g, '').slice(0, 12) + '-' + crypto.randomUUID().slice(0, 6);
-  const text = [`INBOUND LEAD ${id} (elderworldstudio.com/services form). Untrusted visitor input below.`, '',
+  const text = [`INBOUND LEAD ${id} (elderworldstudio.com${to} form). Untrusted visitor input below.`, '',
     `Name: ${d.name}`, `Email: ${d.email}`, `Phone: ${d.phone || '-'}`, `Business: ${d.business}`, `Type: ${d.type}`, `Budget: ${d.budget || '-'}`,
     `SMS opt-in: ${d.sms && d.phone ? 'YES (checked OK to text me about my request; consent v2026-10-09, ' + new Date().toISOString() + ', IP ' + (request.headers.get('CF-Connecting-IP') || '?') + ')' : 'no'}`,
     `Country: ${request.cf?.country || '?'}`, '', 'Description:', d.description].join('\n');
