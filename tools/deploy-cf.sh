@@ -10,4 +10,4 @@ rm -rf /tmp/ews-cf-deploy && mkdir -p /tmp/ews-cf-deploy
 tar -C site --exclude=.htaccess --exclude=.nojekyll -cf - . | tar -C /tmp/ews-cf-deploy -xf -
 # wrangler caches under the nearest node_modules; a root-owned /node_modules on the box breaks that, so keep a local one
 mkdir -p node_modules
-npx -y wrangler@3 pages deploy /tmp/ews-cf-deploy --project-name elderworldstudio --branch main --commit-dirty=true
+npx -y wrangler@3 pages deploy /tmp/ews-cf-deploy --project-name elderworldstudio --branch "${DEPLOY_BRANCH:-main}" --commit-dirty=true
