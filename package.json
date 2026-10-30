@@ -4,6 +4,7 @@
   "description": "Static website for Elder World Studio Inc",
   "scripts": {
     "test": "playwright test",
+    "test:unit": "node --test functions/api/lead.test.js",
     "test:audit": "node tools/audit-mobile.mjs"
   },
   "devDependencies": {
