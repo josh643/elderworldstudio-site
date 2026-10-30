@@ -134,3 +134,11 @@ test('different specs render visibly different sites', () => {
   const a = L.validateSpec(good()).spec, b = L.fallbackSpec(inp({ type: 'salon', name: 'Fade Lab' })), d = B.blank();
   assert.notEqual(B.renderSpec(a, d, 'Home'), B.renderSpec(b, d, 'Home'));
 });
+test('design direction differs per business and per regenerate seed; edit keeps the model layout', () => {
+  const biz = [inp({ name: 'Summer Ave Fades', type: 'salon', story: 'Old-school barbershop since 1998', vibe: 'Old-school' }), inp({ name: 'Broad Ave Bread Co', type: 'bakery', story: 'sourdough bakery', vibe: 'Cozy' }), inp({ name: 'Midsouth Lids', type: 'retail', story: 'fitted caps and embroidery for crews', vibe: 'Bold' })];
+  const ds = biz.map(L.direction), key = d => d.mood + d.hero + d.order.join();
+  assert.equal(new Set(ds.map(key)).size, 3);
+  const seeds = new Set([1, 2, 3, 4, 5, 6].map(seed => key(L.direction({ ...biz[0], seed })))); assert.ok(seeds.size >= 4);
+  const sp = L.applyDirection(L.validateSpec(good()).spec, ds[1]); assert.equal(sp.hero, ds[1].hero); assert.equal(sp.fonts.head, ds[1].fonts[0]);
+  assert.ok(L.prompt(biz[0])[1].content.includes(ds[0].mood)); assert.ok(!L.prompt(biz[0], good(), 'darker')[1].content.includes('Design direction'));
+});

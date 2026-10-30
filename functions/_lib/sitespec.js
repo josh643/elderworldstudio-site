@@ -78,13 +78,53 @@ export function costUSD(usage) {
   if (usage.neurons) return usage.neurons * NEURON_USD;
   return (usage.prompt_tokens || 0) * 0.29e-6 + (usage.completion_tokens || 0) * 2.25e-6;
 }
+// Per-business design direction: deterministic from the business itself + the regenerate seed, so two shops never get the same skeleton
+// and Regenerate really changes it. The model writes copy and tunes the palette inside this direction.
+const DIRECTIONS = [
+  { mood: 'warm heritage', hues: ['#7a2e1f', '#c8963e'], bg: 'light', fonts: ['dmserif', 'worksans'], hero: 'split' },
+  { mood: 'dark luxe', hues: ['#c9a227', '#3b2a1a'], bg: 'dark', fonts: ['cormorant', 'inter'], hero: 'full' },
+  { mood: 'street bold', hues: ['#e63946', '#1d3557'], bg: 'light', fonts: ['archivo', 'inter'], hero: 'banner' },
+  { mood: 'neon night', hues: ['#00e5ff', '#ff2bd6'], bg: 'dark', fonts: ['bebas', 'space'], hero: 'full' },
+  { mood: 'soft pastel', hues: ['#e8899e', '#8fb9a8'], bg: 'light', fonts: ['fraunces', 'nunito'], hero: 'center' },
+  { mood: 'clean modern', hues: ['#2f6df6', '#0f172a'], bg: 'light', fonts: ['space', 'inter'], hero: 'minimal' },
+  { mood: 'earthy craft', hues: ['#6b8f3a', '#8a5a2b'], bg: 'light', fonts: ['lora', 'worksans'], hero: 'split' },
+  { mood: 'vintage sign', hues: ['#d1495b', '#00798c'], bg: 'light', fonts: ['pacifico', 'nunito'], hero: 'banner' },
+  { mood: 'editorial', hues: ['#111111', '#b08968'], bg: 'light', fonts: ['playfair', 'inter'], hero: 'minimal' },
+  { mood: 'sporty', hues: ['#0b6e4f', '#f2a541'], bg: 'dark', fonts: ['oswald', 'poppins'], hero: 'split' },
+  { mood: 'sunny local', hues: ['#f4a259', '#5b8e7d'], bg: 'light', fonts: ['poppins', 'nunito'], hero: 'center' },
+  { mood: 'blues & brick', hues: ['#1f4e79', '#a23e2a'], bg: 'dark', fonts: ['dmserif', 'worksans'], hero: 'full' }];
+const ORDERS = { menu: [['menu', 'story', 'gallery', 'testimonials', 'hours', 'map'], ['story', 'menu', 'testimonials', 'gallery', 'booking'], ['gallery', 'menu', 'stats', 'testimonials', 'faq', 'hours']],
+  services: [['services', 'testimonials', 'about', 'booking', 'map'], ['stats', 'services', 'gallery', 'testimonials', 'hours'], ['about', 'gallery', 'services', 'faq', 'booking'], ['services', 'gallery', 'story', 'testimonials', 'hours', 'map']] };
+const MOODWORDS = { 'dark luxe': /upscale|luxur|premium|high.end|elegant/i, 'street bold': /street|bold|hip.?hop|urban|crew|team/i, 'neon night': /neon|night|club|bar|gaming|late/i,
+  'soft pastel': /sweet|cake|cupcake|pastel|cute|floral|nail|lash/i, 'clean modern': /modern|minimal|tech|clean/i, 'earthy craft': /sourdough|organic|plant|garden|craft|natural|farm/i,
+  'vintage sign': /old.?school|vintage|retro|classic|since 19/i, editorial: /boutique|design|studio|gallery|art/i, sporty: /sport|grizzl|fitness|gym|fitted|cap/i,
+  'warm heritage': /family|heritage|tradition|soul|bbq|barbecue/i, 'sunny local': /friendly|family.friendly|playful|fun|kids/i, 'blues & brick': /memphis|blues|beale|music/i };
+function h32(str) { let h = 2166136261; for (const c of String(str)) { h ^= c.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; }
+export function direction(inp) {
+  const text = [inp.vibe, inp.story, inp.tagline, inp.type].join(' '), r = h32(inp.name + '|' + inp.type + '|' + (inp.seed || 0));
+  const matches = DIRECTIONS.filter(d => MOODWORDS[d.mood] && MOODWORDS[d.mood].test(text));
+  const pool = matches.length && !inp.seed ? matches : matches.length && r % 3 ? matches : DIRECTIONS;
+  const dir = pool[r % pool.length], kind = /bakery|restaurant|cafe|food/.test(inp.type) ? 'menu' : 'services', orders = ORDERS[kind];
+  const heroes = [dir.hero, ...HERO.filter(x => x !== dir.hero)];
+  return { ...dir, hero: inp.seed ? heroes[(r >> 5) % heroes.length] : dir.hero, order: orders[(r >> 9) % orders.length].map(k => (k === 'menu' && kind !== 'menu' ? 'services' : k)), radius: [0, 4, 10, 18, 28][(r >> 13) % 5] };
+}
+export function applyDirection(spec, dir) {
+  spec.hero = dir.hero; spec.fonts = { head: dir.fonts[0], body: dir.fonts[1] }; spec.radius = dir.radius;
+  const byKind = {}; for (const sec of spec.sections) (byKind[sec.kind] = byKind[sec.kind] || []).push(sec);
+  const out = []; for (const k of dir.order) if (byKind[k] && byKind[k].length) out.push(byKind[k].shift());
+  for (const k in byKind) out.push(...byKind[k]);
+  spec.sections = out.slice(0, 10); return spec;
+}
 export function prompt(inp, current, request) {
+  const dir = direction(inp);
   const sys = 'You are the senior designer at Elder World Studio, a Memphis web studio. You design ONE distinctive small-business website as JSON matching the schema. ' +
-    'Make it feel made for this exact business: choose hero layout, section mix and ORDER, palette (hex colors, readable contrast), and a font pair that fit its personality. ' +
-    'Write real copy in the owner\'s voice: specific headline (not just the name), subhead, about (2-4 sentences), 3-6 realistic items per services/menu section with short descriptions, testimonials as short quotes with first names. ' +
-    'Prices only if typical and clearly plausible, formatted like "$12". 4-7 sections. imagery = one sentence of photo art direction. Never include HTML, scripts, URLs or emails. Plain text only.';
-  const biz = `Business: ${inp.name}\nType: ${inp.type}\nLocation: ${inp.location || 'Memphis, TN'}\nVibe: ${inp.vibe || inp.style || 'owner did not say'}\nTagline idea: ${inp.tagline}\nHours: ${inp.hours}\nAbout (owner's words): ${inp.story || '(none)'}\nHas own logo: ${inp.hasLogo}; has own photo: ${inp.hasPhoto}\nVariation seed: ${inp.seed}`;
-  const user = current ? `${biz}\n\nCurrent design JSON:\n${JSON.stringify(current).slice(0, 6000)}\n\nChange request from the owner: "${request}"\nReturn the full updated design JSON. Change only what the request implies; keep the rest.` : `${biz}\n\nDesign the site.`;
+    'Make it feel made for this exact business, never a generic template. Follow the design direction you are given. ' +
+    'Palette: five hex colors that express the direction and the business (start from the anchor hues, adjust to fit), bg/surface ' + '' + 'matching the light/dark mood, ink readable on bg. Do NOT use #ff9900 or default orange unless the business calls for it. ' +
+    'Write real copy in the owner\'s voice using concrete details from their description: a specific headline (not just the name, not a pun template), subhead, about (2-4 sentences), 3-6 realistic items per services/menu section with short descriptions, testimonials as short quotes with first names, stats as short numbers with labels. ' +
+    'Section titles must be specific to the business (e.g. "Fresh out the oven", not "Our Services"). Prices only if typical, like "$12". imagery = one sentence of photo art direction for THIS business. Never include HTML, scripts, URLs or emails. Plain text only.';
+  const biz = `Business: ${inp.name}\nType: ${inp.type}\nLocation: ${inp.location || 'Memphis, TN'}\nVibe: ${inp.vibe || inp.style || 'owner did not say'}\nTagline idea: ${inp.tagline}\nHours: ${inp.hours}\nAbout (owner's words): ${inp.story || '(none)'}\nHas own logo: ${inp.hasLogo}; has own photo: ${inp.hasPhoto}`;
+  const brief = `Design direction: mood "${dir.mood}", ${dir.bg} background, anchor hues ${dir.hues.join(' and ')}, hero "${dir.hero}", fonts ${dir.fonts.join(' + ')}, sections in this order: ${dir.order.join(', ')}.`;
+  const user = current ? `${biz}\n\nCurrent design JSON:\n${JSON.stringify(current).slice(0, 6000)}\n\nChange request from the owner: "${request}"\nReturn the full updated design JSON. Change only what the request implies (layout, colors, fonts, sections or copy); keep the rest.` : `${biz}\n\n${brief}\n\nDesign the site.`;
   return [{ role: 'system', content: sys }, { role: 'user', content: user }];
 }
 

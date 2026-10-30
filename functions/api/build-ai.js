@@ -1,6 +1,6 @@
 // POST /api/build-ai — AI site spec for the website builder. Server-side only (Workers AI binding AI); no keys reach the browser.
 // actions: generate | regenerate | edit (needs spec + request) | outcome (training log only). Limits + daily $ cap in D1 (BUILD_LEADS).
-import { parseInput, validateSpec, fallbackSpec, prompt, SCHEMA, MODEL, costUSD, checkLimits, addCost, ensureTables, cleanText, trainRow, logTrain } from '../_lib/sitespec.js';
+import { parseInput, validateSpec, fallbackSpec, prompt, SCHEMA, MODEL, costUSD, checkLimits, addCost, direction, applyDirection, ensureTables, cleanText, trainRow, logTrain } from '../_lib/sitespec.js';
 const json = (o, s = 200) => Response.json(o, { status: s, headers: { 'Cache-Control': 'no-store' } });
 export async function runModel(env, messages) {
   const r = await env.AI.run(MODEL, { messages, response_format: { type: 'json_schema', json_schema: SCHEMA }, max_tokens: 1800, temperature: 0.9 });
@@ -33,6 +33,7 @@ export async function onRequestPost({ request, env }) {
     const { raw, usage } = await runModel(env, prompt(inp, action === 'edit' ? prev : null, request_));
     const cost = costUSD(usage); await addCost(db, lim.day, cost);
     const v = validateSpec(raw);
+    if (v.ok && action !== 'edit') applyDirection(v.spec, direction(inp));
     out = v.ok ? { ok: true, source: 'ai', spec: v.spec, cost: Number(cost.toFixed(5)) } : { ...fb('invalid'), invalid: v.errors };
   } catch (e) { out = fb('error'); }
   if (out.source === 'ai') await logTrain(db, trainRow({ ...train, event: action, request: request_, spec: out.spec, prev: action === 'edit' ? prev : null, source: 'ai' })).catch(() => {});
