@@ -21,3 +21,7 @@
 @media(max-width:900px){.bld iframe{height:460px}}
 .bld .exp{font-size:12px;opacity:.7;margin-top:8px}.bld .mono{font-family:monospace}
 .price-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
+.bld .inline input[type=checkbox]{width:20px;height:20px;flex:none}.bld label.inline{font-size:14px;align-items:flex-start}
+.bld input[type=file]{font-size:14px;padding:6px 0;background:none;border:0}
+.bld #regen{margin:6px 0 4px}.bld button[disabled]{opacity:.55;cursor:wait}
+.bld #ai-msg{border-left:3px solid #FF2BD6;padding-left:10px}
