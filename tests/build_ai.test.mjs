@@ -142,3 +142,8 @@ test('design direction differs per business and per regenerate seed; edit keeps 
   const sp = L.applyDirection(L.validateSpec(good()).spec, ds[1]); assert.equal(sp.hero, ds[1].hero); assert.equal(sp.fonts.head, ds[1].fonts[0]);
   assert.ok(L.prompt(biz[0])[1].content.includes(ds[0].mood)); assert.ok(!L.prompt(biz[0], good(), 'darker')[1].content.includes('Design direction'));
 });
+test('every selected page renders content even if the AI skipped that section kind', () => {
+  const s = L.validateSpec(good()).spec, d = B.blank(); d.pages = ['Home', 'Menu', 'About', 'Contact', 'Gallery'];
+  for (const p of d.pages) assert.match(B.renderSpec(s, d, p), /<section class="s /, p);
+  assert.ok(B.renderSpec(s, d, 'Gallery').includes('class="gal"'));
+});

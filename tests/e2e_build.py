@@ -66,7 +66,7 @@ async def run(b, biz, device):
         assert await pg.evaluate("document.getElementById('preview').srcdoc") == before, 'undo restores first design'
         await pg.reload(wait_until='networkidle'); assert (await pg.text_content('#rev-badge')) == 'v1', 'persists across reload'
         if biz['logo']: assert await pf.locator('header img').count() == 1, 'logo persists'
-    await pg.click('[data-tab=Gallery]'); assert await pf.locator('.gal, .s').count() >= 1
+    await pg.click('[data-tab=Gallery]'); await pf.locator('.gal').first.wait_for(timeout=5000)
     await pg.click('[data-tab=Home]'); await pg.click('#next')
     assert 'opted in' in await pg.inner_text('#claim'), 'privacy line on form'
     for price in ['$349', '$19/mo', '$699', '$39/mo', '$1,299', '$69/mo', '$249', '+ $2/yr']: assert price in await pg.inner_text('#pricing'), price

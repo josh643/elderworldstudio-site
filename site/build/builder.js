@@ -96,6 +96,8 @@
     }
     var list = page === 'Home' ? sp.sections : sp.sections.filter(function (s) { return (PAGE_KINDS[page] || []).indexOf(s.kind) >= 0; });
     if (page === 'About' && !list.length) list = [{ kind: 'about', title: 'About ' + (d.name || 'us'), intro: '', items: [] }];
+    if (page === 'Gallery' && !list.length) list = [{ kind: 'gallery', variant: 'grid', title: 'Gallery', intro: '', items: [] }];
+    if (page === 'Menu' && !list.length) list = sp.sections.filter(function (s) { return s.items && s.items.length; }).slice(0, 1);
     if (page === 'Contact' && !list.length) list = [{ kind: 'booking', title: 'Visit or call', intro: '', items: [] }, { kind: 'map', title: 'Find us', intro: '', items: [] }];
     var body = (page === 'Home' ? heroes[sp.hero] || heroes.center : '') + list.map(sec).join('');
     var dark = function (h) { var n = parseInt(h.slice(1), 16); return ((n >> 16) * 299 + ((n >> 8) & 255) * 587 + (n & 255) * 114) / 1000 < 140; };
