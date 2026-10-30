@@ -180,10 +180,15 @@ async def main():
     gens = [s for s in SPECS.items() if s[0][1] == 'generate']
     keys = {(v['hero'], v['fonts']['head'], v['palette']['accent'], tuple(x['kind'] for x in v['sections'])) for k, v in gens}
     assert len(keys) == len(BIZ), ('skeletons not distinct', keys)
-    sigs = [(k[0], ((int(v['palette']['bg'][1:], 16) >> 16) < 70, v['fonts']['head'], v['hero'], v.get('layout'), v['palette']['accent'])) for k, v in gens]
+    import colorsys  # same 5 traits as sitespec.signature/similarity: dark bg (luminance < .18), head font, hero, layout, accent hue within 35deg
+    def lum(h):
+        c = [int(h[i:i + 2], 16) / 255 for i in (1, 3, 5)]; c = [x / 12.92 if x <= .03928 else ((x + .055) / 1.055) ** 2.4 for x in c]; return .2126 * c[0] + .7152 * c[1] + .0722 * c[2]
+    def hue(h): r, g, b2 = [int(h[i:i + 2], 16) / 255 for i in (1, 3, 5)]; hh, l, sa = colorsys.rgb_to_hls(r, g, b2); return -1 if max(r, g, b2) == min(r, g, b2) else hh * 360
+    def gap(a, b): return a == b if (a < 0 or b < 0) else min(abs(a - b), 360 - abs(a - b)) < 35
+    sigs = [(k[0], (lum(v['palette']['bg']) < .18, v['fonts']['head'], v['hero'], v.get('layout'), hue(v['palette']['accent']))) for k, v in gens]
     for i in range(len(sigs)):
         for j in range(i + 1, len(sigs)):
-            same = sum(a == b for a, b in zip(sigs[i][1], sigs[j][1]))
+            same = sum(a == b for a, b in zip(sigs[i][1][:4], sigs[j][1][:4])) + gap(sigs[i][1][4], sigs[j][1][4])
             assert same < 3, ('too alike', sigs[i], sigs[j])
     assert len({s[1][3] for s in sigs}) >= 2, ('layouts not varied', sigs)
     if EXPECT_LUNA: assert all(c[7] == 'ews-llm' for c in COSTS if c[2] == 'ai' and c[1] != 'image') and any(c[2] == 'ai' for c in COSTS), ('not on luna gateway', COSTS)
