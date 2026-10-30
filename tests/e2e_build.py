@@ -3,7 +3,7 @@ Default: real /api/build-ai on desktop (3 generates + 1 regenerate + 1 edit), ph
 /api/build-lead is mocked unless --live-lead. Screenshots + specs go to /workspace/ews-web-builder/e2e/."""
 import asyncio, sys, json, os, hashlib
 from playwright.async_api import async_playwright
-BASE = sys.argv[1].rstrip('/') + '/'; LIVE_LEAD = '--live-lead' in sys.argv; MOCK_AI = '--mock-ai' in sys.argv
+BASE = sys.argv[1].rstrip('/') + '/'; LIVE_LEAD = '--live-lead' in sys.argv; MOCK_AI = '--mock-ai' in sys.argv; EXPECT_LUNA = '--expect-luna' in sys.argv
 OUT = '/workspace/ews-web-builder/e2e/'; os.makedirs(OUT, exist_ok=True)
 LOGO = os.path.join(os.path.dirname(__file__), 'fixture-logo.png')
 REGRESS = ['', 'services/', 'contact/', 'merch/', 'games/', 'testers/', 'privacy-policy/']
@@ -34,7 +34,7 @@ async def run(b, biz, device):
             return await route.fulfill(json={'ok': True, 'source': 'ai', 'spec': SPECS.get((biz['slug'], body.get('action')), SPECS.get((biz['slug'], 'generate'))) or {}, 'cost': 0})
         resp = await route.fetch(timeout=120000); j = await resp.json()
         if body.get('action') != 'outcome':
-            SPECS[(biz['slug'], body['action'])] = j.get('spec'); COSTS.append((biz['slug'], body['action'], j.get('source'), j.get('cost'), j.get('reason'), j.get('invalid'), j.get('detail')))
+            SPECS[(biz['slug'], body['action'])] = j.get('spec'); COSTS.append((biz['slug'], body['action'], j.get('source'), j.get('cost'), j.get('reason'), j.get('invalid'), j.get('detail'), j.get('model')))
         await route.fulfill(status=resp.status, json=j)
     await pg.route('**/api/build-ai', on_ai)
     await pg.goto(BASE + 'build/', wait_until='networkidle'); await pg.evaluate('localStorage.clear()'); await pg.reload(wait_until='networkidle')
@@ -103,6 +103,7 @@ async def main():
             same = sum(a == b for a, b in zip(sigs[i][1], sigs[j][1]))
             assert same < 3, ('too alike', sigs[i], sigs[j])
     assert len({s[1][3] for s in sigs}) >= 2, ('layouts not varied', sigs)
+    if EXPECT_LUNA: assert all(c[7] == 'ews-llm' for c in COSTS if c[2] == 'ai') and any(c[2] == 'ai' for c in COSTS), ('not on luna gateway', COSTS)
     json.dump({'costs': COSTS, 'specs': {f'{k[0]}:{k[1]}': v for k, v in SPECS.items()}}, open(OUT + 'specs.json', 'w'), indent=1)
     print('costs', COSTS); print('E2E PASS')
 asyncio.run(main())

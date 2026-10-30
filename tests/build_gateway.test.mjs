@@ -7,7 +7,7 @@ const okFetch = (calls) => async (url, init) => { calls.push({ url, body: JSON.p
 test('uses gateway with luna + max_completion_tokens when configured', async () => {
   const calls = []; const env = { EWS_LLM_URL: 'https://gw.test/', EWS_LLM_KEY: 'k', AI: { run: () => { throw new Error('should not call workers ai'); } } };
   const r = await runModel(env, [{ role: 'user', content: 'x' }], 0.9, okFetch(calls));
-  assert.equal(GATEWAY_MODEL, 'luna'); assert.equal(r.via, 'ews-llm'); assert.deepEqual(r.raw, spec);
+  assert.equal(GATEWAY_MODEL, 'luna'); assert.equal(r.via, 'ews-llm'); assert.deepEqual(r.raw, spec); assert.equal(r.usd, null);
   assert.equal(calls[0].url, 'https://gw.test/v1/chat/completions'); assert.equal(calls[0].body.model, 'luna');
   assert.equal(calls[0].body.max_completion_tokens, 3000); assert.equal(calls[0].body.max_tokens, undefined); assert.equal(calls[0].auth, 'Bearer k');
 });
@@ -35,4 +35,9 @@ test('no client names in builder or tests', async () => {
 test('Workers AI JSON-mode internal error retries once in plain mode', async () => {
   let n = 0; const env = { AI: { run: async (m, o) => { n++; if (o.response_format) throw new Error("Cannot read properties of undefined (reading 'map')"); return { response: '```json\n{"headline":"Hi"}\n```' }; } } };
   const r = await runModel(env, [], 0.9); assert.equal(n, 2); assert.deepEqual(r.raw, spec);
+});
+test('gateway cost_usd is used as the design cost', async () => {
+  const env = { EWS_LLM_URL: 'https://gw.test', EWS_LLM_KEY: 'k' };
+  const r = await runModel(env, [], 0.9, async () => ({ ok: true, json: async () => ({ choices: [{ message: { content: '{"headline":"Hi"}' } }], cost_usd: 0.0042 }) }));
+  assert.equal(r.usd, 0.0042);
 });
