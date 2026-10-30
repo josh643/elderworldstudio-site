@@ -32,3 +32,7 @@ test('no client names in builder or tests', async () => {
   const fs = await import('node:fs');
   for (const f of ['../site/build/builder.js', '../site/build/index.html', '../tests/e2e_build.py']) assert.ok(!/marlon|cap bar/i.test(fs.readFileSync(new URL(f, import.meta.url), 'utf8')), f);
 });
+test('Workers AI JSON-mode internal error retries once in plain mode', async () => {
+  let n = 0; const env = { AI: { run: async (m, o) => { n++; if (o.response_format) throw new Error("Cannot read properties of undefined (reading 'map')"); return { response: '```json\n{"headline":"Hi"}\n```' }; } } };
+  const r = await runModel(env, [], 0.9); assert.equal(n, 2); assert.deepEqual(r.raw, spec);
+});

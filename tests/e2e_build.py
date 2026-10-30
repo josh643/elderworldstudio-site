@@ -70,7 +70,8 @@ async def run(b, biz, device):
     await pg.click('[data-tab=Gallery]'); await pf.locator('.gal').first.wait_for(timeout=5000)
     await pg.click('[data-tab=Home]'); await pg.click('#next')
     assert 'opted in' in await pg.inner_text('#claim'), 'privacy line on form'
-    for price in ['$349', '$19/mo', '$699', '$39/mo', '$1,299', '$69/mo', '$249', '+ $2/yr']: assert price in await pg.inner_text('#pricing'), price
+    for price in ['$349', '$19/mo', '$699', '$39/mo', '$1,299', '$69/mo', '$249', 'From $13/yr']: assert price in await pg.inner_text('#pricing'), price
+    assert 'Registrar' not in await pg.inner_text('#pricing')
     await pg.fill('input[name=name]', 'E2E Test'); await pg.fill('input[name=email]', 'e2e-test@example.com'); await pg.fill('textarea[name=notes]', 'E2E TEST - safe to delete')
     await pg.wait_for_timeout(3100); await pg.click('#send'); await pg.wait_for_selector('#lead-id', timeout=15000)
     if biz['consent']: assert any(c.get('action') == 'outcome' and c.get('outcome') == 'lead' for c in calls), 'outcome label sent'

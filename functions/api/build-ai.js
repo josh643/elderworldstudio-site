@@ -17,7 +17,9 @@ export async function runModel(env, messages, temperature = 0.9, fetcher = fetch
   if (env.EWS_LLM_URL && env.EWS_LLM_KEY) {
     try { return await runGateway(env, messages, temperature, fetcher); } catch (e) { if (!env.AI) throw e; }
   }
-  const r = await env.AI.run(MODEL, { messages, response_format: { type: 'json_schema', json_schema: SCHEMA }, max_tokens: 3000, temperature });
+  let r;
+  try { r = await env.AI.run(MODEL, { messages, response_format: { type: 'json_schema', json_schema: SCHEMA }, max_tokens: 3000, temperature }); }
+  catch (e) { r = await env.AI.run(MODEL, { messages: [...messages, { role: 'user', content: 'Reply with only the JSON object.' }], max_tokens: 3000, temperature }); } // JSON mode can fail inside Workers AI
   return { raw: parseRaw(r && (r.response ?? r.choices?.[0]?.message?.content)), usage: r && r.usage, via: 'workers-ai' };
 }
 export async function onRequestPost({ request, env }) {
