@@ -260,7 +260,7 @@ POLICY = f"""
   <p>This website is a static site. It uses no cookies, no analytics and no advertising, and its fonts and images are served from this site itself. Like any website, our hosting provider automatically processes basic technical request data (such as IP address, browser type and the page requested) in order to deliver pages and protect the site from abuse. We do not use this data to identify or track you. If you use the request form on our Services page, the details you enter (name, email, optional phone, business, and your message) are emailed to us and used only to reply to your request; the form uses Cloudflare Turnstile to block spam. Ask us any time and we&rsquo;ll delete it.</p>
 
   <h3>Website builder</h3>
-  <p>If you use our free website builder at <a href="{{P}}build/index.html">/build/</a>, the details and description you type are sent to our server so our AI designer (run on Cloudflare Workers AI) can draft a design. Logos and photos you add stay in your browser for the preview. To limit abuse we keep a one-way hash of your IP address for up to a day. If you request a site, we store your name, email, phone and draft so we can contact you about it. If you tick &ldquo;Help improve our AI designer&rdquo;, we keep an anonymous copy of your design session (your description, the designs, your change requests and whether you requested a site) with names, emails, phone numbers and street addresses removed, and your business name replaced by a placeholder unless you also allow it. We use this only to improve the builder; email us to have it deleted.</p>
+  <p>If you use our website builder at <a href="{{P}}build/index.html">/build/</a>, the details and description you type are sent to our server so our AI designer (run on Cloudflare Workers AI) can draft a design. Logos and photos you add stay in your browser for the preview. To limit abuse we keep a one-way hash of your IP address for up to a day. If you request a site, we store your name, email, phone and draft so we can contact you about it. If you tick &ldquo;Help improve our AI designer&rdquo;, we keep an anonymous copy of your design session (your description, the designs, your change requests and whether you requested a site) with names, emails, phone numbers and street addresses removed, and your business name replaced by a placeholder unless you also allow it. We use this only to improve the builder; email us to have it deleted.</p>
 
   <h2 id="use">5. How we use information</h2>
   <ul>
@@ -617,7 +617,7 @@ page("games/index.html", f"Games | {STUDIO}", f"Games by {STUDIO}: Astro Dodge a
 # Website builder: web version of the EWS in-store kiosk "Custom Website" flow. Prices approved by Joshua 2026-10-29.
 BUILD = f"""
 <div class="page"><div class="wrap">
- <div class="page-head"><h1>Design your website free</h1><p class="meta">Pick a style, add your details and watch a live draft of your site appear. When you like it, we build it for real. Made in Memphis by {STUDIO}.</p></div>
+ <div class="page-head"><h1>See your website before you pay</h1><p class="meta"><b class="from-price">From $349</b> · The draft preview costs nothing. When you like it, the real build starts at $349 + $19/mo, and nothing is charged online. Made in Memphis by {STUDIO}.</p></div>
  <link rel="stylesheet" href="{{P}}build/builder.css?v=2">
  <div id="builder" class="bld">
   <div class="panel"><ol class="steps" id="steps"></ol><div id="panel"></div>
@@ -641,7 +641,7 @@ BUILD = f"""
  <script src="{{P}}build/builder.js?v=5" defer></script>
 </div></div>
 """
-page("build/index.html", f"Free Website Builder for Small Businesses | {STUDIO}", "Design a website for your small business free, see a live draft instantly, then have Elder World Studio build it on your own domain. Memphis, TN.", BUILD, "/build/", "build")
+page("build/index.html", f"See Your Website Before You Pay | {STUDIO}", "Preview a draft of your small business website at no cost, then have Elder World Studio build it on your own domain from $349 + $19/mo. Memphis, TN.", BUILD, "/build/", "build")
 # 404 uses root-absolute links (served for any missing path)
 page("404.html", f"Page not found | {STUDIO}", "Page not found.", NOTFOUND, "/404.html", noindex=True)
 p404 = ROOT / "404.html"
