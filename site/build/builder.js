@@ -51,7 +51,7 @@
       'header .logo{font-weight:700;font-size:22px;margin-right:auto}.n{font-size:15px;padding-bottom:3px}.n.on{color:' + accent + ';border-bottom:3px solid ' + accent + '}' +
       '.hero{padding:64px 24px;background:' + st.hero + ';color:#fff;text-align:center}.hero h1{font-size:' + (m.bigHead ? 'clamp(40px,8vw,72px)' : 'clamp(30px,6vw,52px)') + ';line-height:1.05}.hero p{margin:12px 0 22px;font-size:18px;opacity:.95}' +
       '.b{display:inline-block;background:' + accent + ';color:#fff;padding:12px 26px;border-radius:' + rad + 'px;font-weight:700}' +
-      '.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:16px;padding:26px 22px}.c{background:rgba(0,0,0,.04);border-radius:' + st.radius + 'px;padding:18px}.c small,.row small{opacity:.7}' +
+      '.c b{display:block}.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:16px;padding:26px 22px}.c{background:rgba(0,0,0,.04);border-radius:' + st.radius + 'px;padding:18px}.c small,.row small{opacity:.7}' +
       '.pad{padding:34px 24px}.pad h2{font-size:30px;margin-bottom:16px}.pad p{margin-bottom:10px;line-height:1.5}.row{display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid rgba(0,0,0,.1)}.pr{color:' + accent + ';font-weight:700}' +
       '.note{opacity:.6;font-size:13px;margin-top:14px}.split{display:flex;gap:24px;flex-wrap:wrap}.split>div:last-child{flex:1;min-width:220px}.ph{width:180px;height:180px;border-radius:' + st.radius + 'px;background:' + st.hero + ';display:flex;align-items:center;justify-content:center;font-size:64px}' +
       '.gal{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px}.g{aspect-ratio:1;border-radius:' + st.radius + 'px;background:' + st.hero + ';opacity:.8}' +
@@ -79,6 +79,12 @@
   if (!S || !S.d) S = { step: 0, d: blank(), revs: [], page: 'Home', device: 'desktop' };
   var $ = function (q) { return root.querySelector(q); };
   var save = function () { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} };
+  /* Proposed pricing: hidden unless ?pricing=proposed (for Joshua's review). Not final until he approves. */
+  var PRICING = [['Starter', '$349 one-time + $19/mo care', 'Up to 3 pages from your draft, hosting, SSL, 1 small edit a month'],
+    ['Business', '$699 one-time + $39/mo care', 'Up to 6 pages, your photos and copy polish, Google Business setup, 2 edits a month'],
+    ['Plus', '$1,299 one-time + $69/mo care', 'Up to 10 pages, booking or online ordering hookup, priority edits'],
+    ['Domain', 'Registrar cost + $2/yr', 'e.g. a .com is about $13/yr, in your name']];
+  var SHOW_PRICING = /[?&]pricing=proposed\b/.test(location.search);
   var STEPS = ['Business type', 'Style', 'Details', 'Preview', 'Get it built'];
 
   function chip(group, val, label, on, extra) { return '<button type="button" class="chip' + (on ? ' on' : '') + '" data-' + group + '="' + esc(val) + '" aria-pressed="' + (on ? 'true' : 'false') + '"' + (extra || '') + '>' + label + '</button>'; }
@@ -100,6 +106,7 @@
       (S.revs.length ? '<button type="button" class="ghost sm" id="undo">Undo last change</button>' : '');
     if (S.step === 4) h = S.sent ? '<h2>Thanks, we’ve got it ✅</h2><p>Your request <b class="mono" id="lead-id">' + esc(S.sent) + '</b> is saved with your draft. Someone from Elder World Studio will reach out about your site and domain. Nothing has been charged.</p><button type="button" class="ghost" id="restart">Start another design</button>' :
       '<h2>Get it built</h2><p class="muted">We’ll turn this draft into a real site: your photos and copy, mobile-ready, and on your own domain. <b>Pricing on request.</b> We send a quote first and nothing is charged here.</p>' +
+      (SHOW_PRICING ? '<div class="panel" id="pricing" style="border:1px dashed #FF2BD6"><b>PROPOSED PRICING, NOT FINAL</b>' + PRICING.map(function (r) { return '<p><b>' + r[0] + ':</b> ' + r[1] + '<br><small>' + r[2] + '</small></p>'; }).join('') + '</div>' : '') +
       '<form id="claim" class="form" novalidate><input type="text" name="website_url" class="hp" tabindex="-1" autocomplete="off" aria-hidden="true">' +
       '<label>Your name *<input name="name" required maxlength="100" autocomplete="name"></label>' +
       '<label>Email *<input name="email" type="email" required maxlength="200" autocomplete="email"></label>' +

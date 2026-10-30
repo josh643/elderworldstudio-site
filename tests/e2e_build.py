@@ -44,3 +44,12 @@ async def main():
         ids += await run(b, 'mobile', {'width': 390, 'height': 844}, True, not LIVE)
         await b.close(); print('E2E PASS', 'live' if LIVE else 'mocked', json.dumps(ids))
 asyncio.run(main())
+async def pricing_flag():
+    async with async_playwright() as p:
+        b = await p.chromium.launch(executable_path='/usr/bin/google-chrome'); pg = await b.new_page()
+        for q, want in (('', 0), ('?pricing=proposed', 1)):
+            await pg.goto(BASE + 'build/' + q); await pg.evaluate("localStorage.setItem('ews-builder-draft-v1', JSON.stringify({step:4,d:EWSBuilder.blank(),revs:[],page:'Home',device:'desktop'}))")
+            await pg.reload(); n = await pg.locator('#pricing').count(); assert n == want, (q, n)
+            if want: await pg.screenshot(path=OUT + 'desktop-pricing-proposed.png', full_page=True)
+        await b.close(); print('PRICING FLAG PASS (hidden by default)')
+asyncio.run(pricing_flag())

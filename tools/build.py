@@ -633,7 +633,7 @@ BUILD = f"""
   <div class="panel"><h3>3. Go live on your domain</h3><p>We set up your domain and hosting and keep it running. <b>Pricing on request</b>, quoted before anything is charged.</p></div>
  </div>
  <p class="lead" style="margin-top:24px">Prefer to try it in person? Look for the Elder World Studio kiosk at The Cap Bar in Memphis.</p>
- <script src="{{P}}build/builder.js?v=1" defer></script>
+ <script src="{{P}}build/builder.js?v=2" defer></script>
 </div></div>
 """
 page("build/index.html", f"Free Website Builder for Small Businesses | {STUDIO}", "Design a website for your small business free, see a live draft instantly, then have Elder World Studio build it on your own domain. Memphis, TN.", BUILD, "/build/", "build")
