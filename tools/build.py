@@ -27,7 +27,7 @@ def page(path, title, desc, body, canonical, current="", noindex=False):
     depth = path.count("/")  # e.g. "privacy-policy/index.html" -> 1
     P = "../" * depth
     nav = [("index.html", "Home", "home"), ("developer-assets/index.html", "Assets", "assets"),
-           ("services/index.html#pos-kiosk", "POS &amp; Kiosks", "poskiosk"), ("services/index.html", "Web Services", "services"), ("games/index.html", "Past Releases", "games"), ("merch/index.html", "Merch", "merch"), ("contact/index.html", "Contact", "contact"),
+           ("services/index.html#pos-kiosk", "POS &amp; Kiosks", "poskiosk"), ("services/index.html", "Web Services", "services"), ("build/index.html", "Build a Site", "build"), ("games/index.html", "Past Releases", "games"), ("merch/index.html", "Merch", "merch"), ("contact/index.html", "Contact", "contact"),
            ("privacy-policy/index.html", "Privacy Policy", "privacy")]
     navhtml = "".join(f'<a href="{P}{h}"{" aria-current=\"page\"" if k == current else ""}>{t}</a>' for h, t, k in nav)
     robots = '<meta name="robots" content="noindex">' if noindex else '<meta name="robots" content="index,follow">'
@@ -608,6 +608,35 @@ GAMES = f"""
 </section>
 """
 page("games/index.html", f"Past Releases | {STUDIO}", f"Past game releases by {STUDIO}: Astro Dodge and Star Wayfarer on Google Play.", GAMES, "/games/", "games")
+
+# Website builder: web version of the Cap Bar kiosk "Custom Website" flow. Pricing stays hidden until Joshua approves it.
+BUILD = f"""
+<div class="page"><div class="wrap">
+ <div class="page-head"><h1>Design your website free</h1><p class="meta">Pick a style, add your details and watch a live draft of your site appear. When you like it, we build it for real. Made in Memphis by {STUDIO}.</p></div>
+ <link rel="stylesheet" href="{{P}}build/builder.css?v=1">
+ <div id="builder" class="bld">
+  <div class="panel"><ol class="steps" id="steps"></ol><div id="panel"></div>
+   <div class="nav-btns"><button type="button" class="btn btn-ghost" id="back">&larr; Back</button><button type="button" class="btn btn-primary" id="next">Next &rarr;</button></div>
+   <p class="exp">Your draft is saved in this browser so you can come back to it.</p></div>
+  <div class="stage">
+   <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px"><strong>Live preview <span class="tag" id="rev-badge">v1</span></strong>
+    <span><button type="button" class="tab on" data-device="desktop">Desktop</button> <button type="button" class="tab" data-device="mobile">Phone</button></span></div>
+   <div class="tabs" id="tabs"></div>
+   <div id="frame-wrap" class="frame desktop"><div class="chrome"><span>&#9679; &#9679; &#9679;</span><span class="u" id="url">yourbusiness.com</span></div>
+    <iframe id="preview" title="Live preview of your draft website" sandbox=""></iframe></div>
+  </div>
+ </div>
+ <h2 style="margin-top:40px">How it works</h2>
+ <div class="grid contact-grid">
+  <div class="panel"><h3>1. Design it here</h3><p>Choose your business type and style. Your draft updates as you type.</p></div>
+  <div class="panel"><h3>2. We build it</h3><p>We add your real photos, menu or services and make it fast on phones.</p></div>
+  <div class="panel"><h3>3. Go live on your domain</h3><p>We set up your domain and hosting and keep it running. <b>Pricing on request</b>, quoted before anything is charged.</p></div>
+ </div>
+ <p class="lead" style="margin-top:24px">Prefer to try it in person? Look for the Elder World Studio kiosk at The Cap Bar in Memphis.</p>
+ <script src="{{P}}build/builder.js?v=1" defer></script>
+</div></div>
+"""
+page("build/index.html", f"Free Website Builder for Small Businesses | {STUDIO}", "Design a website for your small business free, see a live draft instantly, then have Elder World Studio build it on your own domain. Memphis, TN.", BUILD, "/build/", "build")
 # 404 uses root-absolute links (served for any missing path)
 page("404.html", f"Page not found | {STUDIO}", "Page not found.", NOTFOUND, "/404.html", noindex=True)
 p404 = ROOT / "404.html"
