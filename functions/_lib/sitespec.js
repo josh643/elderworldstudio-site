@@ -177,7 +177,7 @@ export function prompt(inp, current, request) {
 }
 
 // D1-backed limits. Per IP: 8 generations / 10 min and 40 / day. Global: DAILY_CAP_USD (default $3).
-export const LIMITS = { burst: 8, burstWindowMin: 10, perDay: 40 };
+export const LIMITS = { burst: 12, burstWindowMin: 10, perDay: 40 };
 export async function ensureTables(db) {
   await db.batch([db.prepare('CREATE TABLE IF NOT EXISTS ai_rl (k TEXT PRIMARY KEY, n INTEGER NOT NULL, exp INTEGER NOT NULL)'),
     db.prepare('CREATE TABLE IF NOT EXISTS ai_cost (day TEXT PRIMARY KEY, usd REAL NOT NULL DEFAULT 0, calls INTEGER NOT NULL DEFAULT 0)')]);

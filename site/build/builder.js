@@ -26,7 +26,7 @@
     square: { label: 'Square buttons', apply: function (s) { s.mods.round = false; } }
   };
   var clone = function (o) { return JSON.parse(JSON.stringify(o)); };
-  function blank() { return { type: 'bakery', style: 'rustic', name: '', tagline: '', phone: '', address: '', hours: '', pages: ['Home', 'Menu', 'About', 'Contact'], accent: '', mods: {} }; }
+  function blank() { return { type: '', style: 'rustic', name: '', tagline: '', phone: '', address: '', hours: '', pages: ['Home', 'Menu', 'About', 'Contact'], accent: '', mods: {} }; }
   function pageLabel(d, p) { return p === 'Menu' ? (TYPES[d.type] || TYPES.other).menuWord : p; }
 
   /* Render a draft page to a complete static HTML document (shown in a sandboxed, script-less iframe). */
@@ -154,13 +154,36 @@
   function aiInput(seed) { var d = S.d; return { name: d.name, type: d.type, style: d.style, story: d.story || '', vibe: (d.vibes || []).join(', '), tagline: d.tagline, phone: d.phone, address: d.address, hours: d.hours, hasLogo: !!IMG.logo, hasPhoto: !!IMG.photo, seed: seed || 0 }; }
   function ai(body) { body.input = aiInput(body.seed); body.session = S.sid; body.consent = !!S.d.consent; body.nameConsent = !!S.d.nameConsent;
     return fetch('/api/build-ai', { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify(body) }).then(function (r) { return r.json().catch(function () { return { ok: false }; }); }); }
+
+  /* ---- Preview before a design exists: carousel of 5 real AI samples, then the closest sample for the chosen type, then a quick luna design once type + name are in. ---- */
+  var SAMPLES = (typeof window !== 'undefined' && window.EWS_SAMPLES) || [], ci = 0, timer = null, qTimer = null;
+  var TYPE_SAMPLE = { salon: 3, bakery: 1, restaurant: 1, auto: 2, retail: 4, pro: 4 };
+  var QUICK_MAX = 2, QUICK_MS = 1500, QUICK_OFF = typeof location !== 'undefined' && /[?&]quick=0\b/.test(location.search);
+  function sampleIdx() { return S.d.type ? (TYPE_SAMPLE[S.d.type] != null ? TYPE_SAMPLE[S.d.type] : ci % SAMPLES.length) : ci % SAMPLES.length; }
+  function paint() {
+    var f = $('#preview'), u = $('#url'), d = S.d; if (!f) return;
+    var sp = S.spec || S.qspec;
+    if (sp) { f.srcdoc = renderSpec(sp, d, S.page, IMG); f.dataset.mode = S.spec ? (S.specStage || 'full') : 'quick'; u.textContent = (suggestDomain(d.name) || 'yourbusiness.com') + (S.page === 'Home' ? '' : '/' + S.page.toLowerCase()); }
+    else if (SAMPLES.length) { var x = SAMPLES[sampleIdx()]; f.srcdoc = renderSpec(x.spec, { name: x.name, pages: ['Home'] }, 'Home', {}); f.dataset.mode = 'sample'; f.dataset.sample = x.name;
+      u.textContent = (S.d.type ? 'Example AI design · ' : 'AI-designed examples · ') + x.name + (S.d.type ? ' · yours is next' : ''); }
+    else { f.srcdoc = render(d.type ? d : Object.assign({}, d, { type: 'other' }), S.page); f.dataset.mode = 'starter'; }
+    if (!timer && typeof setInterval !== 'undefined') timer = setInterval(function () { if (!S.spec && !S.d.type && SAMPLES.length > 1) { ci++; paint(); } }, 3500);
+  }
+  function quickSoon() {
+    if (QUICK_OFF || S.spec || (S.quick || 0) >= QUICK_MAX) return; clearTimeout(qTimer);
+    qTimer = setTimeout(function () { var d = S.d; if (!d.type || (d.name || '').length < 3 || S.spec || busy) return;
+      S.quick = (S.quick || 0) + 1; busy = true; $('#url').textContent = 'Designing ' + d.name + ' with AI…';
+      ai({ action: 'generate', seed: Math.floor(Math.random() * 99999), spec: null, request: '' }).then(function (j) { busy = false;
+        if (j && j.spec && j.source === 'ai' && !S.spec) { S.spec = j.spec; S.src = 'ai'; S.specStage = 'quick'; save(); paint(); } else paint(); }).catch(function () { busy = false; paint(); });
+    }, QUICK_MS);
+  }
   function design(action, req, retry) {
     if (busy) return; busy = true; S.msg = action === 'edit' ? 'Updating your design…' : 'Designing a site just for ' + (S.d.name || 'you') + '…'; draw();
     var seed = Math.floor(Math.random() * 99999);
     ai({ action: action, seed: seed, spec: S.spec || null, request: req || '' }).then(function (j) {
       busy = false; S.msg = '';
       if (j && j.source === 'fallback' && (j.reason === 'error' || j.reason === 'invalid') && !retry) { setTimeout(function () { design(action, req, true); }, 800); return; }
-      if (j && j.spec) { if (S.spec) S.revs.push({ label: action === 'edit' ? 'Change: ' + req : action === 'regenerate' ? 'Fresh design' : 'New design', before: clone(S.d), spec: clone(S.spec), src: S.src }); S.spec = j.spec; S.src = j.source; if (j.source === 'fallback') S.msg = j.error || 'Our AI designer is busy, so this is a starter layout. Try Regenerate in a bit.'; }
+      if (j && j.spec) { if (S.spec) S.revs.push({ label: action === 'edit' ? 'Change: ' + req : action === 'regenerate' ? 'Fresh design' : 'New design', before: clone(S.d), spec: clone(S.spec), src: S.src }); S.spec = j.spec; S.src = j.source; S.specStage = 'full'; S.qspec = null; if (j.source === 'fallback') S.msg = j.error || 'Our AI designer is busy, so this is a starter layout. Try Regenerate in a bit.'; }
       else S.msg = (j && j.error) || 'Could not reach the designer. Showing a starter layout.';
       draw();
     }).catch(function () { busy = false; S.msg = 'Could not reach the designer. Showing a starter layout.'; draw(); });
@@ -184,7 +207,7 @@
     if (S.step === 1) h = '<h2>Pick a style</h2><div class="tiles">' + Object.keys(STYLES).map(function (k) { var s = STYLES[k]; return '<button type="button" class="tile sty' + (d.style === k ? ' on' : '') + '" data-style="' + k + '"><i style="background:' + s.hero + '"></i>' + s.label + '</button>'; }).join('') + '</div><h3>Which pages do you need?</h3><div>' + PAGES.map(function (p) { return chip('page', p, esc(pageLabel(d, p)), d.pages.indexOf(p) >= 0); }).join('') + '</div>';
     if (S.step === 2) h = '<h2>Tell us about your business</h2><div class="form">' +
       '<label>Business name *<input id="f-name" maxlength="80" value="' + esc(d.name) + '" placeholder="Bluff City Bakery" autocomplete="organization"></label>' +
-      '<label>Tagline<input id="f-tagline" maxlength="120" value="' + esc(d.tagline) + '" placeholder="' + esc(TYPES[d.type].tagline) + '"></label>' +
+      '<label>Tagline<input id="f-tagline" maxlength="120" value="' + esc(d.tagline) + '" placeholder="' + esc((TYPES[d.type] || TYPES.other).tagline) + '"></label>' +
       '<label>Phone<input id="f-phone" maxlength="40" value="' + esc(d.phone) + '" placeholder="(901) 555-0100" autocomplete="tel"></label>' +
       '<label>Address or area<input id="f-address" maxlength="120" value="' + esc(d.address) + '" placeholder="Memphis, TN"></label>' +
       '<label>Hours<input id="f-hours" maxlength="80" value="' + esc(d.hours) + '" placeholder="Mon–Sat 8am–6pm"></label></div><p class="err" id="err" hidden>Please add your business name.</p>';
@@ -222,7 +245,7 @@
     $('#frame-wrap').className = 'frame ' + S.device;
     root.querySelectorAll('[data-device]').forEach(function (b) { b.classList.toggle('on', b.dataset.device === S.device); });
     $('#url').textContent = (suggestDomain(d.name) || 'yourbusiness.com') + (S.page === 'Home' ? '' : '/' + S.page.toLowerCase());
-    $('#preview').srcdoc = S.spec ? renderSpec(S.spec, d, S.page, IMG) : render(d, S.page);
+    paint();
     $('#rev-badge').textContent = 'v' + (S.revs.length + 1);
     save();
   }
@@ -240,14 +263,14 @@
     else if (b.id === 'ask') { var q = ($('#f-ask').value || '').trim(); if (!q || !S.spec) return; design('edit', q); return; }
     else if (b.dataset.change) { S.revs.push({ label: CHANGES[b.dataset.change].label, before: clone(S.d) }); CHANGES[b.dataset.change].apply(S.d); }
     else if (b.id === 'undo') { var r = S.revs.pop(); if (r) { S.d = r.before; if (r.spec) { S.spec = r.spec; S.src = r.src; } S.msg = ''; } }
-    else if (b.id === 'next') { if (S.step === 2) { readDetails(); if (!S.d.name) { $('#err').hidden = false; $('#f-name').focus(); return; } } if (S.step === 3) { readStory(); if (S.d.story.length < 10) { $('#err').hidden = false; $('#f-story').focus(); return; } S.step = 4; S.revs = []; S.spec = null; draw(); design('generate'); window.scrollTo(0, root.offsetTop - 70); return; } S.step = Math.min(5, S.step + 1); window.scrollTo(0, root.offsetTop - 70); }
+    else if (b.id === 'next') { if (S.step === 0 && !S.d.type) { var t0 = root.querySelector('.tile'); if (t0) t0.focus(); return; } if (S.step === 2) { readDetails(); if (!S.d.name) { $('#err').hidden = false; $('#f-name').focus(); return; } } if (S.step === 3) { readStory(); if (S.d.story.length < 10) { $('#err').hidden = false; $('#f-story').focus(); return; } S.step = 4; S.revs = []; S.qspec = S.specStage === 'quick' ? S.spec : null; S.spec = null; draw(); design('generate'); window.scrollTo(0, root.offsetTop - 70); return; } S.step = Math.min(5, S.step + 1); window.scrollTo(0, root.offsetTop - 70); }
     else if (b.id === 'back') { if (S.step === 2) readDetails(); if (S.step === 3) readStory(); S.step = Math.max(0, S.step - 1); }
-    else if (b.id === 'restart') { S = { step: 0, d: blank(), revs: [], page: 'Home', device: S.device, sid: 'w' + Date.now().toString(36) + Math.random().toString(36).slice(2, 10) }; IMG = {}; }
+    else if (b.id === 'restart') { S = { quick: S.quick, step: 0, d: blank(), revs: [], page: 'Home', device: S.device, sid: 'w' + Date.now().toString(36) + Math.random().toString(36).slice(2, 10) }; IMG = {}; }
     else return;
     draw();
   });
   root.addEventListener('input', function (e) {
-    if (e.target.id && e.target.id.indexOf('f-') === 0 && e.target.id !== 'f-accent') { readDetails(); $('#preview').srcdoc = S.spec ? renderSpec(S.spec, S.d, S.page, IMG) : render(S.d, S.page); $('#url').textContent = suggestDomain(S.d.name) || 'yourbusiness.com'; save(); }
+    if (e.target.id && e.target.id.indexOf('f-') === 0 && e.target.id !== 'f-accent') { readDetails(); paint(); save(); if (e.target.id === 'f-name') quickSoon(); }
   });
   root.addEventListener('change', function (e) {
     if (e.target.id === 'f-accent') { S.revs.push({ label: 'Accent color ' + e.target.value, before: clone(S.d), spec: S.spec ? clone(S.spec) : null, src: S.src }); S.d.accent = e.target.value; if (S.spec && /^#[0-9a-f]{6}$/i.test(e.target.value)) S.spec.palette.accent = e.target.value; draw(); }
@@ -267,6 +290,6 @@
       .then(function (j) { if (!j.ok) throw new Error(j.error || 'Could not send right now.'); S.sent = j.id; if (S.spec) ai({ action: 'outcome', outcome: 'lead', spec: S.spec }).catch(function () {}); draw(); })
       .catch(function (x) { err.textContent = x.message + ' You can also email annaews@agentmail.to.'; err.hidden = false; btn.disabled = false; btn.textContent = 'Request my site'; });
   });
-  S.t0 = S.t0 || Date.now(); S.sent = S.step === 5 ? S.sent : null; busy = false; if (S.step === 4 && !S.spec) design('generate');
+  S.t0 = S.t0 || Date.now(); S.sent = S.step === 5 ? S.sent : null; busy = false; if (S.step === 4 && (!S.spec || S.specStage === 'quick')) design('generate');
   draw();
 })();

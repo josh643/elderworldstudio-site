@@ -18,9 +18,9 @@ BIZ = [
        story='Nail salon with a calm, pretty space. Gel manicures, spa pedicures, hand-painted nail art and lash lifts. Walk-ins welcome, appointments preferred.', logo=False, consent=False),
   dict(slug='hardware', type='retail', style='rustic', name='Hillcrest Hardware', phone='(555) 555-0177', address='Hillcrest', vibes=['Classic', 'Bold'],
        story='Family hardware store since 1972. Tools, paint mixing, plumbing and electrical parts, key cutting and cut-to-size lumber. Ask us anything.', logo=False, consent=False)]
-SPECS = {}; COSTS = []; LOG = []
+SPECS = {}; COSTS = []; LOG = []; AFTER1 = {}; QUICK = {}
 async def wait_design(pg, timeout=150000):
-    await pg.wait_for_function("() => { const s = JSON.parse(localStorage.getItem('ews-builder-draft-v2') || '{}'); return s.spec && !document.querySelector('#regen[disabled]'); }", timeout=timeout)
+    await pg.wait_for_function("() => { const s = JSON.parse(localStorage.getItem('ews-builder-draft-v2') || '{}'); return s.spec && s.specStage === 'full' && !document.querySelector('#regen[disabled]'); }", timeout=timeout)
 async def run(b, biz, device):
     mobile = device == 'phone'; vp = {'width': 390, 'height': 844} if mobile else {'width': 1366, 'height': 900}
     ctx = await b.new_context(viewport=vp, device_scale_factor=2 if mobile else 1, is_mobile=mobile, has_touch=mobile)
@@ -37,11 +37,29 @@ async def run(b, biz, device):
             SPECS[(biz['slug'], body['action'])] = j.get('spec'); COSTS.append((biz['slug'], body['action'], j.get('source'), j.get('cost'), j.get('reason'), j.get('invalid'), j.get('detail'), j.get('model')))
         await route.fulfill(status=resp.status, json=j)
     await pg.route('**/api/build-ai', on_ai)
-    await pg.goto(BASE + 'build/', wait_until='networkidle'); await pg.evaluate('localStorage.clear()'); await pg.reload(wait_until='networkidle')
+    idx = BIZ.index(biz); quick = idx < 2
+    await pg.goto(BASE + 'build/' + ('' if quick else '?quick=0'), wait_until='networkidle'); await pg.evaluate('localStorage.clear()'); await pg.reload(wait_until='networkidle')
     pf = pg.frame_locator('#preview')
+    # start state: real AI sample designs rotate, not a placeholder template
+    assert await pg.get_attribute('#preview', 'data-mode') == 'sample'
+    if idx == 0:
+        s0 = await pg.get_attribute('#preview', 'data-sample')
+        if mobile: await pg.screenshot(path=f"{OUT}start-{device}.png")
+        await pg.wait_for_function("s => document.querySelector('#preview').dataset.sample !== s", arg=s0, timeout=8000)
     await pg.click(f"[data-type={biz['type']}]"); await pg.click('#next')
+    AFTER1[(biz['slug'], device)] = (await pg.get_attribute('#preview', 'data-sample'), await pg.get_attribute('#preview', 'srcdoc'))
+    assert await pg.get_attribute('#preview', 'data-mode') == 'sample'
+    if mobile and biz['slug'] in ('barbershop', 'autoshop', 'hardware'): await pg.screenshot(path=f"{OUT}{biz['slug']}-after-step1-{device}.png")
     await pg.click(f"[data-style={biz['style']}]"); await pg.click('[data-page=Gallery]'); await pg.click('#next')
-    await pg.fill('#f-name', biz['name']); await pg.fill('#f-address', biz['address'])
+    await pg.fill('#f-name', biz['name'])
+    if quick:  # quick luna design as soon as type + name are in, before the story step
+        await pg.wait_for_function("() => document.querySelector('#preview').dataset.mode === 'quick'", timeout=90000)
+        QUICK[(biz['slug'], device)] = True
+        assert biz['name'] in await pf.locator('header').inner_text()
+        if mobile: await pg.screenshot(path=f"{OUT}{biz['slug']}-quick-{device}.png")
+    else:
+        await pg.wait_for_timeout(1800); assert await pg.get_attribute('#preview', 'data-mode') == 'sample', 'quick=0 stays on sample'
+    await pg.fill('#f-address', biz['address'])
     if biz['phone']: await pg.fill('#f-phone', biz['phone'])
     await pg.click('#next')
     await pg.click('#next'); assert await pg.is_visible('#err'), 'story required'
@@ -91,6 +109,10 @@ async def main():
         for device in ['desktop', 'phone']:
             for biz in BIZ: await run(b, biz, device); print('ok', biz['slug'], device, flush=True)
         await b.close()
+    for dev in ['desktop', 'phone']:
+        a, b2 = AFTER1[('barbershop', dev)], AFTER1[('autoshop', dev)]
+        assert a[0] != b2[0] and a[1] != b2[1], ('preview after step 1 same for two types', dev)
+        assert QUICK.get(('barbershop', dev)) and QUICK.get(('bakery', dev)), 'quick designs'
     by = {}
     for s, d, h in LOG: by.setdefault(d, set()).add(h)
     assert all(len(v) == len(BIZ) for v in by.values()), ('designs not distinct', LOG)
