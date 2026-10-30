@@ -16,3 +16,7 @@ table.t{width:100%;border-collapse:collapse;margin-top:12px}table.t td,table.t t
 .err{color:#FF8FA3}.ok{color:#7CF5C6}.nav a[aria-current=page]{color:var(--accent)}
 .card{display:flex;flex-direction:column;gap:6px}.card .btn{align-self:flex-start;margin-top:auto}
 .acct h2{margin:28px 0 8px}
+
+.plans{grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
+@media (max-width:640px){.grid,.plans{grid-template-columns:1fr}.card{min-width:0;overflow-wrap:anywhere}}
+@media (max-width:640px){table.t{display:block;max-width:100%;overflow-x:auto}}

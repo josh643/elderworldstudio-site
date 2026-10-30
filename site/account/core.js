@@ -4,7 +4,11 @@ export const PLANS = {
   business: { name: 'Business', setup: 699, monthly: 39 },
   plus: { name: 'Plus', setup: 1299, monthly: 69 },
 };
-export const DOMAIN_FEE = 'Domains at registrar cost + $2/yr';
+// Internal pricing only: customer price = current .com registrar cost (~$10.44/yr) + $2, rounded up to a whole dollar.
+// Never show the formula to customers.
+const COM_REGISTRAR_COST = 10.44;
+export const DOMAIN_PRICE_YR = Math.ceil(COM_REGISTRAR_COST + 2);
+export const DOMAIN_FEE = `Custom domain: from $${DOMAIN_PRICE_YR}/yr`;
 export const PRODUCTS = [
   { kind: 'web_builder', name: 'AI Website', blurb: 'Your AI-built website, unique to your business.', href: '#/sites' },
   { kind: 'receptionist', name: 'AI Receptionist', blurb: 'Answers calls, texts and chat; books appointments. Part of Agent OS.', href: '#/dashboard' },

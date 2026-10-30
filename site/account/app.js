@@ -54,7 +54,7 @@ const views = {
     const list = await api.sites();
     app.innerHTML = `<h1>Your websites</h1><p class="muted">Sites made with the EWS AI website builder.</p>
       ${list.length ? `<table class="t"><thead><tr><th>Site</th><th>Domain</th><th>Plan</th><th>Status</th></tr></thead><tbody>${list.map((x) => `<tr><td>${esc(x.name)}</td><td>${esc(x.domain || '—')}</td><td>${esc(PLANS[x.plan]?.name || x.plan)}</td><td><span class="badge ${esc(x.status)}">${esc(x.status)}</span></td></tr>`).join('')}</tbody></table>` : `<p class="card">No sites yet. <a href="/build/">Start one with the builder</a>.</p>`}
-      <h2>Plans</h2><div class="grid">${Object.values(PLANS).map((p) => `<div class="card"><h3>${p.name}</h3><p>$${p.setup.toLocaleString()} setup + $${p.monthly}/mo</p></div>`).join('')}</div><p class="muted">${DOMAIN_FEE}.</p>`;
+      <h2>Plans</h2><div class="grid plans" id="plans">${Object.values(PLANS).map((p) => `<div class="card"><h3>${p.name}</h3><p>$${p.setup.toLocaleString()} setup + $${p.monthly}/mo</p></div>`).join('')}</div><p class="muted">${DOMAIN_FEE}.</p>`;
   },
   async billing() {
     const inv = await api.invoices();

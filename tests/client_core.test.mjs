@@ -33,3 +33,7 @@ test('client-config never returns a secret key', async () => {
   assert.deepEqual(await g({ SUPABASE_URL: 'https://x.supabase.co', SUPABASE_PUBLISHABLE_KEY: jwt('service_role') }), { mode: 'demo' });
   assert.equal((await g({ SUPABASE_URL: 'https://x.supabase.co', SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_ok' })).supabaseKey, 'sb_publishable_ok');
 });
+test('domain price is a flat customer price with no markup wording', () => {
+  assert.equal(c.DOMAIN_PRICE_YR, 13); assert.equal(c.DOMAIN_FEE, 'Custom domain: from $13/yr');
+  assert.doesNotMatch(c.DOMAIN_FEE, /registrar|cost|\+|markup/i);
+});

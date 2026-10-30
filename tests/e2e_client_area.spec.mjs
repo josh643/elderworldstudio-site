@@ -37,3 +37,18 @@ test('mobile layout has no horizontal overflow', async ({ browser }) => {
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
   await shot(page, '08-dashboard-mobile');
 });
+
+test('sites plans stack on mobile and never show domain markup', async ({ browser }) => {
+  const page = await (await browser.newContext({ viewport: { width: 360, height: 780 } })).newPage();
+  await page.goto(BASE + '/account/'); await page.fill('#email', 'p@example.com'); await page.click('button[type=submit]'); await page.click('#demo-link');
+  await expect(page.locator('#products .card')).toHaveCount(5);
+  await page.evaluate(() => { location.hash = '#/sites'; });
+  const cards = page.locator('#plans .card'); await expect(cards.first()).toBeVisible();
+  const boxes = await cards.evaluateAll((els) => els.map((e) => e.getBoundingClientRect()).map((r) => ({ l: r.left, r: r.right, t: r.top })));
+  for (const b of boxes) { expect(b.r).toBeLessThanOrEqual(360 + 1); expect(b.l).toBeGreaterThanOrEqual(0); }
+  for (let i = 1; i < boxes.length; i++) expect(boxes[i].t).toBeGreaterThan(boxes[i - 1].t);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
+  const text = await page.locator('body').innerText();
+  expect(text).not.toMatch(/registrar|at cost|\+\s*\$2|markup/i); expect(text).toMatch(/Custom domain: from \$\d+\/yr/);
+  await shot(page, '09-sites-plans-mobile');
+});
