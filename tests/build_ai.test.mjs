@@ -147,3 +147,8 @@ test('every selected page renders content even if the AI skipped that section ki
   for (const p of d.pages) assert.match(B.renderSpec(s, d, p), /<section class="s /, p);
   assert.ok(B.renderSpec(s, d, 'Gallery').includes('class="gal"'));
 });
+test('api retries once when the model output is cut off, and counts both calls in the cost', async () => {
+  let n = 0; const db = memD1(), AI = { run: async () => (++n === 1 ? { response: '{"palette": {"bg": "#fff' } : { response: good(), neurons: 500 }) };
+  const j = await (await onRequestPost({ request: req({ input: inp() }), env: { AI, BUILD_LEADS: db } })).json();
+  assert.equal(n, 2); assert.equal(j.source, 'ai'); assert.equal([...db.cost.values()][0].calls, 2);
+});

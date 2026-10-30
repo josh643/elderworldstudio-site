@@ -15,7 +15,7 @@ BIZ = [
   dict(slug='capshop', type='retail', style='minimal', name='Midsouth Lids', phone='', address='Cooper-Young, Memphis, TN', vibes=['Bold', 'Modern'],
        story='Fitted caps and custom embroidery for Memphis teams, crews and events. Streetwear energy, quick turnaround, embroidery done in-house.', logo=False, consent=False)]
 SPECS = {}; COSTS = []; LOG = []
-async def wait_design(pg, timeout=90000):
+async def wait_design(pg, timeout=150000):
     await pg.wait_for_function("() => { const s = JSON.parse(localStorage.getItem('ews-builder-draft-v2') || '{}'); return s.spec && !document.querySelector('#regen[disabled]'); }", timeout=timeout)
 async def run(b, biz, device):
     mobile = device == 'phone'; vp = {'width': 390, 'height': 844} if mobile else {'width': 1366, 'height': 900}
@@ -28,10 +28,10 @@ async def run(b, biz, device):
         if mobile or MOCK_AI:
             if body.get('action') == 'outcome': return await route.fulfill(json={'ok': True, 'stored': False})
             return await route.fulfill(json={'ok': True, 'source': 'ai', 'spec': SPECS.get((biz['slug'], body.get('action')), SPECS.get((biz['slug'], 'generate'))) or {}, 'cost': 0})
-        resp = await route.fetch(); j = await resp.json()
+        resp = await route.fetch(timeout=120000); j = await resp.json()
         if body.get('action') != 'outcome':
-            SPECS[(biz['slug'], body['action'])] = j.get('spec'); COSTS.append((biz['slug'], body['action'], j.get('source'), j.get('cost')))
-        await route.fulfill(response=resp, json=j)
+            SPECS[(biz['slug'], body['action'])] = j.get('spec'); COSTS.append((biz['slug'], body['action'], j.get('source'), j.get('cost'), j.get('reason'), j.get('invalid')))
+        await route.fulfill(status=resp.status, json=j)
     await pg.route('**/api/build-ai', on_ai)
     await pg.goto(BASE + 'build/', wait_until='networkidle'); await pg.evaluate('localStorage.clear()'); await pg.reload(wait_until='networkidle')
     pf = pg.frame_locator('#preview')
@@ -47,6 +47,7 @@ async def run(b, biz, device):
     if biz['consent']: await pg.check('#f-consent'); await pg.check('#f-nameconsent')
     assert await pg.input_value('#f-story') == biz['story'], 'story survives redraw'
     await pg.click('#next'); await wait_design(pg)
+    if not (mobile or MOCK_AI): assert COSTS[-1][2] == 'ai', ('AI fell back', COSTS[-1])
     gen = calls[-1]; assert gen['action'] == 'generate' and gen['input']['story'] == biz['story'] and gen['consent'] is biz['consent']
     assert 'data:image' not in json.dumps(gen), 'images never leave the browser'
     assert gen['input']['hasLogo'] is biz['logo']

@@ -2,8 +2,8 @@
 // actions: generate | regenerate | edit (needs spec + request) | outcome (training log only). Limits + daily $ cap in D1 (BUILD_LEADS).
 import { parseInput, validateSpec, fallbackSpec, prompt, SCHEMA, MODEL, costUSD, checkLimits, addCost, direction, applyDirection, ensureTables, cleanText, trainRow, logTrain } from '../_lib/sitespec.js';
 const json = (o, s = 200) => Response.json(o, { status: s, headers: { 'Cache-Control': 'no-store' } });
-export async function runModel(env, messages) {
-  const r = await env.AI.run(MODEL, { messages, response_format: { type: 'json_schema', json_schema: SCHEMA }, max_tokens: 1800, temperature: 0.9 });
+export async function runModel(env, messages, temperature = 0.9) {
+  const r = await env.AI.run(MODEL, { messages, response_format: { type: 'json_schema', json_schema: SCHEMA }, max_tokens: 3000, temperature });
   let raw = r && (r.response ?? r.choices?.[0]?.message?.content);
   if (typeof raw === 'string') { raw = raw.replace(/^```(?:json)?|```$/g, '').trim(); raw = JSON.parse(raw); }
   return { raw, usage: r && r.usage };
@@ -30,9 +30,13 @@ export async function onRequestPost({ request, env }) {
   if (!lim.ok) return json({ ...fb(lim.reason), error: lim.reason === 'rate' ? 'You’re going fast! Try again in a few minutes.' : 'Our designer is resting for today. Here’s a starter layout.' }, lim.reason === 'rate' ? 429 : 200);
   let out;
   try {
-    const { raw, usage } = await runModel(env, prompt(inp, action === 'edit' ? prev : null, request_));
-    const cost = costUSD(usage); await addCost(db, lim.day, cost);
-    const v = validateSpec(raw);
+    const msgs = prompt(inp, action === 'edit' ? prev : null, request_);
+    let v = { ok: false, errors: ['no output'] }, cost = 0;
+    for (const t of [0.9, 0.5]) { // one retry at lower temperature if the model output is cut off or invalid
+      try { const { raw, usage } = await runModel(env, msgs, t); const c = costUSD(usage); cost += c; await addCost(db, lim.day, c); v = validateSpec(raw); }
+      catch (e) { cost += costUSD(null); await addCost(db, lim.day, costUSD(null)); v = { ok: false, errors: [String(e && e.message || e).slice(0, 80)] }; }
+      if (v.ok) break;
+    }
     if (v.ok && action !== 'edit') applyDirection(v.spec, direction(inp));
     out = v.ok ? { ok: true, source: 'ai', spec: v.spec, cost: Number(cost.toFixed(5)) } : { ...fb('invalid'), invalid: v.errors };
   } catch (e) { out = fb('error'); }
