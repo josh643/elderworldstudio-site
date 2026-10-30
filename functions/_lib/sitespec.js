@@ -46,7 +46,8 @@ export function validateSpec(raw) {
   if (!headline) errors.push('empty headline');
   const spec = { palette, fonts: { head: pick(f.head, Object.keys(FONTS), 'inter'), body: pick(f.body, Object.keys(FONTS), 'inter') }, hero: pick(raw.hero, HERO, 'center'),
     radius: Math.max(0, Math.min(32, parseInt(raw.radius, 10) || 8)), headline, subhead: cleanText(raw.subhead, 200), about: cleanText(raw.about, 700),
-    tone: cleanText(raw.tone, 80), imagery: cleanText(raw.imagery, 240), cta: { label: cleanText(raw.cta && raw.cta.label, 30) || 'Get in touch', note: cleanText(raw.cta && raw.cta.note, 120) }, sections };
+    tone: cleanText(raw.tone, 80), imagery: cleanText(raw.imagery, 240), cta: { label: cleanText(raw.cta && raw.cta.label, 30) || 'Get in touch', note: cleanText(raw.cta && raw.cta.note, 120) }, sections,
+    layout: pick(raw.layout, ['grid', 'editorial', 'split'], 'grid'), mood: cleanText(raw.mood, 30) };
   return { ok: errors.length === 0, spec, errors };
 }
 
@@ -81,40 +82,87 @@ export function costUSD(usage) {
 // Per-business design direction: deterministic from the business itself + the regenerate seed, so two shops never get the same skeleton
 // and Regenerate really changes it. The model writes copy and tunes the palette inside this direction.
 const DIRECTIONS = [
-  { mood: 'warm heritage', hues: ['#7a2e1f', '#c8963e'], bg: 'light', fonts: ['dmserif', 'worksans'], hero: 'split' },
-  { mood: 'dark luxe', hues: ['#c9a227', '#3b2a1a'], bg: 'dark', fonts: ['cormorant', 'inter'], hero: 'full' },
-  { mood: 'street bold', hues: ['#e63946', '#1d3557'], bg: 'light', fonts: ['archivo', 'inter'], hero: 'banner' },
-  { mood: 'neon night', hues: ['#00e5ff', '#ff2bd6'], bg: 'dark', fonts: ['bebas', 'space'], hero: 'full' },
-  { mood: 'soft pastel', hues: ['#e8899e', '#8fb9a8'], bg: 'light', fonts: ['fraunces', 'nunito'], hero: 'center' },
-  { mood: 'clean modern', hues: ['#2f6df6', '#0f172a'], bg: 'light', fonts: ['space', 'inter'], hero: 'minimal' },
-  { mood: 'earthy craft', hues: ['#6b8f3a', '#8a5a2b'], bg: 'light', fonts: ['lora', 'worksans'], hero: 'split' },
-  { mood: 'vintage sign', hues: ['#d1495b', '#00798c'], bg: 'light', fonts: ['pacifico', 'nunito'], hero: 'banner' },
-  { mood: 'editorial', hues: ['#111111', '#b08968'], bg: 'light', fonts: ['playfair', 'inter'], hero: 'minimal' },
-  { mood: 'sporty', hues: ['#0b6e4f', '#f2a541'], bg: 'dark', fonts: ['oswald', 'poppins'], hero: 'split' },
-  { mood: 'sunny local', hues: ['#f4a259', '#5b8e7d'], bg: 'light', fonts: ['poppins', 'nunito'], hero: 'center' },
-  { mood: 'blues & brick', hues: ['#1f4e79', '#a23e2a'], bg: 'dark', fonts: ['dmserif', 'worksans'], hero: 'full' }];
+  { mood: 'warm heritage', hues: ['#7a2e1f', '#c8963e'], bg: 'light', fonts: ['dmserif', 'worksans'], hero: 'split', layout: 'editorial' },
+  { mood: 'garage steel', hues: ['#ff5a1f', '#1c2630'], bg: 'dark', fonts: ['archivo', 'inter'], hero: 'banner', layout: 'grid' },
+  { mood: 'workshop yellow', hues: ['#ffc300', '#111111'], bg: 'light', fonts: ['oswald', 'worksans'], hero: 'split', layout: 'grid' },
+  { mood: 'glam blush', hues: ['#d63384', '#2b1a2f'], bg: 'light', fonts: ['cormorant', 'nunito'], hero: 'minimal', layout: 'split' },
+  { mood: 'dark luxe', hues: ['#c9a227', '#3b2a1a'], bg: 'dark', fonts: ['cormorant', 'inter'], hero: 'full', layout: 'editorial' },
+  { mood: 'street bold', hues: ['#e63946', '#1d3557'], bg: 'light', fonts: ['archivo', 'inter'], hero: 'banner', layout: 'grid' },
+  { mood: 'neon night', hues: ['#00e5ff', '#ff2bd6'], bg: 'dark', fonts: ['bebas', 'space'], hero: 'full', layout: 'grid' },
+  { mood: 'soft pastel', hues: ['#e8899e', '#8fb9a8'], bg: 'light', fonts: ['fraunces', 'nunito'], hero: 'center', layout: 'split' },
+  { mood: 'clean modern', hues: ['#2f6df6', '#0f172a'], bg: 'light', fonts: ['space', 'inter'], hero: 'minimal', layout: 'split' },
+  { mood: 'earthy craft', hues: ['#6b8f3a', '#8a5a2b'], bg: 'light', fonts: ['lora', 'worksans'], hero: 'split', layout: 'editorial' },
+  { mood: 'vintage sign', hues: ['#d1495b', '#00798c'], bg: 'light', fonts: ['pacifico', 'nunito'], hero: 'banner', layout: 'grid' },
+  { mood: 'editorial', hues: ['#111111', '#b08968'], bg: 'light', fonts: ['playfair', 'inter'], hero: 'minimal', layout: 'editorial' },
+  { mood: 'sporty', hues: ['#0b6e4f', '#f2a541'], bg: 'dark', fonts: ['oswald', 'poppins'], hero: 'split', layout: 'grid' },
+  { mood: 'sunny local', hues: ['#f4a259', '#5b8e7d'], bg: 'light', fonts: ['poppins', 'nunito'], hero: 'center', layout: 'split' },
+  { mood: 'blues & brick', hues: ['#1f4e79', '#a23e2a'], bg: 'dark', fonts: ['dmserif', 'worksans'], hero: 'full', layout: 'split' }];
 const ORDERS = { menu: [['menu', 'story', 'gallery', 'testimonials', 'hours', 'map'], ['story', 'menu', 'testimonials', 'gallery', 'booking'], ['gallery', 'menu', 'stats', 'testimonials', 'faq', 'hours']],
   services: [['services', 'testimonials', 'about', 'booking', 'map'], ['stats', 'services', 'gallery', 'testimonials', 'hours'], ['about', 'gallery', 'services', 'faq', 'booking'], ['services', 'gallery', 'story', 'testimonials', 'hours', 'map']] };
 const MOODWORDS = { 'dark luxe': /upscale|luxur|premium|high.end|elegant/i, 'street bold': /street|bold|hip.?hop|urban|crew|team/i, 'neon night': /neon|night|club|bar|gaming|late/i,
   'soft pastel': /sweet|cake|cupcake|pastel|cute|floral|nail|lash/i, 'clean modern': /modern|minimal|tech|clean/i, 'earthy craft': /sourdough|organic|plant|garden|craft|natural|farm/i,
   'vintage sign': /old.?school|vintage|retro|classic|since 19/i, editorial: /boutique|design|studio|gallery|art/i, sporty: /sport|grizzl|fitness|gym|fitted|cap/i,
   'warm heritage': /family|heritage|tradition|soul|bbq|barbecue/i, 'sunny local': /friendly|family.friendly|playful|fun|kids/i, 'blues & brick': /memphis|blues|beale|music/i };
+export const LAYOUTS = ['grid', 'editorial', 'split'];
+// Industry -> preferred moods, checked against type + name + owner's words before generic mood words.
+const INDUSTRY = [[/auto|repair|mechanic|garage|brake|tire|oil change|collision/i, ['garage steel', 'street bold', 'clean modern']],
+  [/hardware|lumber|tools?\b|paint|plumb|feed store|supply/i, ['workshop yellow', 'vintage sign', 'warm heritage']],
+  [/nail|lash|brow|spa\b|beauty|manicure|pedicure|esthetic/i, ['glam blush', 'soft pastel', 'dark luxe']],
+  [/barber|fade|shave/i, ['neon night', 'vintage sign', 'street bold', 'dark luxe']],
+  [/bak|bread|pastry|sourdough|cafe|café|coffee|donut/i, ['earthy craft', 'warm heritage', 'soft pastel']],
+  [/bbq|barbecue|restaurant|grill|kitchen|diner/i, ['warm heritage', 'blues & brick', 'neon night']],
+  [/gym|fitness|yoga|sport/i, ['sporty', 'clean modern', 'neon night']]];
 function h32(str) { let h = 2166136261; for (const c of String(str)) { h ^= c.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; }
-export function direction(inp) {
-  const text = [inp.vibe, inp.story, inp.tagline, inp.type].join(' '), r = h32(inp.name + '|' + inp.type + '|' + (inp.seed || 0));
-  const matches = DIRECTIONS.filter(d => MOODWORDS[d.mood] && MOODWORDS[d.mood].test(text));
-  const pool = matches.length && !inp.seed ? matches : matches.length && r % 3 ? matches : DIRECTIONS;
-  const dir = pool[r % pool.length], kind = /bakery|restaurant|cafe|food/.test(inp.type) ? 'menu' : 'services', orders = ORDERS[kind];
-  const heroes = [dir.hero, ...HERO.filter(x => x !== dir.hero)];
-  return { ...dir, hero: inp.seed ? heroes[(r >> 5) % heroes.length] : dir.hero, order: orders[(r >> 9) % orders.length].map(k => (k === 'menu' && kind !== 'menu' ? 'services' : k)), radius: [0, 4, 10, 18, 28][(r >> 13) % 5] };
+export function candidates(inp) {
+  const text = [inp.type, inp.name, inp.vibe, inp.story, inp.tagline].join(' '), r = h32(inp.name + '|' + inp.type + '|' + (inp.seed || 0));
+  const ind = (INDUSTRY.find(([re]) => re.test(text)) || [null, []])[1];
+  const mood = DIRECTIONS.filter(d => MOODWORDS[d.mood] && MOODWORDS[d.mood].test(text)).map(d => d.mood);
+  const rot = (a, k) => a.length ? a.slice(k % a.length).concat(a.slice(0, k % a.length)) : a;
+  const names = [...new Set([...rot(ind, inp.seed || 0), ...rot(mood, r), ...rot(DIRECTIONS.map(d => d.mood), r)])];
+  const kind = /bakery|restaurant|cafe|food/.test(inp.type) ? 'menu' : 'services', orders = ORDERS[kind];
+  return names.map((m, i) => { const dir = DIRECTIONS.find(d => d.mood === m), heroes = [dir.hero, ...HERO.filter(x => x !== dir.hero)], q = h32(m + r + i);
+    return { ...dir, hero: inp.seed ? heroes[(q >>> 5) % 2] : dir.hero, order: orders[(q >>> 9) % orders.length].map(k => (k === 'menu' && kind !== 'menu' ? 'services' : k)), radius: [0, 4, 10, 18, 28][(q >>> 13) % 5] }; });
+}
+export function direction(inp) { return candidates(inp)[0]; }
+// Palette: keep the AI's colors only if they match the direction's light/dark mode and anchor hue; else derive from the direction.
+const pRgb = h => { const n = parseInt(h.slice(1), 16); return [n >> 16, (n >> 8) & 255, n & 255]; };
+const pHex = c => '#' + c.map(x => Math.max(0, Math.min(255, Math.round(x))).toString(16).padStart(2, '0')).join('');
+const pMix = (a, b, t) => pHex(pRgb(a).map((x, i) => x + (pRgb(b)[i] - x) * t));
+export function hue(h) { const [r, g, b] = pRgb(h).map(x => x / 255), mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn; if (!d) return -1;
+  const x = mx === r ? ((g - b) / d) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4; return (x * 60 + 360) % 360; }
+const hueGap = (a, b) => (a < 0 || b < 0 ? (a === b ? 0 : 180) : Math.min(Math.abs(a - b), 360 - Math.abs(a - b)));
+export const isDark = h => lum(h) < 0.18;
+function fitPalette(P, dir) {
+  const wantDark = dir.bg === 'dark', a = dir.hues[0], b = dir.hues[1];
+  if (isDark(P.bg) === wantDark && hueGap(hue(P.accent), hue(a)) < 40) return P;
+  return wantDark ? { bg: pMix(b, '#000000', 0.7), surface: pMix(b, '#000000', 0.5), ink: '#f5f3ee', accent: a, accent2: pMix(b, '#ffffff', 0.15) }
+    : { bg: pMix(a, '#ffffff', 0.95), surface: pMix(a, '#ffffff', 0.85), ink: pMix(b, '#000000', 0.55), accent: a, accent2: b };
 }
 export function applyDirection(spec, dir) {
-  spec.hero = dir.hero; spec.fonts = { head: dir.fonts[0], body: dir.fonts[1] }; spec.radius = dir.radius;
+  spec.hero = dir.hero; spec.fonts = { head: dir.fonts[0], body: dir.fonts[1] }; spec.radius = dir.radius; spec.layout = dir.layout || 'grid'; spec.mood = dir.mood;
+  spec.palette = fitPalette(spec.palette, dir);
   const byKind = {}; for (const sec of spec.sections) (byKind[sec.kind] = byKind[sec.kind] || []).push(sec);
   const out = []; for (const k of dir.order) if (byKind[k] && byKind[k].length) out.push(byKind[k].shift());
   for (const k in byKind) out.push(...byKind[k]);
   spec.sections = out.slice(0, 10); return spec;
 }
+// Distinctness: signature of the look; a design matching a recent one on 3+ of 5 traits is rejected and the next direction is tried.
+export function signature(spec) { return { dark: isDark(spec.palette.bg), head: spec.fonts.head, hero: spec.hero, layout: spec.layout, hue: Math.round(hue(spec.palette.accent)) }; }
+export function similarity(a, b) { return (a.dark === b.dark) + (a.head === b.head) + (a.hero === b.hero) + (a.layout === b.layout) + (hueGap(a.hue, b.hue) < 35); }
+export const TOO_CLOSE = 3;
+export function pickDistinct(spec, inp, recent) {
+  const base = JSON.parse(JSON.stringify(spec)), cands = candidates(inp); let best = null, bestScore = 9, tries = 0;
+  for (const dir of cands) { tries++; const s = applyDirection(JSON.parse(JSON.stringify(base)), dir), sig = signature(s);
+    const score = recent.reduce((m, r) => Math.max(m, similarity(sig, r)), 0);
+    if (score < TOO_CLOSE) return { spec: s, tries, score }; if (score < bestScore) { best = s; bestScore = score; } }
+  return { spec: best || applyDirection(base, cands[0]), tries, score: bestScore };
+}
+export async function recentSigs(db, n = 12) {
+  await db.prepare('CREATE TABLE IF NOT EXISTS ai_recent (id INTEGER PRIMARY KEY AUTOINCREMENT, sig TEXT NOT NULL, ts INTEGER NOT NULL)').run();
+  const r = await db.prepare('SELECT sig FROM ai_recent ORDER BY id DESC LIMIT ?').bind(n).all();
+  return (r.results || []).map(x => { try { return JSON.parse(x.sig); } catch { return null; } }).filter(Boolean);
+}
+export async function saveSig(db, sig) { await db.prepare('INSERT INTO ai_recent (sig, ts) VALUES (?, ?)').bind(JSON.stringify(sig), Date.now()).run(); }
 export function prompt(inp, current, request) {
   const dir = direction(inp);
   const sys = 'You are the senior designer at Elder World Studio, a Memphis web studio. You design ONE distinctive small-business website as JSON matching the schema. ' +
@@ -123,7 +171,7 @@ export function prompt(inp, current, request) {
     'Write real copy in the owner\'s voice using concrete details from their description: a specific headline (not just the name, not a pun template), subhead, about (2-4 sentences), 3-6 realistic items per services/menu section with short descriptions, testimonials as short quotes with first names, stats as short numbers with labels. ' +
     'Section titles must be specific to the business (e.g. "Fresh out the oven", not "Our Services"). Prices only if typical, like "$12". imagery = one sentence of photo art direction for THIS business. Never include HTML, scripts, URLs or emails. Plain text only.';
   const biz = `Business: ${inp.name}\nType: ${inp.type}\nLocation: ${inp.location || 'Memphis, TN'}\nVibe: ${inp.vibe || inp.style || 'owner did not say'}\nTagline idea: ${inp.tagline}\nHours: ${inp.hours}\nAbout (owner's words): ${inp.story || '(none)'}\nHas own logo: ${inp.hasLogo}; has own photo: ${inp.hasPhoto}`;
-  const brief = `Design direction: mood "${dir.mood}", ${dir.bg} background, anchor hues ${dir.hues.join(' and ')}, hero "${dir.hero}", fonts ${dir.fonts.join(' + ')}, sections in this order: ${dir.order.join(', ')}.`;
+  const brief = `Design direction: mood "${dir.mood}", ${dir.bg} background, anchor hues ${dir.hues.join(' and ')}, hero "${dir.hero}", ${dir.layout} layout, fonts ${dir.fonts.join(' + ')}, sections in this order: ${dir.order.join(', ')}.`;
   const user = current ? `${biz}\n\nCurrent design JSON:\n${JSON.stringify(current).slice(0, 6000)}\n\nChange request from the owner: "${request}"\nReturn the full updated design JSON. Change only what the request implies (layout, colors, fonts, sections or copy); keep the rest.` : `${biz}\n\n${brief}\n\nDesign the site.`;
   return [{ role: 'system', content: sys }, { role: 'user', content: user }];
 }

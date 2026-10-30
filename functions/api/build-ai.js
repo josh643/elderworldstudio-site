@@ -1,6 +1,6 @@
 // POST /api/build-ai — AI site spec for the website builder. Server-side only (Workers AI binding AI); no keys reach the browser.
 // actions: generate | regenerate | edit (needs spec + request) | outcome (training log only). Limits + daily $ cap in D1 (BUILD_LEADS).
-import { parseInput, validateSpec, fallbackSpec, prompt, SCHEMA, MODEL, costUSD, checkLimits, addCost, direction, applyDirection, ensureTables, cleanText, trainRow, logTrain } from '../_lib/sitespec.js';
+import { parseInput, validateSpec, fallbackSpec, prompt, SCHEMA, MODEL, costUSD, checkLimits, addCost, direction, applyDirection, pickDistinct, recentSigs, saveSig, signature, ensureTables, cleanText, trainRow, logTrain } from '../_lib/sitespec.js';
 const json = (o, s = 200) => Response.json(o, { status: s, headers: { 'Cache-Control': 'no-store' } });
 // Model: ews-llm gateway (alias luna) when EWS_LLM_URL + EWS_LLM_KEY are set; Workers AI only as a fallback.
 export const GATEWAY_MODEL = 'luna';
@@ -45,14 +45,19 @@ export async function onRequestPost({ request, env }) {
   let out;
   try {
     const msgs = prompt(inp, action === 'edit' ? prev : null, request_);
-    let v = { ok: false, errors: ['no output'] }, cost = 0, via = null;
+    let v = { ok: false, errors: ['no output'] }, cost = 0, via = null, distinct = null;
     for (const t of [0.9, 0.5]) { // one retry at lower temperature if the model output is cut off or invalid
       try { const { raw, usage, via: m } = await runModel(env, msgs, t); via = m; const c = costUSD(usage); cost += c; await addCost(db, lim.day, c); v = validateSpec(raw); }
       catch (e) { cost += costUSD(null); await addCost(db, lim.day, costUSD(null)).catch(() => {}); v = { ok: false, errors: [String(e && e.message || e).slice(0, 80)] }; }
       if (v.ok) break;
     }
-    if (v.ok && action !== 'edit') applyDirection(v.spec, direction(inp));
-    out = v.ok ? { ok: true, source: 'ai', model: via, spec: v.spec, cost: Number(cost.toFixed(5)) } : { ...fb('invalid'), invalid: v.errors };
+    if (v.ok && action !== 'edit') {
+      const recent = await recentSigs(db).catch(() => []);
+      if (action === 'regenerate' && prev && prev.palette) { try { recent.unshift(signature(prev)); } catch {} } // never regenerate into the same look
+      const d = pickDistinct(v.spec, inp, recent); v.spec = d.spec; distinct = { tries: d.tries, score: d.score };
+      await saveSig(db, signature(v.spec)).catch(() => {});
+    }
+    out = v.ok ? { ok: true, source: 'ai', model: via, distinct, spec: v.spec, cost: Number(cost.toFixed(5)) } : { ...fb('invalid'), invalid: v.errors };
   } catch (e) { out = { ...fb('error'), detail: String(e && e.message || e).replace(/[^\w .:-]/g, '').slice(0, 80) }; }
   if (out.source === 'ai') await logTrain(db, trainRow({ ...train, event: action, request: request_, spec: out.spec, prev: action === 'edit' ? prev : null, source: 'ai' })).catch(() => {});
   return json(out);

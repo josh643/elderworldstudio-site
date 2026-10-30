@@ -13,7 +13,11 @@ BIZ = [
   dict(slug='bakery', type='bakery', style='rustic', name='Broad Ave Bread Co', phone='', address='Main Street', vibes=['Cozy', 'Classic'],
        story='Small sourdough bakery in the arts district. Naturally leavened loaves, cardamom buns, local coffee. Sells out by noon on Saturdays.', logo=False, consent=False),
   dict(slug='autoshop', type='auto', style='minimal', name='Northside Auto Care', phone='(555) 555-0188', address='Springfield', vibes=['Modern', 'Bold'],
-       story='Independent auto repair shop. Honest diagnostics, brakes, oil changes and EV-friendly service. Free inspection photos texted to you before any work.', logo=False, consent=False)]
+       story='Independent auto repair shop. Honest diagnostics, brakes, oil changes and EV-friendly service. Free inspection photos texted to you before any work.', logo=False, consent=False),
+  dict(slug='nailsalon', type='salon', style='minimal', name='Polished Nail Lounge', phone='(555) 555-0123', address='Oak Street', vibes=['Modern', 'Cozy'],
+       story='Nail salon with a calm, pretty space. Gel manicures, spa pedicures, hand-painted nail art and lash lifts. Walk-ins welcome, appointments preferred.', logo=False, consent=False),
+  dict(slug='hardware', type='retail', style='rustic', name='Hillcrest Hardware', phone='(555) 555-0177', address='Hillcrest', vibes=['Classic', 'Bold'],
+       story='Family hardware store since 1972. Tools, paint mixing, plumbing and electrical parts, key cutting and cut-to-size lumber. Ask us anything.', logo=False, consent=False)]
 SPECS = {}; COSTS = []; LOG = []
 async def wait_design(pg, timeout=150000):
     await pg.wait_for_function("() => { const s = JSON.parse(localStorage.getItem('ews-builder-draft-v2') || '{}'); return s.spec && !document.querySelector('#regen[disabled]'); }", timeout=timeout)
@@ -89,10 +93,16 @@ async def main():
         await b.close()
     by = {}
     for s, d, h in LOG: by.setdefault(d, set()).add(h)
-    assert all(len(v) == 3 for v in by.values()), ('designs not distinct', LOG)
+    assert all(len(v) == len(BIZ) for v in by.values()), ('designs not distinct', LOG)
     gens = [s for s in SPECS.items() if s[0][1] == 'generate']
     keys = {(v['hero'], v['fonts']['head'], v['palette']['accent'], tuple(x['kind'] for x in v['sections'])) for k, v in gens}
-    assert len(keys) == 3, ('skeletons not distinct', keys)
+    assert len(keys) == len(BIZ), ('skeletons not distinct', keys)
+    sigs = [(k[0], ((int(v['palette']['bg'][1:], 16) >> 16) < 70, v['fonts']['head'], v['hero'], v.get('layout'), v['palette']['accent'])) for k, v in gens]
+    for i in range(len(sigs)):
+        for j in range(i + 1, len(sigs)):
+            same = sum(a == b for a, b in zip(sigs[i][1], sigs[j][1]))
+            assert same < 3, ('too alike', sigs[i], sigs[j])
+    assert len({s[1][3] for s in sigs}) >= 2, ('layouts not varied', sigs)
     json.dump({'costs': COSTS, 'specs': {f'{k[0]}:{k[1]}': v for k, v in SPECS.items()}}, open(OUT + 'specs.json', 'w'), indent=1)
     print('costs', COSTS); print('E2E PASS')
 asyncio.run(main())
