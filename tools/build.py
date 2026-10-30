@@ -94,9 +94,9 @@ HOME = f"""
    <h2>Assets for Game Developers</h2>
    <p class="lead">Asset packs are now our main focus. We publish game-ready assets on the Unity Asset Store as <strong>Elder Worlds Publishing</strong>, built in the same pipeline we used for our own games.</p>
    <div class="panel">
-    <span class="tag review">In review</span>
+    <span class="tag soon">Coming to the Unity Asset Store</span>
     <h3>Medieval Village Props</h3>
-    <p>A pack of medieval village and market props: barrels, baskets, bread, bottles, crates, tools and more, with modular crate and liquid fills. Submitted to the Unity Asset Store.</p>
+    <p>A pack of medieval village and market props: barrels, baskets, bread, bottles, crates, tools and more, with modular crate and liquid fills.</p>
     <div class="actions"><a class="btn btn-primary" href="{{P}}developer-assets/index.html">See all assets</a></div>
    </div>
   </div>
@@ -157,9 +157,9 @@ ASSETS = f"""
 <section class="block" id="packs">
  <div class="wrap grid two">
   <div class="panel">
-   <span class="tag review">In review</span>
+   <span class="tag soon">Coming to the Unity Asset Store</span>
    <h3>Medieval Village Props</h3>
-   <p>A pack of medieval village and market props: barrels, baskets, bread, bottles, crates, tools and more, with modular crate and liquid fills. Submitted to the Unity Asset Store.</p>
+   <p>A pack of medieval village and market props: barrels, baskets, bread, bottles, crates, tools and more, with modular crate and liquid fills.</p>
   </div>
   <img src="{{P}}assets/img/medieval-village-props.jpg" width="1200" height="800" alt="Renders of props from the Medieval Village Props pack" loading="lazy" style="border-radius:16px;border:1px solid var(--line)">
  </div>
