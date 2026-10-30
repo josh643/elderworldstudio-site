@@ -167,7 +167,7 @@
   var PRICING = [['Starter', '$349 one-time + $19/mo care', 'Up to 3 pages from your draft, hosting, SSL, 1 small edit a month'],
     ['Business', '$699 one-time + $39/mo care', 'Up to 6 pages, your photos and copy polish, Google Business setup, 2 edits a month'],
     ['Plus', '$1,299 one-time + $69/mo care', 'Up to 10 pages, booking or online ordering hookup, priority edits'],
-    ['Domain', 'Registrar cost + $2/yr', 'e.g. a .com is about $13/yr, in your name'],
+    ['Domain', 'From $13/yr', 'Your own .com, registered in your name'],
     ['Launch offer', 'Starter $249 one-time + $19/mo care', 'For the first 10 Memphis shops']];
   var SHOW_PRICING = true;
   var STEPS = ['Business type', 'Style', 'Details', 'Your story', 'Preview', 'Get it built'];

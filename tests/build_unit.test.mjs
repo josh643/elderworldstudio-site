@@ -57,7 +57,7 @@ test('regression: existing services lead form and pages untouched', () => {
   const b = fs.readFileSync(new URL('../site/build/index.html', import.meta.url), 'utf8');
   assert.ok(b.includes('$349 + $19/mo'), 'approved Starter price on page'); assert.ok(!b.includes('Pricing on request'));
   const js = fs.readFileSync(new URL('../site/build/builder.js', import.meta.url), 'utf8');
-  for (const want of ['$349 one-time + $19/mo', '$699 one-time + $39/mo', '$1,299 one-time + $69/mo', 'Registrar cost + $2/yr', 'Starter $249', 'first 10 Memphis shops']) assert.ok(js.includes(want), want);
+  for (const want of ['$349 one-time + $19/mo', '$699 one-time + $39/mo', '$1,299 one-time + $69/mo', 'From $13/yr', 'Starter $249', 'first 10 Memphis shops']) assert.ok(js.includes(want), want);
   assert.ok(!js.includes('PROPOSED') && !js.includes('NOT FINAL') && !js.includes('pricing=proposed'), 'no proposed label/flag');
   assert.ok(!/checkout|stripe|card number/i.test(js + b), 'no checkout or payments');
   assert.ok(b.includes('sandbox=""'));

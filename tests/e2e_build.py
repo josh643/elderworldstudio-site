@@ -8,12 +8,12 @@ OUT = '/workspace/ews-web-builder/e2e/'; os.makedirs(OUT, exist_ok=True)
 LOGO = os.path.join(os.path.dirname(__file__), 'fixture-logo.png')
 REGRESS = ['', 'services/', 'contact/', 'merch/', 'games/', 'testers/', 'privacy-policy/']
 BIZ = [
-  dict(slug='barbershop', type='salon', style='bold', name='Riverside Fades', phone='(901) 555-0142', address='Memphis, TN', vibes=['Old-school', 'Bold'],
-       story='Old-school family barbershop since 1998 on the riverside. Hot towel shaves, sharp fades, Grizzlies on the TV and fair prices.', logo=True, consent=True),
-  dict(slug='bakery', type='bakery', style='rustic', name='Broad Ave Bread Co', phone='', address='Broad Ave, Memphis, TN', vibes=['Cozy', 'Classic'],
-       story='Small sourdough bakery in the Broad Ave arts district. Naturally leavened loaves, cardamom buns, local coffee. Sells out by noon on Saturdays.', logo=False, consent=False),
-  dict(slug='capshop', type='retail', style='minimal', name='Midsouth Lids', phone='', address='Cooper-Young, Memphis, TN', vibes=['Bold', 'Modern'],
-       story='Fitted caps and custom embroidery for Memphis teams, crews and events. Streetwear energy, quick turnaround, embroidery done in-house.', logo=False, consent=False)]
+  dict(slug='barbershop', type='salon', style='bold', name='Riverside Fades', phone='(555) 555-0142', address='Riverside', vibes=['Old-school', 'Bold'],
+       story='Old-school family barbershop since 1998 on the riverside. Hot towel shaves, sharp fades, the game on the TV and fair prices.', logo=True, consent=True),
+  dict(slug='bakery', type='bakery', style='rustic', name='Broad Ave Bread Co', phone='', address='Main Street', vibes=['Cozy', 'Classic'],
+       story='Small sourdough bakery in the arts district. Naturally leavened loaves, cardamom buns, local coffee. Sells out by noon on Saturdays.', logo=False, consent=False),
+  dict(slug='autoshop', type='auto', style='minimal', name='Northside Auto Care', phone='(555) 555-0188', address='Springfield', vibes=['Modern', 'Bold'],
+       story='Independent auto repair shop. Honest diagnostics, brakes, oil changes and EV-friendly service. Free inspection photos texted to you before any work.', logo=False, consent=False)]
 SPECS = {}; COSTS = []; LOG = []
 async def wait_design(pg, timeout=150000):
     await pg.wait_for_function("() => { const s = JSON.parse(localStorage.getItem('ews-builder-draft-v2') || '{}'); return s.spec && !document.querySelector('#regen[disabled]'); }", timeout=timeout)
