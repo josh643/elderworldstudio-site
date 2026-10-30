@@ -25,3 +25,9 @@
 .bld input[type=file]{font-size:14px;padding:6px 0;background:none;border:0}
 .bld #regen{margin:6px 0 4px}.bld button[disabled]{opacity:.55;cursor:wait}
 .bld #ai-msg{border-left:3px solid #FF2BD6;padding-left:10px}
+/* AI page builder */
+.cpages{list-style:none;padding:0;margin:8px 0;display:grid;gap:6px}
+.cpages li{display:flex;gap:4px;align-items:center;padding:4px;border-radius:10px;border:1px solid rgba(127,127,127,.25)}
+.cpages li.on{border-color:currentColor}
+.cpages .cp-name{flex:1;min-width:0;padding:6px 8px;font:inherit;border:0;background:transparent;color:inherit}
+.ideas{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 4px}

@@ -618,7 +618,7 @@ page("games/index.html", f"Games | {STUDIO}", f"Games by {STUDIO}: Astro Dodge a
 BUILD = f"""
 <div class="page"><div class="wrap">
  <div class="page-head"><h1>See your website before you pay</h1><p class="meta"><b class="from-price">From $349</b> · The draft preview costs nothing. When you like it, the real build starts at $349 + $19/mo, and nothing is charged online. Made in Memphis by {STUDIO}.</p></div>
- <link rel="stylesheet" href="{{P}}build/builder.css?v=2">
+ <link rel="stylesheet" href="{{P}}build/builder.css?v=3">
  <div id="builder" class="bld">
   <div class="panel"><ol class="steps" id="steps"></ol><div id="panel"></div>
    <div class="nav-btns"><button type="button" class="btn btn-ghost" id="back">&larr; Back</button><button type="button" class="btn btn-primary" id="next">Next &rarr;</button></div>
@@ -638,8 +638,8 @@ BUILD = f"""
   <div class="panel"><h3>3. Go live on your domain</h3><p>We set up your domain and hosting and keep it running. Plans from <b>$349 + $19/mo</b>. Nothing is charged online; we confirm a quote first.</p></div>
  </div>
  <p class="lead" style="margin-top:24px">Prefer to try it in person? Look for an Elder World Studio website kiosk at participating local shops.</p>
- <script src="{{P}}build/samples.js?v=1" defer></script>
- <script src="{{P}}build/builder.js?v=6" defer></script>
+ <script src="{{P}}build/samples.js?v=2" defer></script>
+ <script src="{{P}}build/builder.js?v=7" defer></script>
 </div></div>
 """
 page("build/index.html", f"See Your Website Before You Pay | {STUDIO}", "Preview a draft of your small business website at no cost, then have Elder World Studio build it on your own domain from $349 + $19/mo. Memphis, TN.", BUILD, "/build/", "build")

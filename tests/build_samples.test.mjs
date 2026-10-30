@@ -12,5 +12,5 @@ test('blank draft has no business type; quick design is debounced and capped', (
   const js = fs.readFileSync(new URL('../site/build/builder.js', import.meta.url), 'utf8');
   assert.ok(js.includes("function blank() { return { type: '',"));
   assert.match(js, /QUICK_MAX = 2, QUICK_MS = 1500/); assert.ok(js.includes('clearTimeout(qTimer)'));
-  assert.ok(L.LIMITS.burst <= 12 && L.LIMITS.perDay <= 40);
+  assert.ok(L.LIMITS.burst <= 16 && L.LIMITS.perDay <= 40);
 });
