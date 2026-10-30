@@ -34,12 +34,12 @@ export async function onRequestPost({ request, env }) {
     let v = { ok: false, errors: ['no output'] }, cost = 0;
     for (const t of [0.9, 0.5]) { // one retry at lower temperature if the model output is cut off or invalid
       try { const { raw, usage } = await runModel(env, msgs, t); const c = costUSD(usage); cost += c; await addCost(db, lim.day, c); v = validateSpec(raw); }
-      catch (e) { cost += costUSD(null); await addCost(db, lim.day, costUSD(null)); v = { ok: false, errors: [String(e && e.message || e).slice(0, 80)] }; }
+      catch (e) { cost += costUSD(null); await addCost(db, lim.day, costUSD(null)).catch(() => {}); v = { ok: false, errors: [String(e && e.message || e).slice(0, 80)] }; }
       if (v.ok) break;
     }
     if (v.ok && action !== 'edit') applyDirection(v.spec, direction(inp));
     out = v.ok ? { ok: true, source: 'ai', spec: v.spec, cost: Number(cost.toFixed(5)) } : { ...fb('invalid'), invalid: v.errors };
-  } catch (e) { out = fb('error'); }
+  } catch (e) { out = { ...fb('error'), detail: String(e && e.message || e).replace(/[^\w .:-]/g, '').slice(0, 80) }; }
   if (out.source === 'ai') await logTrain(db, trainRow({ ...train, event: action, request: request_, spec: out.spec, prev: action === 'edit' ? prev : null, source: 'ai' })).catch(() => {});
   return json(out);
 }

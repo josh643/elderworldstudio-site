@@ -150,11 +150,12 @@
   function aiInput(seed) { var d = S.d; return { name: d.name, type: d.type, style: d.style, story: d.story || '', vibe: (d.vibes || []).join(', '), tagline: d.tagline, phone: d.phone, address: d.address, hours: d.hours, hasLogo: !!IMG.logo, hasPhoto: !!IMG.photo, seed: seed || 0 }; }
   function ai(body) { body.input = aiInput(body.seed); body.session = S.sid; body.consent = !!S.d.consent; body.nameConsent = !!S.d.nameConsent;
     return fetch('/api/build-ai', { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify(body) }).then(function (r) { return r.json().catch(function () { return { ok: false }; }); }); }
-  function design(action, req) {
+  function design(action, req, retry) {
     if (busy) return; busy = true; S.msg = action === 'edit' ? 'Updating your design…' : 'Designing a site just for ' + (S.d.name || 'you') + '…'; draw();
     var seed = Math.floor(Math.random() * 99999);
     ai({ action: action, seed: seed, spec: S.spec || null, request: req || '' }).then(function (j) {
       busy = false; S.msg = '';
+      if (j && j.source === 'fallback' && (j.reason === 'error' || j.reason === 'invalid') && !retry) { setTimeout(function () { design(action, req, true); }, 800); return; }
       if (j && j.spec) { if (S.spec) S.revs.push({ label: action === 'edit' ? 'Change: ' + req : action === 'regenerate' ? 'Fresh design' : 'New design', before: clone(S.d), spec: clone(S.spec), src: S.src }); S.spec = j.spec; S.src = j.source; if (j.source === 'fallback') S.msg = j.error || 'Our AI designer is busy, so this is a starter layout. Try Regenerate in a bit.'; }
       else S.msg = (j && j.error) || 'Could not reach the designer. Showing a starter layout.';
       draw();

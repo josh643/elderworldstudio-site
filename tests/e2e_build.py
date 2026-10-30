@@ -30,7 +30,7 @@ async def run(b, biz, device):
             return await route.fulfill(json={'ok': True, 'source': 'ai', 'spec': SPECS.get((biz['slug'], body.get('action')), SPECS.get((biz['slug'], 'generate'))) or {}, 'cost': 0})
         resp = await route.fetch(timeout=120000); j = await resp.json()
         if body.get('action') != 'outcome':
-            SPECS[(biz['slug'], body['action'])] = j.get('spec'); COSTS.append((biz['slug'], body['action'], j.get('source'), j.get('cost'), j.get('reason'), j.get('invalid')))
+            SPECS[(biz['slug'], body['action'])] = j.get('spec'); COSTS.append((biz['slug'], body['action'], j.get('source'), j.get('cost'), j.get('reason'), j.get('invalid'), j.get('detail')))
         await route.fulfill(status=resp.status, json=j)
     await pg.route('**/api/build-ai', on_ai)
     await pg.goto(BASE + 'build/', wait_until='networkidle'); await pg.evaluate('localStorage.clear()'); await pg.reload(wait_until='networkidle')
@@ -47,7 +47,7 @@ async def run(b, biz, device):
     if biz['consent']: await pg.check('#f-consent'); await pg.check('#f-nameconsent')
     assert await pg.input_value('#f-story') == biz['story'], 'story survives redraw'
     await pg.click('#next'); await wait_design(pg)
-    if not (mobile or MOCK_AI): assert COSTS[-1][2] == 'ai', ('AI fell back', COSTS[-1])
+    if not (mobile or MOCK_AI): assert COSTS[-1][2] == 'ai', ('AI fell back', COSTS[-2:])
     gen = calls[-1]; assert gen['action'] == 'generate' and gen['input']['story'] == biz['story'] and gen['consent'] is biz['consent']
     assert 'data:image' not in json.dumps(gen), 'images never leave the browser'
     assert gen['input']['hasLogo'] is biz['logo']
@@ -79,7 +79,7 @@ async def run(b, biz, device):
         for p in REGRESS:
             r = await pg.goto(BASE + p); assert r.status == 200, (p, r.status)
             assert await pg.locator('.site-header a[href$="build/index.html"]').count() == 1, f'nav link on {p}'
-    await ctx.close()
+    await pg.wait_for_timeout(1500); await pg.unroute_all(behavior='ignoreErrors'); await ctx.close()
 async def main():
     async with async_playwright() as p:
         b = await p.chromium.launch()
