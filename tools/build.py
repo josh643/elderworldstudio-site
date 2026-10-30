@@ -23,9 +23,9 @@ EWS_TESTERS_EMAIL = "ews_testers@googlegroups.com"
 STEAM_OMNI = utm("https://store.steampowered.com/app/4121760/", "omnivael")
 STEAM_COTR = utm("https://store.steampowered.com/app/2559510/", "chronicles")
 
-def page(path, title, desc, body, canonical, current="", noindex=False):
+def page(path, title, desc, body, canonical, current="", noindex=False, abs_urls=False):
     depth = path.count("/")  # e.g. "privacy-policy/index.html" -> 1
-    P = "../" * depth
+    P = "/" if abs_urls else "../" * depth
     nav = [("index.html", "Home", "home"), ("games/index.html", "Games", "games"),
            ("index.html#tools", "Assets", "tools"), ("testers/index.html", "Testers", "testers"), ("merch/index.html", "Merch", "merch"), ("services/index.html", "Services", "services"), ("contact/index.html", "Contact", "contact"),
            ("privacy-policy/index.html", "Privacy Policy", "privacy")]
@@ -51,15 +51,18 @@ def page(path, title, desc, body, canonical, current="", noindex=False):
 <meta property="og:url" content="{DOMAIN}{canonical}">
 <meta property="og:image" content="{DOMAIN}/assets/img/brand/ews-og.png?v=4">
 <link rel="preload" href="{P}assets/fonts/michroma.woff" as="font" type="font/woff" crossorigin>
-<link rel="stylesheet" href="{P}assets/css/site.css?v=5">
+<link rel="stylesheet" href="{P}assets/css/site.css?v=6">
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9120677014955697" crossorigin="anonymous"></script>
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
 <header class="site-header">
  <div class="wrap">
+  <div class="header-bar">
   <a class="brand" href="{P}index.html"><img src="{P}assets/img/brand/ews-mark.svg?v=4" width="36" height="36" alt=""><span>{STUDIO}</span></a>
-  <nav class="nav" aria-label="Main">{navhtml}</nav>
+  <button type="button" class="nav-toggle" aria-expanded="false" aria-controls="site-nav" aria-label="Menu"><span class="nav-toggle-bars" aria-hidden="true"></span><span class="nav-toggle-text">Menu</span></button>
+  </div>
+  <nav id="site-nav" class="nav" aria-label="Main">{navhtml}</nav>
  </div>
 </header>
 <main id="main">
@@ -71,6 +74,8 @@ def page(path, title, desc, body, canonical, current="", noindex=False):
   <nav aria-label="Footer"><a href="{P}games/index.html">Games</a><a href="{P}testers/index.html">Testers</a><a href="{P}services/index.html">Services</a><a href="{P}merch/index.html">Merch</a><a href="{P}contact/index.html">Contact</a><a href="{P}privacy-policy/index.html">Privacy Policy</a><a href="mailto:{EMAIL}">{EMAIL}</a></nav>
  </div>
 </footer>
+<script src="{P}assets/js/nav.js?v=1" defer></script>
+<noscript><style>@media (max-width:899px){{.nav{{display:flex!important;flex-direction:column;width:100%}}.nav-toggle{{display:none!important}}}}</style></noscript>
 </body>
 </html>
 """
@@ -164,21 +169,21 @@ CONTACT = f"""
  <div class="page-head"><h1>Contact</h1><p class="meta">{STUDIO}</p></div>
  <div class="grid contact-grid">
   <div class="panel">
-   <h3>Email</h3>
+   <h2 class="card-title">Email</h2>
    <p>For player support, bug reports, privacy requests and business enquiries, email us:</p>
    <p class="email"><a href="mailto:{EMAIL}">{EMAIL}</a></p>
    <p class="meta">Please include the game name and your device or platform for support requests.</p>
   </div>
   <div class="panel">
-   <h3>Websites, AI tools &amp; software</h3>
+   <h2 class="card-title">Websites, AI tools &amp; software</h2>
    <p>Want us to build something for your business? Tell us about it on our <a class="link" href="{{P}}services/index.html#request">Services page</a> and we&rsquo;ll start with a free demo.</p>
   </div>
   <div class="panel">
-   <h3>Privacy &amp; data requests</h3>
+   <h2 class="card-title">Privacy &amp; data requests</h2>
    <p>To ask what data we hold about you or to have it deleted, email us with the subject &ldquo;Privacy request&rdquo;. Details are in our <a href="{{P}}privacy-policy/index.html">Privacy Policy</a>.</p>
   </div>
   <div class="panel">
-   <h3>Find our games</h3>
+   <h2 class="card-title">Find our games</h2>
    <p><a class="link" href="{PLAY_SW}" rel="noopener">Star Wayfarer: out now on Google Play</a><br>
    <a class="link" href="{STEAM_OMNI}" rel="noopener">Omnivael: Wayfarers Life on Steam</a><br>
    <a class="link" href="{STEAM_COTR}" rel="noopener">Chronicles of the Realm on Steam</a></p>
@@ -344,13 +349,13 @@ for p in ["privacy-policy/index.html", "privacy/index.html", "privacy-policy.htm
 SERVICES = f"""
 <div class="page"><div class="wrap">
  <div class="page-head"><h1>Services</h1><p class="meta">Websites, AI tools and custom software for small businesses &middot; based in Memphis, TN</p></div>
- <div class="panel" style="margin-bottom:24px"><h3 style="color:var(--accent)">Free demo first</h3>
+ <div class="panel" style="margin-bottom:24px"><h2 class="card-title">Free demo first</h2>
   <p>Tell us what you need. We build a quick, free demo of it for your business and share it by link. You only decide on anything after you&rsquo;ve seen it working. No pressure and no obligation.</p></div>
  <div class="grid contact-grid">
-  <div class="panel"><h3>Websites</h3><p>New sites, refreshes and fixes: mobile-friendly pages, online booking, menus, quote forms and simple online stores.</p></div>
-  <div class="panel"><h3>AI tools &amp; chat assistants</h3><p>A chat assistant on your site that answers questions from your hours, menu and prices 24/7, takes requests and emails real leads to you.</p><p><a class="link" href="https://ews-ai-assistant.pages.dev/" target="_blank" rel="noopener">Try a live demo &rarr;</a> <small>(sample businesses)</small></p></div>
-  <div class="panel"><h3>Automation</h3><p>Stop retyping things. We connect forms, email, spreadsheets and the tools you already use so routine work happens on its own.</p></div>
-  <div class="panel"><h3>Custom software &amp; dashboards</h3><p>Internal tools, client portals and dashboards that replace paper forms and messy spreadsheets.</p></div>
+  <div class="panel"><h2 class="card-title">Websites</h2><p>New sites, refreshes and fixes: mobile-friendly pages, online booking, menus, quote forms and simple online stores.</p></div>
+  <div class="panel"><h2 class="card-title">AI tools &amp; chat assistants</h2><p>A chat assistant on your site that answers questions from your hours, menu and prices 24/7, takes requests and emails real leads to you.</p><p><a class="link" href="https://ews-ai-assistant.pages.dev/" target="_blank" rel="noopener">Try a live demo &rarr;</a> <small>(sample businesses)</small></p></div>
+  <div class="panel"><h2 class="card-title">Automation</h2><p>Stop retyping things. We connect forms, email, spreadsheets and the tools you already use so routine work happens on its own.</p></div>
+  <div class="panel"><h2 class="card-title">Custom software &amp; dashboards</h2><p>Internal tools, client portals and dashboards that replace paper forms and messy spreadsheets.</p></div>
  </div>
  <h2 id="request" style="margin-top:40px">Request a free demo</h2>
  <div id="form-status" class="panel" hidden style="margin-bottom:16px"></div>
@@ -370,15 +375,13 @@ SERVICES = f"""
   <p class="meta">We reply by email, usually within one business day. We only use your details to answer your request (see our <a href="{{P}}privacy-policy/index.html">Privacy Policy</a>).</p>
  </form>
 </div></div>
-<style>.lead-form{{display:grid;gap:14px;max-width:640px}}.lead-form label{{display:grid;gap:6px;font-weight:600}}.lead-form input,.lead-form select,.lead-form textarea{{font:inherit;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:#130B22;color:inherit}}.lead-form .sms-opt{{display:flex;gap:10px;align-items:flex-start;font-weight:400}}.lead-form .sms-opt input{{width:auto;margin-top:4px}}.lead-form .hp{{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}}</style>
 <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 <script>document.getElementById('lead-t').value=Date.now();(function(){{var q=new URLSearchParams(location.search),s=document.getElementById('form-status');if(!q.has('sent'))return;s.hidden=false;s.textContent=q.get('sent')==='1'?'Thanks! Your request was sent. We will reply by email soon.':('Sorry, that did not go through: '+(q.get('e')||'please try again')+' You can also email annaews@agentmail.to.');}})();</script>
 """
 SMSTERMS = f"""
-<div class="section"><div class="wrap">
- <article class="policy">
-  <h1>SMS Terms and Conditions</h1>
-  <p class="meta">Last updated: October 11, 2026</p>
+<div class="page"><div class="wrap">
+ <div class="page-head"><h1>SMS Terms and Conditions</h1><p class="meta">Last updated: October 11, 2026</p></div>
+ <article class="prose">
   <p><strong>Program:</strong> Elder World Studio project updates. {STUDIO} sends text messages only to people who request a website, AI tool or software demo on our <a href="{{P}}services/index.html">Services page</a> and tick the optional SMS consent checkbox (messages about your service request; up to 4 msgs per request; Message and data rates may apply; Reply STOP to opt out and HELP for help).</p>
   <ul>
    <li><strong>Program description:</strong> one-to-one, non-marketing texts about a service request you submitted to Elder World Studio.</li>
@@ -612,8 +615,5 @@ GAMES = f"""
 """
 page("games/index.html", f"Games | {STUDIO}", f"Games by {STUDIO}: Astro Dodge and Star Wayfarer on Google Play, Omnivael and Chronicles of the Realm on Steam, and casual mobile games coming soon.", GAMES, "/games/", "games")
 # 404 uses root-absolute links (served for any missing path)
-page("404.html", f"Page not found | {STUDIO}", "Page not found.", NOTFOUND, "/404.html", noindex=True)
-p404 = ROOT / "404.html"
-t = p404.read_text().replace('href="favicon.png', 'href="/favicon.png').replace('href="assets/', 'href="/assets/').replace('src="assets/', 'src="/assets/').replace('href="index.html', 'href="/index.html').replace('href="contact/', 'href="/contact/').replace('href="merch/', 'href="/merch/').replace('href="privacy-policy/index.html"', 'href="/privacy-policy/"').replace('href="mailto', 'href="mailto')
-p404.write_text(t)
+page("404.html", f"Page not found | {STUDIO}", "Page not found.", NOTFOUND, "/404.html", noindex=True, abs_urls=True)
 print("built", sum(1 for _ in ROOT.rglob("*.html")), "html files")

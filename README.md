@@ -7,6 +7,7 @@ Static website for Elder World Studio Inc. No build step is needed to deploy: th
   - `_redirects`, `_headers` – Cloudflare Pages config. `.htaccess` – Apache fallback. `404.html` – not-found page.
 - `tools/build.py` – regenerates the HTML pages from one template (`python3 tools/build.py`). Edit the copy there, not in the generated files.
 - `tools/shots.py` – Playwright screenshot/overflow/console check.
+- `npm test` – Playwright e2e: phone overflow + viewport meta on every page, hamburger nav, SMS consent wording, and desktop header regression.
 
 ## Deploy to Cloudflare Pages
 
