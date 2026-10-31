@@ -11,3 +11,8 @@
 /tools     /#tools    301
 /services  /services/  301
 /schedule  /contact/  301
+# Product aliases
+/kiosk-os   /kiosk/     301
+/kiosk-os/  /kiosk/     301
+/agentos    /agent-os/  301
+/agentos/   /agent-os/  301
