@@ -1,0 +1,55 @@
+/* Elderverse worlds HUD — modern / futuristic. No crests, runes, or serif fantasy type. */
+:root { --ew-cyan:#3ee8ff; --ew-mag:#d24bff; --ew-bg:#05070d; --ew-panel:#0b1220ee; --ew-line:#3ee8ff55; --ew-text:#e8f4ff; }
+html.worlds-on, html.worlds-on body { background: var(--ew-bg); color: var(--ew-text); }
+html.worlds-on .office-hud, html.worlds-on .office-hint, html.worlds-on .office-lookhint, html.worlds-on .office-tour { display:none !important; }
+html.worlds-on .office-load { font-family: ui-sans-serif, system-ui, sans-serif; letter-spacing: .18em; color: var(--ew-cyan); text-transform: uppercase; }
+html.worlds-on .office-joy { display: none !important; }
+html.worlds-on.office-on body { overflow: hidden; }
+
+.ew-ui { position: absolute; inset: 0; pointer-events: none; z-index: 8; font-family: ui-sans-serif, "Segoe UI", system-ui, sans-serif; color: var(--ew-text); }
+.ew-ui button, .ew-ui select, .ew-ui input, .ew-ui .ew-joy, .ew-ui .ew-screen { pointer-events: auto; }
+.ew-top { display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: linear-gradient(#05070de6, #05070d00); }
+.ew-brand { letter-spacing: .22em; font-size: 12px; color: var(--ew-cyan); }
+.ew-brand b { font-weight: 700; }
+.ew-brand span { opacity: .55; margin-left: 8px; letter-spacing: .28em; }
+.ew-loc { margin-left: auto; font-size: 13px; padding: 4px 10px; border: 1px solid var(--ew-line); border-radius: 999px; background: #0b1220aa; }
+.ew-top-actions { display: flex; gap: 6px; }
+.ew-btn { font: 600 12px/1 ui-sans-serif, system-ui, sans-serif; letter-spacing: .06em; text-transform: uppercase; color: var(--ew-text); background: #101828cc; border: 1px solid var(--ew-line); border-radius: 999px; padding: 8px 12px; min-height: 36px; cursor: pointer; }
+.ew-btn:hover, .ew-cta:hover { border-color: var(--ew-cyan); color: #fff; }
+.ew-cta { display: block; width: 100%; margin: 14px 0 8px; font: 700 15px/1 ui-sans-serif, system-ui, sans-serif; letter-spacing: .14em; text-transform: uppercase; color: #041018; background: linear-gradient(90deg, var(--ew-cyan), #7cf); border: 0; border-radius: 10px; padding: 14px 16px; cursor: pointer; }
+.ew-map { position: absolute; right: 14px; bottom: 14px; width: 132px; height: 132px; border-radius: 12px; border: 1px solid var(--ew-line); background: #04101899; }
+.ew-prompt { position: absolute; left: 50%; bottom: 28px; transform: translateX(-50%); padding: 8px 14px; border: 1px solid var(--ew-cyan); border-radius: 8px; background: #041018cc; letter-spacing: .12em; font-size: 12px; text-transform: uppercase; }
+.ew-screen { position: absolute; inset: 0; display: grid; place-items: center; background: radial-gradient(80% 60% at 50% 40%, #0b1a2ccc, #05070df2); }
+.ew-screen.hide { display: none; }
+.ew-panel { width: min(440px, calc(100% - 32px)); padding: 28px 24px; background: var(--ew-panel); border: 1px solid var(--ew-line); border-radius: 16px; box-shadow: 0 0 40px #3ee8ff22; }
+.ew-panel.ew-wide { width: min(560px, calc(100% - 32px)); }
+.ew-kicker { margin: 0 0 8px; letter-spacing: .28em; text-transform: uppercase; font-size: 11px; color: var(--ew-mag); }
+.ew-panel h1 { margin: 0 0 8px; font-size: clamp(28px, 7vw, 42px); letter-spacing: .2em; font-weight: 700; }
+.ew-panel h2 { margin: 0 0 12px; letter-spacing: .16em; text-transform: uppercase; font-size: 18px; color: var(--ew-cyan); }
+.ew-sub, .ew-fine { color: #b7c8d8; }
+.ew-fine { font-size: 12px; }
+.ew-keys { margin: 0 0 16px; padding-left: 18px; display: grid; gap: 8px; color: #cfe0ee; }
+.ew-keys kbd { font: 600 12px ui-monospace, monospace; border: 1px solid var(--ew-line); padding: 1px 6px; border-radius: 4px; color: var(--ew-cyan); }
+.ew-panel label { display: grid; gap: 6px; margin: 10px 0; font-size: 13px; }
+.ew-panel select, .ew-panel input[type=range] { width: 100%; accent-color: var(--ew-cyan); background: #071018; color: var(--ew-text); border: 1px solid var(--ew-line); border-radius: 8px; padding: 8px; }
+.ew-check { display: flex; align-items: center; gap: 8px; }
+.ew-fade { position: absolute; inset: 0; background: #02040a; opacity: 0; pointer-events: none; transition: opacity .22s; z-index: 9; }
+.ew-fade.on { opacity: 1; }
+
+.ew-joy { position: absolute; inset: 0; pointer-events: none; }
+.ew-joy-stick { pointer-events: auto; position: absolute; left: 18px; bottom: 22px; width: 120px; height: 120px; border-radius: 50%; background: #ffffff10; border: 1px solid #3ee8ff55; }
+.ew-joy-stick i { position: absolute; left: 40px; top: 40px; width: 40px; height: 40px; border-radius: 50%; background: #3ee8ff99; }
+.ew-joy-look { pointer-events: auto; position: absolute; right: 0; top: 72px; bottom: 0; width: 42%; }
+.ew-joy-act { pointer-events: auto; position: absolute; right: 18px; bottom: 28px; width: 72px; height: 72px; border-radius: 50%; border: 1px solid var(--ew-cyan); background: #0b1220cc; color: var(--ew-cyan); font: 700 11px ui-sans-serif, sans-serif; letter-spacing: .08em; }
+.ew-joy-use { right: 100px; bottom: 36px; width: 58px; height: 58px; color: var(--ew-mag); border-color: var(--ew-mag); }
+
+.ew-build { position: absolute; left: 12px; top: 56px; z-index: 9; pointer-events: auto; }
+.ew-build-bar { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 8px 10px; background: #0b1220ee; border: 1px solid var(--ew-line); border-radius: 12px; }
+.ew-build-bar b { letter-spacing: .16em; font-size: 11px; color: var(--ew-mag); }
+.ew-build-bar button, .ew-build-bar select { font: 600 11px ui-sans-serif, system-ui, sans-serif; color: var(--ew-text); background: #101828; border: 1px solid var(--ew-line); border-radius: 8px; padding: 6px 8px; cursor: pointer; }
+
+@media (max-width: 720px) {
+  .ew-top-actions .ew-btn:nth-child(2) { display: none; }
+  .ew-map { width: 96px; height: 96px; }
+  .ew-brand span { display: none; }
+}

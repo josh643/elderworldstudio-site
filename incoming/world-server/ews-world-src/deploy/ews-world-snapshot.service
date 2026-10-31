@@ -1,0 +1,9 @@
+[Unit]
+Description=ews-world nightly snapshot (local gzip, keep 14; optional R2 if configured)
+[Service]
+Type=oneshot
+User=ewsworld
+Group=ewsworld
+EnvironmentFile=/etc/ews-world/env
+ExecStart=/usr/bin/node /opt/ews-world/dist/snapshot.js
+SyslogIdentifier=ews-world-snapshot

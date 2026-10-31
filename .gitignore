@@ -6,3 +6,8 @@ node_modules/
 dns-backup-*.json
 __pycache__/
 site/office/manifest.json
+.worlds-data/
+.worlds-data-e2e/
+site/office/assets/elderverse/*.glb
+dist/
+test-results/

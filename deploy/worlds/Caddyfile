@@ -1,0 +1,11 @@
+# Caddy in front of worlds-host bound to 127.0.0.1:8080.
+# TLS can stay off here when cloudflared is the public edge.
+
+:80 {
+	encode gzip zstd
+	header {
+		X-Content-Type-Options nosniff
+		Referrer-Policy same-origin
+	}
+	reverse_proxy 127.0.0.1:8080
+}

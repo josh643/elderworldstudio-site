@@ -1,0 +1,20 @@
+[Unit]
+Description=Elderverse worlds host (static + editor + world stub)
+After=network.target
+
+[Service]
+Type=simple
+User=ewsworlds
+Group=ewsworlds
+EnvironmentFile=/etc/ews-worlds/env
+WorkingDirectory=/opt/ews-worlds
+ExecStart=/usr/bin/node incoming/world-server/ews-world-src/worlds-host.mjs
+Restart=always
+RestartSec=3
+MemoryMax=1536M
+CPUQuota=150%
+NoNewPrivileges=yes
+PrivateTmp=yes
+
+[Install]
+WantedBy=multi-user.target

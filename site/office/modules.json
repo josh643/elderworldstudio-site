@@ -172,6 +172,26 @@
   {
    "id": "wayfinding",
    "src": "modules/wayfinding/index.js"
+  },
+  {
+   "id": "baked-props",
+   "src": "modules/baked-props/index.js"
+  },
+  {
+   "id": "worlds-travel",
+   "src": "modules/worlds-travel/index.js"
+  },
+  {
+   "id": "worlds-hud",
+   "src": "modules/worlds-hud/index.js"
+  },
+  {
+   "id": "worlds-editor",
+   "src": "modules/worlds-editor/index.js"
+  },
+  {
+   "id": "worlds-lod",
+   "src": "modules/worlds-lod/index.js"
   }
  ]
 }

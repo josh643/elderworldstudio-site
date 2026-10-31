@@ -1,0 +1,20 @@
+#!/bin/bash
+# ews-world-ctl status|health|logs [n]|roundtrip|snapshot|watchdog|use-stub|use-do <base>
+set -u
+H=http://127.0.0.1:8790
+key() { sed -n 's/^WORLD_KEY=//p' /etc/ews-world/env; }
+case "${1:-status}" in
+  status) systemctl --no-pager status ews-world ews-world-stub | grep -E '●|Active|Memory|CPU'; systemctl --no-pager list-timers 'ews-world-*' | sed -n '1,4p' ;;
+  health) curl -s -m 5 -w '\nHTTP %{http_code}\n' $H/healthz ;;
+  logs) journalctl -u ews-world -u ews-world-stub -n "${2:-50}" --no-pager -o cat ;;
+  roundtrip) curl -s -m 30 -XPOST -H "authorization: Bearer $(key)" $H/admin/roundtrip; echo ;;
+  snapshot) systemctl start ews-world-snapshot && journalctl -u ews-world-snapshot -n 3 --no-pager -o cat; ls -la /var/lib/ews-world/snapshots ;;
+  watchdog) F=/run/ews-world-health.fails
+    if curl -fsS -m 5 $H/healthz >/dev/null; then echo 0 > $F; exit 0; fi
+    n=$(( $(cat $F 2>/dev/null || echo 0) + 1 )); echo $n > $F; echo "health fail $n"
+    if [ $n -ge 3 ]; then echo "restarting ews-world after $n failed checks"; systemctl restart ews-world; echo 0 > $F; fi ;;
+  use-stub) sed -i 's|^WORLD_BASE=.*|WORLD_BASE=http://127.0.0.1:8788|; s|^WORLD_AGENT_EVENTS=.*|WORLD_AGENT_EVENTS=1|' /etc/ews-world/env; systemctl enable --now ews-world-stub; systemctl restart ews-world ;;
+  use-do) [ -n "${2:-}" ] || { echo "usage: use-do https://office-3d.elderworldstudio.pages.dev"; exit 2; }
+    sed -i "s|^WORLD_BASE=.*|WORLD_BASE=${2%/}|; s|^WORLD_AGENT_EVENTS=.*|WORLD_AGENT_EVENTS=0|" /etc/ews-world/env; systemctl restart ews-world ;;
+  *) echo "usage: $0 status|health|logs [n]|roundtrip|snapshot|watchdog|use-stub|use-do <base>"; exit 2 ;;
+esac

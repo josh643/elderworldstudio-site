@@ -1,0 +1,7 @@
+[Unit]
+Description=ews-world snapshot 02:10 daily (before vzdump pve-mini-nightly-usb at 02:30)
+[Timer]
+OnCalendar=*-*-* 02:10:00
+Persistent=true
+[Install]
+WantedBy=timers.target

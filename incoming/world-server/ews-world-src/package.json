@@ -1,0 +1,11 @@
+{
+  "name": "ews-world",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Elderverse world server (staging): authoritative town + construction + agent sim, outbound WS to the Cloudflare world DO",
+  "type": "module",
+  "main": "dist/main.js",
+  "scripts": { "build": "tsc -p .", "test": "node dist/selftest.js" },
+  "dependencies": { "ws": "^8.18.0" },
+  "devDependencies": { "typescript": "^5.6.0", "@types/ws": "^8.5.12", "@types/node": "^20.16.0" }
+}

@@ -39,3 +39,4 @@ html.office-on body{overflow:hidden}
 .office-hint{position:absolute;left:50%;bottom:22px;transform:translateX(-50%);background:#0b0716cc;color:#e8dfcc;font-size:13px;padding:8px 14px;border-radius:10px;pointer-events:none;transition:opacity 1.2s;white-space:nowrap}
 .office-hint.gone{opacity:0}
 .office-hud{display:none!important}
+html.worlds-on .office-load{font-family:ui-sans-serif,system-ui,sans-serif;letter-spacing:.16em;color:#3ee8ff}
