@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import fs from 'node:fs';
-import { waitReady, noPageErrors, serious } from './helpers.js';
+import { waitReady, noPageErrors, serious, worldsChrome, assertPlayableChrome } from './helpers.js';
 
 test.use({ video: { mode: 'on', size: { width: 1280, height: 720 } } });
 
@@ -16,6 +16,7 @@ test('worlds loads, walks, and travels to space and Omnivael', async ({ page }) 
   expect(info.worlds).toBe(true);
   expect(info.zone).toBe('town');
   expect(info.tp).toBe(true);
+  assertPlayableChrome(await worldsChrome(page), { maxMap: 160 });
 
   const before = await page.evaluate(() => window.__ewsWorlds.pos);
   await page.evaluate(() => window.__ewsWorlds.move(1, 0, 0.5));

@@ -8,18 +8,19 @@ html.worlds-on.office-on body { overflow: hidden; }
 
 .ew-ui { position: absolute; inset: 0; pointer-events: none; z-index: 8; font-family: ui-sans-serif, "Segoe UI", system-ui, sans-serif; color: var(--ew-text); }
 .ew-ui button, .ew-ui select, .ew-ui input, .ew-ui .ew-joy, .ew-ui .ew-screen { pointer-events: auto; }
-.ew-top { display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: linear-gradient(#05070de6, #05070d00); }
-.ew-brand { letter-spacing: .22em; font-size: 12px; color: var(--ew-cyan); }
+.ew-top { position: relative; z-index: 21; display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: linear-gradient(#05070de6, #05070d00); }
+.ew-brand { letter-spacing: .22em; font-size: 12px; color: var(--ew-cyan); flex: 0 0 auto; }
 .ew-brand b { font-weight: 700; }
 .ew-brand span { opacity: .55; margin-left: 8px; letter-spacing: .28em; }
-.ew-loc { margin-left: auto; font-size: 13px; padding: 4px 10px; border: 1px solid var(--ew-line); border-radius: 999px; background: #0b1220aa; }
-.ew-top-actions { display: flex; gap: 6px; }
+.ew-loc { margin-left: auto; font-size: 13px; padding: 4px 10px; border: 1px solid var(--ew-line); border-radius: 999px; background: #0b1220aa; min-width: 0; }
+.ew-top-actions { display: flex; gap: 6px; flex: 0 0 auto; }
 .ew-btn { font: 600 12px/1 ui-sans-serif, system-ui, sans-serif; letter-spacing: .06em; text-transform: uppercase; color: var(--ew-text); background: #101828cc; border: 1px solid var(--ew-line); border-radius: 999px; padding: 8px 12px; min-height: 36px; cursor: pointer; }
 .ew-btn:hover, .ew-cta:hover { border-color: var(--ew-cyan); color: #fff; }
 .ew-cta { display: block; width: 100%; margin: 14px 0 8px; font: 700 15px/1 ui-sans-serif, system-ui, sans-serif; letter-spacing: .14em; text-transform: uppercase; color: #041018; background: linear-gradient(90deg, var(--ew-cyan), #7cf); border: 0; border-radius: 10px; padding: 14px 16px; cursor: pointer; }
-.ew-map { position: absolute; right: 14px; bottom: 14px; width: 132px; height: 132px; border-radius: 12px; border: 1px solid var(--ew-line); background: #04101899; }
+.ew-map-wrap { position: absolute; right: max(14px, env(safe-area-inset-right, 0px)); bottom: max(14px, env(safe-area-inset-bottom, 0px)); width: 132px; height: 132px; border-radius: 12px; border: 1px solid var(--ew-line); background: #04101899; overflow: hidden; z-index: 2; pointer-events: none; }
+.office-root .ew-ui canvas.ew-map, .ew-map-wrap .ew-map { position: static; width: 100%; height: 100%; display: block; border: 0; border-radius: 0; background: transparent; }
 .ew-prompt { position: absolute; left: 50%; bottom: 28px; transform: translateX(-50%); padding: 8px 14px; border: 1px solid var(--ew-cyan); border-radius: 8px; background: #041018cc; letter-spacing: .12em; font-size: 12px; text-transform: uppercase; }
-.ew-screen { position: absolute; inset: 0; display: grid; place-items: center; background: radial-gradient(80% 60% at 50% 40%, #0b1a2ccc, #05070df2); }
+.ew-screen { position: absolute; inset: 0; display: grid; place-items: center; background: radial-gradient(80% 60% at 50% 40%, #0b1a2ccc, #05070df2); z-index: 20; }
 .ew-screen.hide { display: none; }
 .ew-panel { width: min(440px, calc(100% - 32px)); padding: 28px 24px; background: var(--ew-panel); border: 1px solid var(--ew-line); border-radius: 16px; box-shadow: 0 0 40px #3ee8ff22; }
 .ew-panel.ew-wide { width: min(560px, calc(100% - 32px)); }
@@ -48,8 +49,17 @@ html.worlds-on.office-on body { overflow: hidden; }
 .ew-build-bar b { letter-spacing: .16em; font-size: 11px; color: var(--ew-mag); }
 .ew-build-bar button, .ew-build-bar select { font: 600 11px ui-sans-serif, system-ui, sans-serif; color: var(--ew-text); background: #101828; border: 1px solid var(--ew-line); border-radius: 8px; padding: 6px 8px; cursor: pointer; }
 
+@media (pointer: coarse) {
+  .ew-map-wrap { top: 58px; bottom: auto; right: max(10px, env(safe-area-inset-right, 0px)); width: 88px; height: 88px; }
+}
 @media (max-width: 720px) {
+  .ew-top { flex-wrap: wrap; padding: max(8px, env(safe-area-inset-top, 0px)) max(12px, env(safe-area-inset-right, 0px)) 8px max(12px, env(safe-area-inset-left, 0px)); gap: 8px; }
   .ew-top-actions .ew-btn:nth-child(2) { display: none; }
-  .ew-map { width: 96px; height: 96px; }
   .ew-brand span { display: none; }
+  .ew-loc { margin-left: auto; max-width: min(56vw, 220px); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .ew-top-actions { flex: 1 0 100%; justify-content: flex-end; flex-wrap: wrap; }
+  .ew-map-wrap { width: 88px; height: 88px; }
+  .ew-joy-stick { left: max(12px, env(safe-area-inset-left, 0px)); bottom: max(16px, env(safe-area-inset-bottom, 0px)); width: 104px; height: 104px; }
+  .ew-joy-act { right: max(14px, env(safe-area-inset-right, 0px)); bottom: max(20px, env(safe-area-inset-bottom, 0px)); }
+  .ew-joy-use { right: calc(max(14px, env(safe-area-inset-right, 0px)) + 80px); }
 }

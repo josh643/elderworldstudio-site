@@ -40,3 +40,23 @@ export function dataUrlToBuf(url) {
   const i = url.indexOf(',');
   return Buffer.from(url.slice(i + 1), 'base64');
 }
+
+export function cropCenterPng(buf, frac = 0.5) {
+  const src = decodePng(buf);
+  const cw = Math.max(8, Math.floor(src.width * frac));
+  const ch = Math.max(8, Math.floor(src.height * frac));
+  const x0 = Math.floor((src.width - cw) / 2);
+  const y0 = Math.floor((src.height - ch) / 2);
+  const out = new PNG({ width: cw, height: ch });
+  for (let y = 0; y < ch; y++) {
+    for (let x = 0; x < cw; x++) {
+      const si = ((y0 + y) * src.width + (x0 + x)) * 4;
+      const di = (y * cw + x) * 4;
+      out.data[di] = src.data[si];
+      out.data[di + 1] = src.data[si + 1];
+      out.data[di + 2] = src.data[si + 2];
+      out.data[di + 3] = src.data[si + 3];
+    }
+  }
+  return PNG.sync.write(out);
+}

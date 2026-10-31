@@ -65,7 +65,7 @@ test('worlds ewsrender=1: distant campus SSIM ≥ 0.98 vs max LOD', async ({ pag
       window.__ewsWorlds.setView(0, 42, 170, 0, 2, 30);
     }, forceMax);
     await page.waitForTimeout(250);
-    return page.evaluate(() => document.querySelector('.office-root canvas').toDataURL('image/png'));
+    return page.evaluate(() => document.querySelector('.office-root > canvas').toDataURL('image/png'));
   }
   const a = dataUrlToBuf(await grab(true));
   const b = dataUrlToBuf(await grab(false));

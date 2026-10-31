@@ -8,6 +8,7 @@ test('self-hosted host answers /healthz and serves worlds + office', async ({ re
   expect(j.service).toBe('ews-worlds');
   expect(j.standalone).toBe(true);
   expect(j.modsConfigured).toBe(true);
+  expect(String(j.staticRoot || '').replace(/\\/g, '/')).toMatch(/\/site$/);
 
   expect((await request.get('/worlds/')).ok()).toBeTruthy();
   expect((await request.get('/office/')).ok()).toBeTruthy();

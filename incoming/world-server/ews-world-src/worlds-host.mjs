@@ -8,6 +8,7 @@ import crypto from 'node:crypto';
 import zlib from 'node:zlib';
 import { fileURLToPath } from 'node:url';
 import { WebSocketServer, WebSocket } from 'ws';
+import { resolveStaticRoot } from './static-root.mjs';
 
 const env = (k, d = '') => (process.env[k] ?? d).trim();
 const envNum = (k, d) => { const n = Number(process.env[k]); return Number.isFinite(n) && process.env[k] ? n : d; };
@@ -15,7 +16,7 @@ const log = (level, msg, extra = {}) => process.stdout.write(JSON.stringify({ t:
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO = env('WORLDS_REPO', path.resolve(HERE, '../../..'));
-const STATIC_ROOT = path.resolve(env('STATIC_ROOT', path.join(REPO, 'site')));
+const STATIC_ROOT = resolveStaticRoot(process.env.STATIC_ROOT, REPO);
 const DATA = env('EWS_WORLD_DATA', path.join(REPO, '.worlds-data'));
 const BIND = env('PUBLIC_BIND', '0.0.0.0');
 const PORT = envNum('PUBLIC_PORT', 8080);
