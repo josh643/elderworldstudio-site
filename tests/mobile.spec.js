@@ -1,5 +1,5 @@
 const { test, expect } = require("@playwright/test");
-const { PAGES, PHONE_VIEWPORTS, SMS_CONSENT, blockAds, layoutAudit } = require("./helpers");
+const { PAGES, PHONE_VIEWPORTS, NAV_LINK_COUNT, SMS_CONSENT, blockAds, layoutAudit } = require("./helpers");
 
 test.describe("mobile layout", () => {
   for (const vp of PHONE_VIEWPORTS) {
@@ -34,7 +34,7 @@ test.describe("mobile layout", () => {
       await toggle.click();
       await expect(toggle).toHaveAttribute("aria-expanded", "true");
       await expect(nav).toBeVisible();
-      await expect(nav.locator("a")).toHaveCount(8);
+      await expect(nav.locator("a")).toHaveCount(NAV_LINK_COUNT);
       await page.keyboard.press("Escape");
       await expect(nav).toBeHidden();
     }
@@ -43,7 +43,7 @@ test.describe("mobile layout", () => {
   test("services SMS opt-in wording is unchanged and the form fits a phone", async ({ page }) => {
     await blockAds(page);
     await page.setViewportSize({ width: 360, height: 740 });
-    await page.goto("/services/", { waitUntil: "domcontentloaded" });
+    await page.goto("/demo/", { waitUntil: "domcontentloaded" });
 
     const sms = page.locator(".sms-opt span");
     await expect(sms).toBeVisible();

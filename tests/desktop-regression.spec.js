@@ -1,5 +1,5 @@
 const { test, expect } = require("@playwright/test");
-const { PAGES, blockAds } = require("./helpers");
+const { PAGES, NAV_LINK_COUNT, blockAds } = require("./helpers");
 
 test.describe("desktop regression", () => {
   test.use({ viewport: { width: 1366, height: 900 } });
@@ -31,7 +31,7 @@ test.describe("desktop regression", () => {
       expect(metrics.toggleDisplay, "hamburger must stay hidden on desktop").toBe("none");
       expect(metrics.navDisplay).toBe("flex");
       expect(metrics.navVisible).toBeTruthy();
-      expect(metrics.linkCount).toBe(8);
+      expect(metrics.linkCount).toBe(NAV_LINK_COUNT);
       expect(metrics.headerH, "header height drifted from the 65px desktop layout").toBeGreaterThanOrEqual(60);
       expect(metrics.headerH).toBeLessThanOrEqual(72);
       expect(metrics.navH, "nav should stay a single row").toBeGreaterThanOrEqual(30);

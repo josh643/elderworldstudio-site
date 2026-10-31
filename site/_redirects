@@ -9,5 +9,5 @@
 /about     /#about    301
 /games     /#games    301
 /tools     /#tools    301
-/services  /          301
+/services  /services/  301
 /schedule  /contact/  301
