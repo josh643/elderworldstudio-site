@@ -1,0 +1,21 @@
+[Unit]
+Description=Elderverse world DO stub (localhost only; stand-in until the Cloudflare world DO is on staging)
+After=network.target
+[Service]
+Type=simple
+User=ewsworld
+Group=ewsworld
+EnvironmentFile=/etc/ews-world/env
+ExecStart=/usr/bin/node /opt/ews-world/dist/stub.js
+Restart=always
+RestartSec=3
+MemoryMax=256M
+CPUQuota=50%
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+ReadWritePaths=/var/lib/ews-world
+SyslogIdentifier=ews-world-stub
+[Install]
+WantedBy=multi-user.target
