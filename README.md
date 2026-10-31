@@ -21,4 +21,4 @@ Privacy Policy URL for app stores: `https://elderworldstudio.com/privacy-policy/
 
 ## Elderverse worlds (office-3d)
 
-Standalone world for `worlds.elderworldstudio.com` lives on the office engine. See `site/worlds/README.md` (run/host/tests) and `docs/ews-render-design.md` (Phase 1 three.js LOD + Phase 2 WebGPU renderer).
+Standalone world for `worlds.elderworldstudio.com` lives on the office engine. See `site/worlds/README.md` (run/host/tests) and `docs/ews-render-design.md` (Phase 1 three.js LOD + Phase 2 `packages/ews-render`). Phase 2 is behind `?ewsrender=1`.

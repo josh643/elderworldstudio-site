@@ -166,7 +166,8 @@ const MIME = {
   '.json': 'application/json; charset=utf-8', '.svg': 'image/svg+xml', '.png': 'image/png', '.jpg': 'image/jpeg',
   '.jpeg': 'image/jpeg', '.webp': 'image/webp', '.glb': 'model/gltf-binary', '.gltf': 'model/gltf+json',
   '.wasm': 'application/wasm', '.ktx2': 'image/ktx2', '.txt': 'text/plain; charset=utf-8', '.ico': 'image/x-icon',
-  '.woff2': 'font/woff2', '.map': 'application/json',
+  '.woff2': 'font/woff2', '.map': 'application/json', '.mjs': 'text/javascript; charset=utf-8',
+  '.wgsl': 'text/plain; charset=utf-8',
 };
 function safeJoin(root, urlPath) {
   const dec = decodeURIComponent(urlPath.split('?')[0]);
@@ -252,6 +253,11 @@ const srv = http.createServer(async (req, res) => {
       return json(res, 200, { ok: true, seq: world.seq, standalone: true });
     }
     if (req.method !== 'GET' && req.method !== 'HEAD') return json(res, 405, { ok: false });
+    if (u.pathname.startsWith('/packages/')) {
+      const pkgRoot = path.resolve(REPO, 'packages');
+      const pkgFile = safeJoin(pkgRoot, u.pathname.slice('/packages'.length));
+      if (pkgFile && sendFile(req, res, pkgFile)) return;
+    }
     let file = safeJoin(STATIC_ROOT, u.pathname);
     if (file && sendFile(req, res, file)) return;
     if (u.pathname === '/' || u.pathname === '/worlds' || u.pathname === '/worlds/') {

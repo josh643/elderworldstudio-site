@@ -36,7 +36,7 @@ Lives in `site/office/modules/worlds-lod` and small engine hooks. The office `/o
 
 Honest limits of Phase 1: no meshlet DAG, no GPU-driven culling, no visibility buffer, no bindless texture streaming, no cube-sphere planets, no baked high-poly→LOD normal-map pipeline. Those are Phase 2.
 
-## Phase 2 — `packages/ews-render` (separate PR)
+## Phase 2 — `packages/ews-render` (this PR)
 
 A dedicated EWS renderer that can sit beside or replace `THREE.WebGLRenderer` while keeping glTF / cluster JSON / heightfield formats.
 
@@ -54,18 +54,22 @@ KTX2 / basis texture mips        log depth + floating origin (same as Phase 1)
 
 **Backends:** WebGPU first (compute + storage buffers + preferred depth). WebGL2 fallback: transform-feedback or CPU cluster pick (Phase 1 path) so mid-range Android still runs.
 
-**Milestones**
+**Milestones (shipped)**
 
 1. Package skeleton (`packages/ews-render`) with a headless SSE unit test and the same `lod-clusters.json` schema.
 2. Offline cluster builder that reads EWS glTF and writes meshlets + geomErr + baked normals.
-3. WebGPU path: GPU cull + LOD select + visibility buffer of the campus + town.
+3. WebGPU path: GPU cull + LOD select + visibility-buffer shaders of the campus + town (compute always; present via WebGL2 when the THREE canvas already owns WebGL).
 4. Terrain: GPU clipmap/CDLOD, full-resolution heightfield on the horizon via SSE.
 5. Cube-sphere planets + scattering; impostors only past the pixel-identical point, dithered crossfade.
-6. WebGL2 fallback; drop-in adapter so `engine.js` can `R = ewsRender.create({ fallback: 'webgl2' })`.
-7. Device lab: SSIM ≥ 0.98 and the FPS targets above on the laptop and the phone.
+6. WebGL2 fallback; drop-in adapter so `engine.js` / worlds can `R = await ewsRender.create({ fallback: 'webgl2' })`.
+7. CI SSIM ≥ 0.98. Device-lab FPS (≥50 laptop / ≥30 mid-range Android) still needs a real GPU; CI records SwiftShader numbers only.
 
-Scene/asset compatibility: keep glTF + Draco/meshopt, the editor heightfield, and the cluster JSON. Do not require a Unity or custom binary that the static host cannot serve.
+**Feature flag:** `/worlds/?ewsrender=1` or `localStorage.ews-render=1`. Off by default. `/office/` unchanged.
 
-## How this PR tests it
+Scene/asset compatibility: keep glTF + Draco/meshopt, the editor heightfield, and the cluster JSON. Do not require a Unity or custom binary that the static host cannot serve. The host serves `/packages/ews-render/` from this repo (Docker + systemd copy the package). No runtime CDN.
 
-`tests/worlds/lod-ssim.spec.js` renders the same distant campus view at `forceMaxLod` and at the SSE path, writes both PNGs, asserts SSIM ≥ 0.98, and prints before/after FPS into `docs/worlds-lod-metrics.json` for the PR body.
+## How this is tested
+
+Phase 1: `tests/worlds/lod-ssim.spec.js` → `docs/worlds-lod-metrics.json`.
+
+Phase 2: `node --test packages/ews-render/test/*.test.mjs` plus `tests/worlds/ews-render.spec.js` (flag on/off, render-lab SSIM ≥ 0.98, same-path fps/calls/tris/memory). Shots in `docs/ews-render-shots/`.

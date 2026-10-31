@@ -12,4 +12,6 @@ test('self-hosted host answers /healthz and serves worlds + office', async ({ re
   expect((await request.get('/worlds/')).ok()).toBeTruthy();
   expect((await request.get('/office/')).ok()).toBeTruthy();
   expect((await request.get('/office/office.js')).ok()).toBeTruthy();
+  expect((await request.get('/packages/ews-render/src/index.js')).ok()).toBeTruthy();
+  expect((await request.get('/worlds/render-lab/')).ok()).toBeTruthy();
 });

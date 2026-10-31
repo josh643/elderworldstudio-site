@@ -33,7 +33,8 @@ function sampleH(field, x, z, cover) {
 export default {
   setup(ctx) {
     if (!ctx.worlds) return;
-    this.ctx = ctx; this.T = ctx.THREE; this.webgpu = !!navigator.gpu;
+    this.ctx = ctx; this.T = ctx.THREE;     this.webgpu = !!navigator.gpu;
+    this.ews = null;
     this.mode = ctx.qualityMode || 'auto';
     this.viewDist = PREF[this.mode]?.far || PREF.auto.far;
     this.forceMax = false;
@@ -43,7 +44,7 @@ export default {
     this.cover = 320;
     this.stats = {
       fps: 0, calls: 0, tris: 0, viewDist: this.viewDist, lodSwitches: 0,
-      backend: this.webgpu ? 'webgpu-ready' : 'webgl2', sseLim: PIXEL_LIM,
+      backend: ctx.ewsRenderFlag ? 'ews-render' : (this.webgpu ? 'webgpu-ready' : 'webgl2'), sseLim: PIXEL_LIM,
       logDepth: !!ctx.renderer.capabilities.logarithmicDepthBuffer,
       floatingOrigin: [0, 0, 0],
     };
@@ -60,8 +61,8 @@ export default {
     const api = window.__ewsWorlds || (window.__ewsWorlds = {});
     api.metrics = () => this.snapshot();
     api.setQuality = m => this.setMode(m);
-    api.forceMaxLod = on => { this.forceMax = !!on; };
-    api.lodInfo = () => ({ pixelLimit: PIXEL_LIM, backend: this.stats.backend, viewDist: this.viewDist, webgpu: this.webgpu, forceMax: !!this.forceMax, logDepth: this.stats.logDepth });
+    api.forceMaxLod = on => { this.forceMax = !!on; this.ctx.use?.('ewsRender')?.forceMaxLod(on); };
+    api.lodInfo = () => ({ pixelLimit: PIXEL_LIM, backend: this.stats.backend, viewDist: this.viewDist, webgpu: this.webgpu, forceMax: !!this.forceMax, logDepth: this.stats.logDepth, ewsRender: !!this.ctx.ewsRenderFlag });
   },
   applyAniso() {
     const an = Math.min(PREF[this.mode]?.aniso || 8, this.ctx.renderer.capabilities.getMaxAnisotropy());
@@ -138,6 +139,15 @@ export default {
     this.stats.terrainSse = +maxSse.toFixed(3);
   },
   pickLod(obj) {
+    this.ews = this.ews || this.ctx.use?.('ewsRender');
+    if (this.ews) {
+      this.ews.forceMaxLod(this.forceMax);
+      return this.ews.pickLod({
+        catalog: obj.userData.catalog,
+        levels: this.clusters?.catalog?.find(c => c.id === obj.userData.catalog)?.levels,
+        position: obj.getWorldPosition(new this.T.Vector3()),
+      }, this.ctx.cam, this.ctx.renderer.domElement.height || innerHeight);
+    }
     if (this.forceMax) return 0;
     const cam = this.ctx.cam, h = this.ctx.renderer.domElement.height || innerHeight;
     const wp = obj.getWorldPosition(new this.T.Vector3());
@@ -185,6 +195,8 @@ export default {
       quality: this.mode,
       logDepth: this.stats.logDepth,
       floatingOrigin: this.stats.floatingOrigin,
+      ewsRender: !!this.ctx.ewsRenderFlag,
+      ews: this.ctx.use?.('ewsRender')?.metrics?.() || null,
     };
   },
   onFrame(dt) {

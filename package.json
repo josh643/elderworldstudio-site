@@ -8,7 +8,8 @@
     "worlds:assets": "node tools/worlds-build.mjs --assets",
     "worlds:build": "node tools/worlds-build.mjs",
     "worlds:host": "node incoming/world-server/ews-world-src/worlds-host.mjs",
-    "test": "playwright test",
+    "test": "node --test packages/ews-render/test/*.test.mjs && playwright test",
+    "test:render": "node --test packages/ews-render/test/*.test.mjs",
     "test:worlds": "playwright test tests/worlds"
   },
   "dependencies": {

@@ -7,7 +7,7 @@ import { mergeGeometries } from '../vendor/jsm/utils/BufferGeometryUtils.js?v=16
 import * as kit from './kit.js?v=32';
 import * as DN from './daynight.js?v=2';
 import * as EX from './exterior.js?v=4';   /* real 3D exterior (campus + town reserve); ?ext=0 = old baked view */
-const V = 36, GOLD = 0xd9b45a;
+const V = 37, GOLD = 0xd9b45a;
 const $ = (t, a = {}, h = '') => { const e = document.createElement(t); for (const k in a) e.setAttribute(k, a[k]); e.innerHTML = h; return e; };
 export const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -35,6 +35,10 @@ export async function start(opts = {}) {
   const igpu = /intel|uhd|iris|mali|adreno|powervr|apple gpu|llvmpipe|swiftshader|videocore/i.test(gpuName);
   const WORLDS = !!(opts.worlds || /\/worlds(\/|$)/.test(location.pathname) || /[?&]worlds=1/.test(location.search));
   const TP = WORLDS || /[?&]tp=1/.test(location.search);
+  let EWS_RENDER = false;
+  if (WORLDS) {
+    try { EWS_RENDER = /[?&]ewsrender=1/.test(location.search) || /[?&]render=ews/.test(location.search) || localStorage.getItem('ews-render') === '1'; } catch { EWS_RENDER = /[?&]ewsrender=1/.test(location.search); }
+  }
   const R = new THREE.WebGLRenderer({ antialias: !igpu && devicePixelRatio < 1.5, powerPreference: 'high-performance', stencil: true, logarithmicDepthBuffer: WORLDS, preserveDrawingBuffer: WORLDS });   /* stencil: real window openings (kit.windowPane). Worlds: log depth so horizon + planets don't z-fight. */
   const lowEnd = (navigator.deviceMemory || 8) <= 4 || (navigator.hardwareConcurrency || 8) <= 4, RATIOS = [0.75, 1, 1.5];   // tier base ratios; DSCALE steps below these at runtime
   let tier = lowEnd ? 0 : devicePixelRatio > 1.5 ? 1 : 2; if (tier === 2 && matchMedia('(pointer: fine)').matches) RATIOS[2] = igpu ? 1.25 : 2;   // desktop: native res up to 2x, 1.25 on integrated GPUs
@@ -82,7 +86,7 @@ export async function start(opts = {}) {
   let KIOSK = false; try { KIOSK = !!localStorage.getItem('ews-kiosk'); } catch {}
   const PUBLIC = WORLDS || /(^|\.)elderworldstudio\.com$/.test(location.hostname) || /[?&]public=1/.test(location.search);
   if (WORLDS) document.documentElement.classList.add('worlds-on');
-  const ctx = { igpu, publicMode: PUBLIC, worlds: WORLDS, thirdPerson: TP, paused: false, menuOpen: false, lookSens: 1,
+  const ctx = { igpu, publicMode: PUBLIC, worlds: WORLDS, thirdPerson: TP, ewsRenderFlag: EWS_RENDER, paused: false, menuOpen: false, lookSens: 1,
     verb, touch, lod: 1,
     THREE, kit, scene, cam, rig, renderer: R, mat, get tier() { return tier; }, M, box, panel, image, textCanvas, label, site, roster, esc, root,
     onClick: (obj, handler) => { obj.userData.onPick = handler; clickables.push(obj); return obj; },
@@ -511,6 +515,7 @@ export async function start(opts = {}) {
       pos: { configurable: true, get() { return { x: pos.x, y: pos.y, z: pos.z, yaw, pitch }; } },
       thirdPerson: { configurable: true, get() { return TP; } },
       worlds: { configurable: true, get() { return WORLDS; } },
+      ewsRender: { configurable: true, get() { return EWS_RENDER; } },
     });
     api.move = (f, r, secs = 0.35) => { keys.w = f > 0 ? 1 : 0; keys.s = f < 0 ? 1 : 0; keys.d = r > 0 ? 1 : 0; keys.a = r < 0 ? 1 : 0; return new Promise(res => setTimeout(() => { keys.w = keys.s = keys.d = keys.a = 0; res({ x: pos.x, y: pos.y, z: pos.z }); }, secs * 1000)); };
     api.jump = () => { keys[' '] = 1; };

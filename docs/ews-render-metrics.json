@@ -1,0 +1,43 @@
+{
+  "phase": 2,
+  "ssim": 1,
+  "mad": 0,
+  "width": 1280,
+  "height": 720,
+  "fpsMax": 60.00000000000001,
+  "fpsLod": 60.00000000000001,
+  "callsMax": 34,
+  "callsLod": 34,
+  "trisMax": 104448,
+  "trisLod": 1540,
+  "memMax": 4450856,
+  "memLod": 4450856,
+  "backend": "webgl2",
+  "sseLimit": 1,
+  "impostors": 0,
+  "compute": false,
+  "at": "2026-10-31T15:33:00.181Z",
+  "note": "CI is SwiftShader/headless. fps is not a laptop/phone target; SSIM is the lossless gate.",
+  "paths": {
+    "campus-distant": {
+      "eye": [
+        0,
+        42,
+        170
+      ],
+      "target": [
+        0,
+        2,
+        30
+      ],
+      "fpsMax": 60.00000000000001,
+      "fpsLod": 60.00000000000001,
+      "callsMax": 34,
+      "callsLod": 34,
+      "trisMax": 104448,
+      "trisLod": 1540,
+      "memMax": 4450856,
+      "memLod": 4450856
+    }
+  }
+}
