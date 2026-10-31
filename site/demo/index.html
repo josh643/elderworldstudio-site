@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Request a Free Demo | Elder World Studio Inc</title>
+<meta name="description" content="Request a free demo of a website, POS, kiosk, AI receptionist or custom tool from Elder World Studio Inc. No pressure and no obligation.">
+<meta name="robots" content="index,follow">
+<link rel="canonical" href="https://elderworldstudio.com/demo/">
+<link rel="icon" type="image/svg+xml" href="../assets/img/brand/ews-mark.svg?v=4">
+<link rel="icon" type="image/png" sizes="32x32" href="../favicon.png?v=4">
+<link rel="apple-touch-icon" href="../apple-touch-icon.png?v=4">
+<meta name="theme-color" content="#0A0614">
+<meta property="og:title" content="Request a Free Demo | Elder World Studio Inc">
+<meta property="og:description" content="Request a free demo of a website, POS, kiosk, AI receptionist or custom tool from Elder World Studio Inc. No pressure and no obligation.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Elder World Studio Inc">
+<meta property="og:url" content="https://elderworldstudio.com/demo/">
+<meta property="og:image" content="https://elderworldstudio.com/assets/img/brand/ews-og.png?v=4">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Request a Free Demo | Elder World Studio Inc">
+<meta name="twitter:description" content="Request a free demo of a website, POS, kiosk, AI receptionist or custom tool from Elder World Studio Inc. No pressure and no obligation.">
+<meta name="twitter:image" content="https://elderworldstudio.com/assets/img/brand/ews-og.png?v=4">
+<link rel="preload" href="../assets/fonts/michroma.woff" as="font" type="font/woff" crossorigin>
+<link rel="stylesheet" href="../assets/css/site.css?v=7">
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9120677014955697" crossorigin="anonymous"></script>
+
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="site-header">
+ <div class="wrap">
+  <div class="header-bar">
+  <a class="brand" href="../index.html"><img src="../assets/img/brand/ews-mark.svg?v=4" width="36" height="36" alt=""><span>Elder World Studio Inc</span></a>
+  <button type="button" class="nav-toggle" aria-expanded="false" aria-controls="site-nav" aria-label="Menu"><span class="nav-toggle-bars" aria-hidden="true"></span><span class="nav-toggle-text">Menu</span></button>
+  </div>
+  <nav id="site-nav" class="nav" aria-label="Main"><a href="../index.html">Home</a><a href="../services/index.html">Products</a><a href="../games/index.html">Games</a><a href="../merch/index.html">Merch</a><a href="../contact/index.html">Contact</a><a class="nav-cta" href="../demo/index.html" aria-current="page">Free demo</a></nav>
+ </div>
+</header>
+<main id="main">
+
+<div class="page"><div class="wrap">
+ <div class="page-head"><h1>Request a free demo</h1><p class="meta">Tell us what you need. We build a quick, free demo and share it by link.</p></div>
+ <div class="panel" style="margin-bottom:24px"><h2 class="card-title">No pressure and no obligation</h2>
+  <p>You only decide on anything after you have seen it working. We reply by email, usually within one business day.</p></div>
+ <h2 id="request">Your request</h2>
+
+ <div id="form-status" class="panel" hidden style="margin-bottom:16px"></div>
+ <form class="panel lead-form" method="post" action="/api/lead">
+  <input type="hidden" name="return_to" value="/demo/">
+  <label>Your name *<input name="name" required maxlength="100" autocomplete="name"></label>
+  <label>Email *<input name="email" type="email" required maxlength="200" autocomplete="email"></label>
+  <label>Phone (optional)<input name="phone" type="tel" maxlength="40" autocomplete="tel"></label>
+  <label>Business name *<input name="business" required maxlength="150" autocomplete="organization"></label>
+  <label>What do you need? *<select name="type" required><option>Website</option><option>Take it with you</option><option>POS</option><option>Kiosk</option><option>AI receptionist</option><option>Agent OS</option><option>AI tool</option><option>Custom software</option><option selected>Not sure</option></select></label>
+  <label>Tell us about it *<textarea name="description" required maxlength="4000" rows="6" placeholder="What does your business do, and what would you like to fix or build?"></textarea></label>
+  <label>Budget (optional)<input name="budget" maxlength="60" placeholder="e.g. under $500, not sure yet"></label>
+  <label class="sms-opt"><input type="checkbox" name="sms_optin" value="yes"> <span>By checking this box, I agree to receive text messages from Elder World Studio about my service request (confirmations, project questions, and demo scheduling). Up to 4 msgs per request. Message and data rates may apply. Reply STOP to opt out and HELP for help. Optional &mdash; not required to get a demo. <a class="link" href="../sms-terms/index.html">SMS Terms</a> &middot; <a class="link" href="../privacy-policy/index.html#sms">Privacy Policy</a></span></label>
+  <div class="hp" aria-hidden="true"><label>Leave this empty<input name="website_url" tabindex="-1" autocomplete="off"></label></div>
+  <input type="hidden" name="t" id="lead-t" value="">
+  <div class="cf-turnstile" data-sitekey="0x4AAAAAAFS0QVr90yy4iuW9" data-theme="dark"></div>
+  <button class="btn btn-primary" type="submit">Request my free demo</button>
+  <p class="meta">We reply by email, usually within one business day. We only use your details to answer your request (see our <a href="../privacy-policy/index.html">Privacy Policy</a>).</p>
+ </form>
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+<script>document.getElementById('lead-t').value=Date.now();(function(){var q=new URLSearchParams(location.search),sel=document.querySelector('.lead-form [name=type]');if(sel&&q.get('type')){var t=q.get('type');for(var i=0;i<sel.options.length;i++)if(sel.options[i].value===t)sel.selectedIndex=i;}var s=document.getElementById('form-status');if(!q.has('sent'))return;s.hidden=false;s.textContent=q.get('sent')==='1'?'Thanks! Your request was sent. We will reply by email soon.':('Sorry, that did not go through: '+(q.get('e')||'please try again')+' You can also email annaews@agentmail.to.');})();</script>
+
+</div></div>
+
+</main>
+<footer class="site-footer">
+ <div class="wrap">
+  <div>&copy; 2026 Elder World Studio Inc. All rights reserved.</div>
+  <nav aria-label="Footer"><a href="../services/index.html">Products</a><a href="../pos/index.html">Elder POS</a><a href="../kiosk/index.html">Kiosk OS</a><a href="../websites/index.html">Websites</a><a href="../build/index.html">Web builder</a><a href="../ai-receptionist/index.html">AI receptionist</a><a href="../agent-os/index.html">Agent OS</a><a href="../custom-software/index.html">Custom software</a><a href="../demo/index.html">Free demo</a><a href="../games/index.html">Games</a><a href="../testers/index.html">Testers</a><a href="../merch/index.html">Merch</a><a href="../contact/index.html">Contact</a><a href="../privacy-policy/index.html">Privacy Policy</a><a href="mailto:annaews@agentmail.to">annaews@agentmail.to</a></nav>
+ </div>
+</footer>
+<script src="../assets/js/nav.js?v=1" defer></script>
+<noscript><style>@media (max-width:899px){.nav{display:flex!important;flex-direction:column;width:100%}.nav-toggle{display:none!important}}</style></noscript>
+</body>
+</html>

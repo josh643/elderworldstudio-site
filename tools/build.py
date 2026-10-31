@@ -23,14 +23,32 @@ EWS_TESTERS_EMAIL = "ews_testers@googlegroups.com"
 STEAM_OMNI = utm("https://store.steampowered.com/app/4121760/", "omnivael")
 STEAM_COTR = utm("https://store.steampowered.com/app/2559510/", "chronicles")
 
-def page(path, title, desc, body, canonical, current="", noindex=False, abs_urls=False):
+def page(path, title, desc, body, canonical, current="", noindex=False, abs_urls=False, extra_head=""):
     depth = path.count("/")  # e.g. "privacy-policy/index.html" -> 1
     P = "/" if abs_urls else "../" * depth
-    nav = [("index.html", "Home", "home"), ("games/index.html", "Games", "games"),
-           ("index.html#tools", "Assets", "tools"), ("testers/index.html", "Testers", "testers"), ("merch/index.html", "Merch", "merch"), ("services/index.html", "Services", "services"), ("contact/index.html", "Contact", "contact"),
-           ("privacy-policy/index.html", "Privacy Policy", "privacy")]
+    nav = [("index.html", "Home", "home"), ("services/index.html", "Products", "products"),
+           ("games/index.html", "Games", "games"), ("merch/index.html", "Merch", "merch"),
+           ("contact/index.html", "Contact", "contact")]
     navhtml = "".join(f'<a href="{P}{h}"{" aria-current=\"page\"" if k == current else ""}>{t}</a>' for h, t, k in nav)
+    navhtml += f'<a class="nav-cta" href="{P}demo/index.html"{" aria-current=\"page\"" if current == "demo" else ""}>Free demo</a>'
     robots = '<meta name="robots" content="noindex">' if noindex else '<meta name="robots" content="index,follow">'
+    footer = (
+        f'<a href="{P}services/index.html">Products</a>'
+        f'<a href="{P}pos/index.html">Elder POS</a>'
+        f'<a href="{P}kiosk/index.html">Kiosk OS</a>'
+        f'<a href="{P}websites/index.html">Websites</a>'
+        f'<a href="{P}build/index.html">Web builder</a>'
+        f'<a href="{P}ai-receptionist/index.html">AI receptionist</a>'
+        f'<a href="{P}agent-os/index.html">Agent OS</a>'
+        f'<a href="{P}custom-software/index.html">Custom software</a>'
+        f'<a href="{P}demo/index.html">Free demo</a>'
+        f'<a href="{P}games/index.html">Games</a>'
+        f'<a href="{P}testers/index.html">Testers</a>'
+        f'<a href="{P}merch/index.html">Merch</a>'
+        f'<a href="{P}contact/index.html">Contact</a>'
+        f'<a href="{P}privacy-policy/index.html">Privacy Policy</a>'
+        f'<a href="mailto:{EMAIL}">{EMAIL}</a>'
+    )
     html = f"""<!doctype html>
 <html lang="en">
 <head>
@@ -50,9 +68,14 @@ def page(path, title, desc, body, canonical, current="", noindex=False, abs_urls
 <meta property="og:site_name" content="{STUDIO}">
 <meta property="og:url" content="{DOMAIN}{canonical}">
 <meta property="og:image" content="{DOMAIN}/assets/img/brand/ews-og.png?v=4">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="{title}">
+<meta name="twitter:description" content="{desc}">
+<meta name="twitter:image" content="{DOMAIN}/assets/img/brand/ews-og.png?v=4">
 <link rel="preload" href="{P}assets/fonts/michroma.woff" as="font" type="font/woff" crossorigin>
-<link rel="stylesheet" href="{P}assets/css/site.css?v=6">
+<link rel="stylesheet" href="{P}assets/css/site.css?v=7">
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9120677014955697" crossorigin="anonymous"></script>
+{extra_head}
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
@@ -71,7 +94,7 @@ def page(path, title, desc, body, canonical, current="", noindex=False, abs_urls
 <footer class="site-footer">
  <div class="wrap">
   <div>&copy; 2026 {STUDIO}. All rights reserved.</div>
-  <nav aria-label="Footer"><a href="{P}games/index.html">Games</a><a href="{P}testers/index.html">Testers</a><a href="{P}services/index.html">Services</a><a href="{P}merch/index.html">Merch</a><a href="{P}contact/index.html">Contact</a><a href="{P}privacy-policy/index.html">Privacy Policy</a><a href="mailto:{EMAIL}">{EMAIL}</a></nav>
+  <nav aria-label="Footer">{footer}</nav>
  </div>
 </footer>
 <script src="{P}assets/js/nav.js?v=1" defer></script>
@@ -83,19 +106,73 @@ def page(path, title, desc, body, canonical, current="", noindex=False, abs_urls
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(html, encoding="utf-8")
 
+def yt_embed(video_id=None, playlist=None, title="Product demo"):
+    if video_id:
+        src = f"https://www.youtube-nocookie.com/embed/{video_id}"
+        if playlist:
+            src += f"?list={playlist}"
+    else:
+        src = f"https://www.youtube-nocookie.com/embed/videoseries?list={playlist}"
+    pl = (f'<p class="meta"><a class="link" href="https://www.youtube.com/playlist?list={playlist}" rel="noopener">Watch the playlist on YouTube</a></p>'
+          if playlist else "")
+    return (
+        f'<div class="embed"><iframe src="{src}" title="{title}" loading="lazy" '
+        f'allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" '
+        f'allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>{pl}'
+    )
+
+def demo_cta(type_value, label="Request a free demo"):
+    from urllib.parse import quote
+    return f'<p><a class="btn btn-primary" href="{{P}}demo/index.html?type={quote(type_value)}#request">{label}</a></p>'
+
+TAKE_IT = "Already have hosting? Take it with you: $99 one time. We hand over your finished site files with an upload guide, or upload it to your host for you. No monthly fee; edits and support not included."
+TAKE_IT_LINE = f'<p class="meta take-it">{TAKE_IT}</p>'
+TAKE_IT_FAQ = f""" <h2>FAQ</h2>
+ <div class="panel" id="faq-take-it"><h3 class="card-title">Take it with you</h3>
+  <p>{TAKE_IT}</p></div>"""
+
 HOME = f"""
 <section class="hero">
  <div class="wrap">
   <img class="logo" src="{{P}}assets/img/brand/ews-mark.svg?v=4" width="256" height="256" alt="Elder World Studio logo">
-  <h1>Forging Digital Realms</h1>
-  <p>{STUDIO} is a game development studio that blends the enchanting aesthetics of medieval worlds with the power of modern technology. We make PC and mobile games, and assets for other developers.</p>
-  <div class="btns"><a class="btn btn-primary" href="#games">View Our Games</a><a class="btn btn-ghost" href="{{P}}contact/index.html">Get in Touch</a></div>
+  <h1>AI websites, receptionists and shop systems for local businesses</h1>
+  <p>Elder World Studio is a Memphis tech studio. We help local shops get found, answer every customer and run the counter, with websites our AI designs just for you, AI phone receptionists, and point-of-sale and kiosk systems.</p>
+  <div class="btns"><a class="btn btn-primary" href="{{P}}build/index.html">See the web builder</a><a class="btn btn-ghost" href="{{P}}demo/index.html#request">Get a free demo</a></div>
+ </div>
+</section>
+
+<section class="block" id="services">
+ <div class="wrap">
+  <div class="center"><h2>What we do for local businesses</h2><p class="lead">Flat prices, real people in Memphis, and a free demo before you decide.</p></div>
+  <div class="grid cards services-grid">
+   <article class="panel"><h3 class="card-title">AI web builder</h3><p>A site designed for your business from your own description, logo and photos. Not a template. From $349 setup + $19/mo, with $249 setup for the first 10 Memphis shops.</p><a class="link" href="{{P}}websites/index.html">See website plans &rarr;</a></article>
+   <article class="panel"><h3 class="card-title">POS systems</h3><p>Point-of-sale setups for counters, bars and shops, sized to how you actually ring up sales. Ask for a quote.</p><a class="link" href="{{P}}pos/index.html">See Elder POS &rarr;</a></article>
+   <article class="panel"><h3 class="card-title">Kiosks</h3><p>Self-order and check-in kiosks that cut lines and free up your staff. Ask for a quote.</p><a class="link" href="{{P}}kiosk/index.html">See Kiosk OS &rarr;</a></article>
+   <article class="panel"><h3 class="card-title">AI receptionist &amp; Agent OS</h3><p>An AI receptionist that answers your phone, takes messages and books customers, built on our own agent platform.</p><a class="link" href="{{P}}ai-receptionist/index.html">See the receptionist &rarr;</a></article>
+   <article class="panel"><h3 class="card-title">Asset packs</h3><p>Game-ready 3D asset packs for developers on the Unity Asset Store.</p><a class="link" href="#tools">See asset packs &rarr;</a></article>
+   <article class="panel"><h3 class="card-title">Merch</h3><p>Elder World Studio shirts and gear.</p><a class="link" href="{{P}}merch/index.html">Shop merch &rarr;</a></article>
+  </div>
+ </div>
+</section>
+
+<section class="block alt" id="tools">
+ <div class="wrap grid two">
+  <div>
+   <h2>Game Asset Packs</h2>
+   <p class="lead">We publish game-ready assets on the Unity Asset Store as <strong>Elder Worlds Publishing</strong>, built from the same pipeline we use for our own games.</p>
+   <div class="panel">
+    <span class="tag soon">Coming to the Unity Asset Store</span>
+    <h3>Medieval Village Props</h3>
+    <p>A pack of medieval village and market props: barrels, baskets, bread, bottles, crates, tools and more, with modular crate and liquid fills.</p>
+   </div>
+  </div>
+  <img src="{{P}}assets/img/medieval-village-props.jpg" width="1200" height="800" alt="Renders of props from the Medieval Village Props pack: a barrel, basket, bread, bottle, barrel tap and axe" loading="lazy" style="border-radius:16px;border:1px solid var(--line)">
  </div>
 </section>
 
 <section class="block" id="games">
  <div class="wrap">
-  <div class="center"><h2>Our Games</h2><p class="lead">Immersive worlds for PC and mobile. <a class="link" href="{{P}}games/index.html">See all our games</a></p></div>
+  <div class="center"><h2>Our Games</h2><p class="lead">Where our studio started, and still builds. <a class="link" href="{{P}}games/index.html">See all our games</a></p></div>
   <div class="grid cards">
    <article class="card">
     <img class="thumb" src="{{P}}assets/img/star-wayfarer.jpg" width="1024" height="576" alt="Star Wayfarer title screen with a starship in space" loading="lazy">
@@ -128,27 +205,12 @@ HOME = f"""
  </div>
 </section>
 
-<section class="block alt" id="tools">
- <div class="wrap grid two">
-  <div>
-   <h2>Developer Assets</h2>
-   <p class="lead">We publish game-ready assets on the Unity Asset Store as <strong>Elder Worlds Publishing</strong>, built from the same pipeline we use for our own games.</p>
-   <div class="panel">
-    <span class="tag review">In review</span>
-    <h3>Medieval Village Props</h3>
-    <p>A pack of medieval village and market props: barrels, baskets, bread, bottles, crates, tools and more, with modular crate and liquid fills. Submitted to the Unity Asset Store and currently in review.</p>
-   </div>
-  </div>
-  <img src="{{P}}assets/img/medieval-village-props.jpg" width="1200" height="800" alt="Renders of props from the Medieval Village Props pack: a barrel, basket, bread, bottle, barrel tap and axe" loading="lazy" style="border-radius:16px;border:1px solid var(--line)">
- </div>
-</section>
-
 <section class="block" id="about">
  <div class="wrap grid two">
   <div>
    <h2>About Elder World Studio</h2>
-   <p class="lead">Founded with a passion for immersive storytelling and robust engineering, Elder World Studio began by creating medieval-style RPGs.</p>
-   <p class="lead">As we built our own tools to solve hard development problems, we realized we could help other creators too. Today we make games for PC and mobile, and assets for the developers who make theirs.</p>
+   <p class="lead">Elder World Studio began in Memphis making games, and building our own AI tools to solve hard problems along the way.</p>
+   <p class="lead">Today we put those tools to work for local businesses: websites, AI receptionists and shop systems, with the same care we put into our game worlds.</p>
   </div>
   <div class="panel center">
    <h3>Join Our Journey</h3>
@@ -157,8 +219,8 @@ HOME = f"""
   </div>
   <div class="panel center">
    <h3>Need a Website or AI Tool?</h3>
-   <p>We also build websites, AI chat assistants, automations and custom software for small businesses. We start with a free demo.</p>
-   <a class="btn btn-primary" href="{{P}}services/index.html">See Services</a>
+   <p>We build websites, AI assistants, automations and custom software for local businesses. We start with a free demo.</p>
+   <a class="btn btn-primary" href="{{P}}services/index.html">See Products</a>
   </div>
  </div>
 </section>
@@ -176,7 +238,7 @@ CONTACT = f"""
   </div>
   <div class="panel">
    <h2 class="card-title">Websites, AI tools &amp; software</h2>
-   <p>Want us to build something for your business? Tell us about it on our <a class="link" href="{{P}}services/index.html#request">Services page</a> and we&rsquo;ll start with a free demo.</p>
+   <p>Want us to build something for your business? Tell us about it on our <a class="link" href="{{P}}demo/index.html#request">free demo form</a> and we&rsquo;ll start with a working demo.</p>
   </div>
   <div class="panel">
    <h2 class="card-title">Privacy &amp; data requests</h2>
@@ -262,7 +324,7 @@ POLICY = f"""
   <h3>When you contact us</h3>
   <p>If you email us, we receive your email address, your name if you include it, and whatever you choose to write (for example a bug report). We use this only to reply and help you.</p>
   <h3>This website</h3>
-  <p>This website is a static site. It uses no cookies, no analytics and no advertising, and its fonts and images are served from this site itself. Like any website, our hosting provider automatically processes basic technical request data (such as IP address, browser type and the page requested) in order to deliver pages and protect the site from abuse. We do not use this data to identify or track you. If you use the request form on our Services page, the details you enter (name, email, optional phone, business, and your message) are emailed to us and used only to reply to your request; the form uses Cloudflare Turnstile to block spam. Ask us any time and we&rsquo;ll delete it.</p>
+  <p>This website is a static site. It uses no cookies, no analytics and no advertising, and its fonts and images are served from this site itself. Like any website, our hosting provider automatically processes basic technical request data (such as IP address, browser type and the page requested) in order to deliver pages and protect the site from abuse. We do not use this data to identify or track you. If you use the request form on our <a href="{{P}}demo/index.html">demo page</a> or the reserve form on <a href="{{P}}build/index.html">/build/</a>, the details you enter (name, email, optional phone, business, and your message) are emailed to us and used only to reply to your request; the form uses Cloudflare Turnstile to block spam. Ask us any time and we&rsquo;ll delete it.</p>
 
   <h2 id="use">5. How we use information</h2>
   <ul>
@@ -284,7 +346,7 @@ POLICY = f"""
   </ul>
 
   <h3 id="sms">Text messages (SMS)</h3>
-  <p>If you tick the optional SMS consent checkbox on our Services form, we may text the phone number you gave us about that request only (for example to confirm we received it or to schedule your demo). Message frequency varies (up to 4 messages per request). Message and data rates may apply. Reply STOP to opt out at any time and HELP for help. Texts are sent through our SMS provider (Twilio Inc.), which processes your number only to deliver messages. <strong>No mobile information will be shared with third parties/affiliates for marketing/promotional purposes. All the above categories exclude text messaging originator opt-in data and consent; this information will not be shared with any third parties.</strong> See our <a href="{{P}}sms-terms/index.html">SMS Terms</a>.</p>
+  <p>If you tick the optional SMS consent checkbox on our demo or web-builder form, we may text the phone number you gave us about that request only (for example to confirm we received it or to schedule your demo). Message frequency varies (up to 4 messages per request). Message and data rates may apply. Reply STOP to opt out at any time and HELP for help. Texts are sent through our SMS provider (Twilio Inc.), which processes your number only to deliver messages. <strong>No mobile information will be shared with third parties/affiliates for marketing/promotional purposes. All the above categories exclude text messaging originator opt-in data and consent; this information will not be shared with any third parties.</strong> See our <a href="{{P}}sms-terms/index.html">SMS Terms</a>.</p>
 
   <h2 id="retention">8. Retention and deletion</h2>
   <ul>
@@ -341,30 +403,21 @@ NOTFOUND = """
 """
 
 PDESC = f"Privacy Policy for {STUDIO} and its games, including Star Wayfarer on Google Play: what data our games store, collect and share (none), retention, deletion and contact."
-page("index.html", f"{STUDIO} | Games and Developer Assets", f"{STUDIO} makes PC and mobile games, including Star Wayfarer on Google Play and Omnivael: Wayfarers Life on Steam, and Unity assets for developers.", HOME, "/", "home")
+HOME_LD = """<script type="application/ld+json">{"@context": "https://schema.org", "@graph": [{"@type": "Organization", "@id": "https://elderworldstudio.com/#org", "name": "Elder World Studio Inc", "url": "https://elderworldstudio.com/", "logo": "https://elderworldstudio.com/assets/img/brand/ews-og.png", "email": "annaews@agentmail.to"}, {"@type": "LocalBusiness", "@id": "https://elderworldstudio.com/#business", "name": "Elder World Studio", "url": "https://elderworldstudio.com/", "image": "https://elderworldstudio.com/assets/img/brand/ews-og.png", "email": "annaews@agentmail.to", "priceRange": "$$", "address": {"@type": "PostalAddress", "addressLocality": "Memphis", "addressRegion": "TN", "addressCountry": "US"}, "areaServed": {"@type": "City", "name": "Memphis"}, "parentOrganization": {"@id": "https://elderworldstudio.com/#org"}}]}</script>"""
+page("index.html", f"{STUDIO} | AI Websites, Receptionists and Shop Systems for Local Businesses in Memphis", "Elder World Studio in Memphis, TN builds AI websites, AI receptionists and point-of-sale and kiosk systems for local businesses. AI-designed sites from $349 setup.", HOME, "/", "home", extra_head=HOME_LD)
 page("contact/index.html", f"Contact | {STUDIO}", f"Contact {STUDIO} for support, privacy requests and business enquiries.", CONTACT, "/contact/", "contact")
 for p in ["privacy-policy/index.html", "privacy/index.html", "privacy-policy.html", "privacy.html", "star-wayfarer/privacy/index.html", "star-wayfarer/privacy-policy/index.html"]:
     page(p, f"Privacy Policy | {STUDIO}", PDESC, POLICY, "/privacy-policy/", "privacy")
 
-SERVICES = f"""
-<div class="page"><div class="wrap">
- <div class="page-head"><h1>Services</h1><p class="meta">Websites, AI tools and custom software for small businesses &middot; based in Memphis, TN</p></div>
- <div class="panel" style="margin-bottom:24px"><h2 class="card-title">Free demo first</h2>
-  <p>Tell us what you need. We build a quick, free demo of it for your business and share it by link. You only decide on anything after you&rsquo;ve seen it working. No pressure and no obligation.</p></div>
- <div class="grid contact-grid">
-  <div class="panel"><h2 class="card-title">Websites</h2><p>New sites, refreshes and fixes: mobile-friendly pages, online booking, menus, quote forms and simple online stores.</p></div>
-  <div class="panel"><h2 class="card-title">AI tools &amp; chat assistants</h2><p>A chat assistant on your site that answers questions from your hours, menu and prices 24/7, takes requests and emails real leads to you.</p><p><a class="link" href="https://ews-ai-assistant.pages.dev/" target="_blank" rel="noopener">Try a live demo &rarr;</a> <small>(sample businesses)</small></p></div>
-  <div class="panel"><h2 class="card-title">Automation</h2><p>Stop retyping things. We connect forms, email, spreadsheets and the tools you already use so routine work happens on its own.</p></div>
-  <div class="panel"><h2 class="card-title">Custom software &amp; dashboards</h2><p>Internal tools, client portals and dashboards that replace paper forms and messy spreadsheets.</p></div>
- </div>
- <h2 id="request" style="margin-top:40px">Request a free demo</h2>
+LEAD_FORM = f"""
  <div id="form-status" class="panel" hidden style="margin-bottom:16px"></div>
  <form class="panel lead-form" method="post" action="/api/lead">
+  <input type="hidden" name="return_to" value="/demo/">
   <label>Your name *<input name="name" required maxlength="100" autocomplete="name"></label>
   <label>Email *<input name="email" type="email" required maxlength="200" autocomplete="email"></label>
   <label>Phone (optional)<input name="phone" type="tel" maxlength="40" autocomplete="tel"></label>
   <label>Business name *<input name="business" required maxlength="150" autocomplete="organization"></label>
-  <label>What do you need? *<select name="type" required><option>Website</option><option>AI tool</option><option>Custom software</option><option selected>Not sure</option></select></label>
+  <label>What do you need? *<select name="type" required><option>Website</option><option>Take it with you</option><option>POS</option><option>Kiosk</option><option>AI receptionist</option><option>Agent OS</option><option>AI tool</option><option>Custom software</option><option selected>Not sure</option></select></label>
   <label>Tell us about it *<textarea name="description" required maxlength="4000" rows="6" placeholder="What does your business do, and what would you like to fix or build?"></textarea></label>
   <label>Budget (optional)<input name="budget" maxlength="60" placeholder="e.g. under $500, not sure yet"></label>
   <label class="sms-opt"><input type="checkbox" name="sms_optin" value="yes"> <span>By checking this box, I agree to receive text messages from Elder World Studio about my service request (confirmations, project questions, and demo scheduling). Up to 4 msgs per request. Message and data rates may apply. Reply STOP to opt out and HELP for help. Optional &mdash; not required to get a demo. <a class="link" href="{{P}}sms-terms/index.html">SMS Terms</a> &middot; <a class="link" href="{{P}}privacy-policy/index.html#sms">Privacy Policy</a></span></label>
@@ -374,15 +427,154 @@ SERVICES = f"""
   <button class="btn btn-primary" type="submit">Request my free demo</button>
   <p class="meta">We reply by email, usually within one business day. We only use your details to answer your request (see our <a href="{{P}}privacy-policy/index.html">Privacy Policy</a>).</p>
  </form>
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+<script>document.getElementById('lead-t').value=Date.now();(function(){{var q=new URLSearchParams(location.search),sel=document.querySelector('.lead-form [name=type]');if(sel&&q.get('type')){{var t=q.get('type');for(var i=0;i<sel.options.length;i++)if(sel.options[i].value===t)sel.selectedIndex=i;}}var s=document.getElementById('form-status');if(!q.has('sent'))return;s.hidden=false;s.textContent=q.get('sent')==='1'?'Thanks! Your request was sent. We will reply by email soon.':('Sorry, that did not go through: '+(q.get('e')||'please try again')+' You can also email annaews@agentmail.to.');}})();</script>
+"""
+SERVICES = f"""
+<div class="page"><div class="wrap">
+ <div class="page-head"><h1>Products</h1><p class="meta">Websites, shop systems and AI tools for small businesses &middot; based in Memphis, TN</p></div>
+ <div class="panel" style="margin-bottom:24px"><h2 class="card-title">Free demo first</h2>
+  <p>Tell us what you need. We build a quick, free demo of it for your business and share it by link. You only decide on anything after you&rsquo;ve seen it working. No pressure and no obligation.</p>
+  <p><a class="btn btn-primary" href="{{P}}demo/index.html#request">Request a free demo</a></p></div>
+ <div class="grid contact-grid">
+  <div class="panel"><h2 class="card-title">Elder POS</h2><p>A point-of-sale system for small shops, supplied and set up by us.</p><a class="link" href="{{P}}pos/index.html">See Elder POS &rarr;</a></div>
+  <div class="panel"><h2 class="card-title">EWS Kiosk OS</h2><p>Self-service kiosks with their own kiosk OS, plus a matching site when you need one.</p><a class="link" href="{{P}}kiosk/index.html">See Kiosk OS &rarr;</a></div>
+  <div class="panel"><h2 class="card-title">AI website builder</h2><p>A site designed for your business from your own description. Flat setup and monthly prices.</p><a class="link" href="{{P}}websites/index.html">See website plans &rarr;</a></div>
+  <div class="panel"><h2 class="card-title">AI receptionist</h2><p>The first Agent OS product: answers the phone, takes messages and books customers.</p><a class="link" href="{{P}}ai-receptionist/index.html">See the receptionist &rarr;</a></div>
+  <div class="panel"><h2 class="card-title">Agent OS</h2><p>Model-agnostic assistants you can put on a phone line, a site, or a counter.</p><a class="link" href="{{P}}agent-os/index.html">See Agent OS &rarr;</a></div>
+  <div class="panel"><h2 class="card-title">Custom software</h2><p>Dashboards, automation and internal tools that replace paper forms and messy spreadsheets.</p><a class="link" href="{{P}}custom-software/index.html">See custom software &rarr;</a></div>
+ </div>
+ <section id="request" style="margin-top:40px">
+  <h2>Request a free demo</h2>
+  <p>The request form lives on our demo page. <a class="link" href="{{P}}demo/index.html#request">Go to the free demo form</a>.</p>
+ </section>
+</div></div>
+"""
+POS = f"""
+<div class="page"><div class="wrap">
+ <div class="page-head"><h1>Elder POS</h1><p class="meta">Point of sale for small shops &middot; Memphis, TN</p></div>
+ <div class="panel" style="margin-bottom:24px"><h2 class="card-title">A register that fits your counter</h2>
+  <p>Elder POS is our own point-of-sale system on a dedicated register OS. We supply it and set it up for a single-location shop: ring up sales, take cards, and keep a simple record of what went out the door.</p>
+  <p>Ask for a free demo and we will show you a working register before you decide on anything.</p></div>
+ {yt_embed("KZ4elQPUkNs", "PLWwfl9svSjPM", "Elder POS demo")}
+ <div class="panel"><h2 class="card-title">Price</h2><p class="product-price">Free demo / contact us</p>{demo_cta("POS")}</div>
+</div></div>
+"""
+KIOSK = f"""
+<div class="page"><div class="wrap">
+ <div class="page-head"><h1>EWS Kiosk OS</h1><p class="meta">Self-service kiosks for small shops &middot; Memphis, TN</p></div>
+ <div class="panel" style="margin-bottom:24px"><h2 class="card-title">A kiosk that runs our OS</h2>
+  <p>EWS Kiosk OS is a self-service kiosk for a small shop: order, check in, or look up a menu without waiting on a counter. We supply the kiosk, the OS, and a matching site when you need one.</p>
+  <p>Ask for a free demo and we will show you a working kiosk before you decide on anything.</p></div>
+ {yt_embed("iNfnsQ5NIK0", "PLCT7Yo3HThzs", "EWS Kiosk OS demo")}
+ <div class="panel"><h2 class="card-title">Price</h2><p class="product-price">Free demo / contact us</p>{demo_cta("Kiosk")}</div>
+</div></div>
+"""
+WEBSITES = f"""
+<div class="page"><div class="wrap">
+ <div class="page-head"><h1>AI website builder</h1><p class="meta">A website designed for your business, not a template &middot; Memphis, TN</p></div>
+ <div class="panel" style="margin-bottom:24px"><h2 class="card-title">Your business, your design</h2>
+  <p>Describe your shop and share a logo and photos. We design a site that is unique to you: layout, colors, fonts and copy come from your own description. It is not a template.</p>
+  <p>Start on the <a class="link" href="{{P}}build/index.html">web builder</a> to reserve a build slot, or request a free demo first.</p></div>
+ {yt_embed("JqwJV61htcE", "PLL8mYbLdE1h0", "AI website builder demo")}
+ <div class="panel launch-offer" style="margin-bottom:24px"><h2 class="card-title">Launch offer</h2><p><strong>$249 setup for the first 10 Memphis shops</strong> on any plan.</p></div>
+ <h2>Plans</h2>
+ <div class="grid cards tiers">
+  <article class="panel tier" data-tier="starter"><h3 class="card-title">Starter</h3><p class="price">$349 setup</p><p class="price-mo">+ $19/mo</p><p>A clean, fast site for a single-location shop: home, services or menu, hours, map and contact.</p></article>
+  <article class="panel tier" data-tier="business"><h3 class="card-title">Business</h3><p class="price">$699 setup</p><p class="price-mo">+ $39/mo</p><p>More pages and room to grow: booking or quote forms, photo galleries, specials and a lead form that emails you.</p></article>
+  <article class="panel tier" data-tier="plus"><h3 class="card-title">Plus</h3><p class="price">$1,299 setup</p><p class="price-mo">+ $69/mo</p><p>The full build: more pages, a simple online store or catalog, and priority changes every month.</p></article>
+ </div>
+ <p class="meta">Custom domain available. Prices shown are what you pay: one-time setup plus a flat monthly plan for hosting, updates and support.</p>
+ {TAKE_IT_LINE}
+ <div class="btns" style="justify-content:flex-start;margin-top:24px"><a class="btn btn-primary" href="{{P}}build/index.html">Open the web builder</a><a class="btn btn-ghost" href="{{P}}demo/index.html?type=Website#request">Request a free demo</a></div>
+{TAKE_IT_FAQ}
+</div></div>
+"""
+AI_RECEPTIONIST = f"""
+<div class="page"><div class="wrap">
+ <div class="page-head"><h1>AI receptionist</h1><p class="meta">The first Agent OS product &middot; Memphis, TN</p></div>
+ <div class="panel" style="margin-bottom:24px"><h2 class="card-title">Someone always picks up</h2>
+  <p>An AI receptionist that answers your phone, takes a message, and books a customer when you are with someone else. It is the first product on Agent OS, so you can grow from a phone line into other assistants later.</p>
+  <p>Ask for a free demo and we will show you a working receptionist before you decide on anything.</p></div>
+ {yt_embed(None, "PLOHxOgCCKH8s", "AI receptionist playlist")}
+ <div class="panel"><h2 class="card-title">Price</h2><p class="product-price">Free demo / contact us</p>{demo_cta("AI receptionist")}</div>
+</div></div>
+"""
+AGENT_OS = f"""
+<div class="page"><div class="wrap">
+ <div class="page-head"><h1>Agent OS</h1><p class="meta">Model-agnostic assistants for small shops &middot; Memphis, TN</p></div>
+ <div class="panel" style="margin-bottom:24px"><h2 class="card-title">Assistants that are not locked to one model</h2>
+  <p>Agent OS is our platform for small-shop assistants: phone, website chat, or a counter. It is model-agnostic, so we can pick the model that fits the job instead of locking you to one vendor.</p>
+  <p>The first product on Agent OS is the <a class="link" href="{{P}}ai-receptionist/index.html">AI receptionist</a>. Ask for a free demo of either.</p></div>
+ {yt_embed(None, "PLOHxOgCCKH8s", "Agent OS playlist")}
+ <div class="panel"><h2 class="card-title">Price</h2><p class="product-price">Free demo / contact us</p>{demo_cta("Agent OS")}</div>
+</div></div>
+"""
+CUSTOM = f"""
+<div class="page"><div class="wrap">
+ <div class="page-head"><h1>Custom software</h1><p class="meta">Dashboards, automation and internal tools &middot; Memphis, TN</p></div>
+ <div class="panel" style="margin-bottom:24px"><h2 class="card-title">Stop retyping things</h2>
+  <p>We build the small tools a shop actually uses: dashboards, client portals, and automations that connect forms, email, spreadsheets and the software you already have.</p></div>
+ <div class="grid contact-grid" style="margin-bottom:24px">
+  <div class="panel"><h2 class="card-title">Automation</h2><p>Routine work happens on its own: a form fill becomes an email, a spreadsheet row, or a follow-up, without copy-paste.</p></div>
+  <div class="panel"><h2 class="card-title">Dashboards &amp; portals</h2><p>Internal tools and client portals that replace paper forms and messy spreadsheets.</p></div>
+ </div>
+ <div class="panel"><h2 class="card-title">Price</h2><p class="product-price">Free demo / contact us</p>{demo_cta("Custom software")}</div>
+</div></div>
+"""
+DEMO = f"""
+<div class="page"><div class="wrap">
+ <div class="page-head"><h1>Request a free demo</h1><p class="meta">Tell us what you need. We build a quick, free demo and share it by link.</p></div>
+ <div class="panel" style="margin-bottom:24px"><h2 class="card-title">No pressure and no obligation</h2>
+  <p>You only decide on anything after you have seen it working. We reply by email, usually within one business day.</p></div>
+ <h2 id="request">Your request</h2>
+{LEAD_FORM}
+</div></div>
+"""
+BUILD = f"""
+<div class="page"><div class="wrap">
+ <div class="page-head"><h1>AI Web Builder</h1><p class="meta">A website designed for your business, not a template &middot; Elder World Studio, Memphis, TN</p></div>
+ <div class="panel" style="margin-bottom:24px"><h2 class="card-title">Your business, your design</h2>
+  <p>Describe your business and share your logo and photos. Our AI designs a site that is unique to you: the layout, colors, fonts, copy and imagery all come from your own description. It is not a template. Don&rsquo;t love something? Regenerate it or ask for changes.</p>
+  <p>See the <a class="link" href="{{P}}websites/index.html">website plans</a> for the full product page, or reserve a slot below.</p></div>
+ <div class="panel launch-offer" style="margin-bottom:24px"><h2 class="card-title">Launch offer</h2><p><strong>$249 setup for the first 10 Memphis shops</strong> on any plan. Reserve your spot now; we&rsquo;ll reach out as soon as your build slot opens.</p></div>
+ <h2>Plans</h2>
+ <div class="grid cards tiers">
+  <article class="panel tier" data-tier="starter"><h3 class="card-title">Starter</h3><p class="price">$349 setup</p><p class="price-mo">+ $19/mo</p><p>A clean, fast site for a single-location shop: home, services or menu, hours, map and contact.</p><a class="btn btn-primary" href="#reserve" data-plan="Starter">Reserve your spot</a></article>
+  <article class="panel tier" data-tier="business"><h3 class="card-title">Business</h3><p class="price">$699 setup</p><p class="price-mo">+ $39/mo</p><p>More pages and room to grow: booking or quote forms, photo galleries, specials and a lead form that emails you.</p><a class="btn btn-primary" href="#reserve" data-plan="Business">Reserve your spot</a></article>
+  <article class="panel tier" data-tier="plus"><h3 class="card-title">Plus</h3><p class="price">$1,299 setup</p><p class="price-mo">+ $69/mo</p><p>The full build: more pages, a simple online store or catalog, and priority changes every month.</p><a class="btn btn-primary" href="#reserve" data-plan="Plus">Reserve your spot</a></article>
+ </div>
+ <p class="meta" style="margin-top:16px">Custom domain available. Prices shown are what you pay: one-time setup plus a flat monthly plan for hosting, updates and support.</p>
+ {TAKE_IT_LINE}
+{TAKE_IT_FAQ}
+ <h2 id="reserve" style="margin-top:40px">Reserve your spot</h2>
+ <p>We&rsquo;re opening the builder to local businesses in small batches. Get started below and we&rsquo;ll email you when your spot is ready. No payment now.</p>
+ <div id="form-status" class="panel" hidden style="margin-bottom:16px"></div>
+ <form class="panel lead-form" id="build-form" method="post" action="/api/lead">
+  <input type="hidden" name="type" value="web-builder">
+  <input type="hidden" name="return_to" value="/build/">
+  <label>Your name *<input name="name" required maxlength="100" autocomplete="name"></label>
+  <label>Email *<input name="email" type="email" required maxlength="200" autocomplete="email"></label>
+  <label>Phone (optional)<input name="phone" type="tel" maxlength="40" autocomplete="tel"></label>
+  <label>Business name *<input name="business" required maxlength="150" autocomplete="organization"></label>
+  <label>Plan you&rsquo;re interested in<select name="budget" id="plan-select"><option value="Starter ($349 + $19/mo)">Starter ($349 + $19/mo)</option><option value="Business ($699 + $39/mo)">Business ($699 + $39/mo)</option><option value="Plus ($1,299 + $69/mo)">Plus ($1,299 + $69/mo)</option><option value="Not sure yet" selected>Not sure yet</option></select></label>
+  <label>Tell us about your business *<textarea name="description" required maxlength="4000" rows="5" placeholder="What does your business do, and how should your site look and feel?"></textarea></label>
+  <label class="sms-opt"><input type="checkbox" name="sms_optin" value="yes"> <span>By checking this box, I agree to receive text messages from Elder World Studio about my service request (confirmations, project questions, and demo scheduling). Up to 4 msgs per request. Message and data rates may apply. Reply STOP to opt out and HELP for help. Optional &mdash; not required to get a demo. <a class="link" href="{{P}}sms-terms/index.html">SMS Terms</a> &middot; <a class="link" href="{{P}}privacy-policy/index.html#sms">Privacy Policy</a></span></label>
+  <div class="hp" aria-hidden="true"><label>Leave this empty<input name="website_url" tabindex="-1" autocomplete="off"></label></div>
+  <input type="hidden" name="t" id="lead-t" value="">
+  <div class="cf-turnstile" data-sitekey="0x4AAAAAAFS0QVr90yy4iuW9" data-theme="dark"></div>
+  <button class="btn btn-primary" type="submit">Get started</button>
+  <p class="meta">We reply by email, usually within one business day. We only use your details to answer your request (see our <a href="{{P}}privacy-policy/index.html">Privacy Policy</a>).</p>
+ </form>
 </div></div>
 <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
-<script>document.getElementById('lead-t').value=Date.now();(function(){{var q=new URLSearchParams(location.search),s=document.getElementById('form-status');if(!q.has('sent'))return;s.hidden=false;s.textContent=q.get('sent')==='1'?'Thanks! Your request was sent. We will reply by email soon.':('Sorry, that did not go through: '+(q.get('e')||'please try again')+' You can also email annaews@agentmail.to.');}})();</script>
+<script>document.getElementById('lead-t').value=Date.now();document.querySelectorAll('[data-plan]').forEach(function(a){{a.addEventListener('click',function(){{var s=document.getElementById('plan-select');for(var i=0;i<s.options.length;i++)if(s.options[i].value.indexOf(a.dataset.plan+' ')===0)s.selectedIndex=i;}});}});(function(){{var q=new URLSearchParams(location.search),s=document.getElementById('form-status');if(!q.has('sent'))return;s.hidden=false;s.textContent=q.get('sent')==='1'?'Thanks! Your spot is reserved. We will email you soon.':('Sorry, that did not go through: '+(q.get('e')||'please try again')+' You can also email annaews@agentmail.to.');}})();</script>
 """
 SMSTERMS = f"""
 <div class="page"><div class="wrap">
  <div class="page-head"><h1>SMS Terms and Conditions</h1><p class="meta">Last updated: October 11, 2026</p></div>
  <article class="prose">
-  <p><strong>Program:</strong> Elder World Studio project updates. {STUDIO} sends text messages only to people who request a website, AI tool or software demo on our <a href="{{P}}services/index.html">Services page</a> and tick the optional SMS consent checkbox (messages about your service request; up to 4 msgs per request; Message and data rates may apply; Reply STOP to opt out and HELP for help).</p>
+  <p><strong>Program:</strong> Elder World Studio project updates. {STUDIO} sends text messages only to people who request a website, AI tool or software demo on our <a href="{{P}}demo/index.html">demo page</a> and tick the optional SMS consent checkbox (messages about your service request; up to 4 msgs per request; Message and data rates may apply; Reply STOP to opt out and HELP for help).</p>
   <ul>
    <li><strong>Program description:</strong> one-to-one, non-marketing texts about a service request you submitted to Elder World Studio.</li>
    <li><strong>What you get:</strong> messages about your request, such as confirming we received it, questions about your project, and scheduling your free demo. No marketing blasts.</li>
@@ -400,7 +592,16 @@ SMSTERMS = f"""
 """
 page("sms-terms/index.html", f"SMS Terms | {STUDIO}", f"SMS terms for {STUDIO} project-update texts: opt-in, frequency, STOP and HELP, privacy.", SMSTERMS, "/sms-terms/", "sms")
 page("terms/index.html", f"Terms and Conditions (SMS) | {STUDIO}", f"SMS terms and conditions for {STUDIO} project-update texts.", SMSTERMS, "/sms-terms/", "sms")
-page("services/index.html", f"Services: Websites, AI Tools and Custom Software | {STUDIO}", f"{STUDIO} builds websites, AI chat assistants, automation and custom software for small businesses in Memphis and beyond. Start with a free demo.", SERVICES, "/services/", "services")
+page("services/index.html", f"Products: Websites, POS, Kiosks and AI Tools | {STUDIO}", f"{STUDIO} builds websites, point-of-sale systems, kiosks, AI receptionists and custom software for small businesses in Memphis and beyond. Start with a free demo.", SERVICES, "/services/", "products")
+page("pos/index.html", f"Elder POS | {STUDIO}", f"Elder POS is a point-of-sale system for small shops, supplied and set up by {STUDIO} in Memphis. Start with a free demo.", POS, "/pos/", "products")
+page("kiosk/index.html", f"EWS Kiosk OS | {STUDIO}", f"EWS Kiosk OS is a self-service kiosk for small shops, with its own kiosk OS. Start with a free demo from {STUDIO}.", KIOSK, "/kiosk/", "products")
+page("websites/index.html", f"AI Website Builder: Plans and Prices | {STUDIO}", "An AI-designed website unique to your business, not a template. Starter $349 + $19/mo, Business $699 + $39/mo, Plus $1,299 + $69/mo. Memphis launch offer: $249 setup.", WEBSITES, "/websites/", "products")
+page("ai-receptionist/index.html", f"AI Receptionist | {STUDIO}", f"An AI receptionist that answers the phone, takes messages and books customers. The first Agent OS product from {STUDIO}. Free demo.", AI_RECEPTIONIST, "/ai-receptionist/", "products")
+page("agent-os/index.html", f"Agent OS | {STUDIO}", f"Agent OS is {STUDIO}'s model-agnostic platform for small-shop assistants. Free demo.", AGENT_OS, "/agent-os/", "products")
+page("custom-software/index.html", f"Custom Software, Dashboards and Automation | {STUDIO}", f"{STUDIO} builds dashboards, automation and internal tools for small businesses. Start with a free demo.", CUSTOM, "/custom-software/", "products")
+page("demo/index.html", f"Request a Free Demo | {STUDIO}", f"Request a free demo of a website, POS, kiosk, AI receptionist or custom tool from {STUDIO}. No pressure and no obligation.", DEMO, "/demo/", "demo")
+BUILD_LD = """<script type="application/ld+json">[{"@context": "https://schema.org", "@type": "Product", "name": "AI Web Builder - Starter", "description": "A clean, fast site for a single-location shop: home, services or menu, hours, map and contact.", "brand": {"@type": "Brand", "name": "Elder World Studio"}, "offers": {"@type": "Offer", "price": "349", "priceCurrency": "USD", "availability": "https://schema.org/PreOrder", "url": "https://elderworldstudio.com/build/", "priceSpecification": [{"@type": "UnitPriceSpecification", "price": "349", "priceCurrency": "USD", "name": "Setup"}, {"@type": "UnitPriceSpecification", "price": "19", "priceCurrency": "USD", "name": "Monthly", "unitCode": "MON"}]}}, {"@context": "https://schema.org", "@type": "Product", "name": "AI Web Builder - Business", "description": "More pages and room to grow: booking or quote forms, photo galleries, specials and a lead form that emails you.", "brand": {"@type": "Brand", "name": "Elder World Studio"}, "offers": {"@type": "Offer", "price": "699", "priceCurrency": "USD", "availability": "https://schema.org/PreOrder", "url": "https://elderworldstudio.com/build/", "priceSpecification": [{"@type": "UnitPriceSpecification", "price": "699", "priceCurrency": "USD", "name": "Setup"}, {"@type": "UnitPriceSpecification", "price": "39", "priceCurrency": "USD", "name": "Monthly", "unitCode": "MON"}]}}, {"@context": "https://schema.org", "@type": "Product", "name": "AI Web Builder - Plus", "description": "The full build: more pages, a simple online store or catalog, and priority changes every month.", "brand": {"@type": "Brand", "name": "Elder World Studio"}, "offers": {"@type": "Offer", "price": "1299", "priceCurrency": "USD", "availability": "https://schema.org/PreOrder", "url": "https://elderworldstudio.com/build/", "priceSpecification": [{"@type": "UnitPriceSpecification", "price": "1299", "priceCurrency": "USD", "name": "Setup"}, {"@type": "UnitPriceSpecification", "price": "69", "priceCurrency": "USD", "name": "Monthly", "unitCode": "MON"}]}}]</script>"""
+page("build/index.html", f"AI Web Builder for Local Businesses: Plans and Prices | {STUDIO}", "An AI-designed website unique to your business, not a template. Starter $349 + $19/mo, Business $699 + $39/mo, Plus $1,299 + $69/mo. Memphis launch offer: $249 setup.", BUILD, "/build/", "products", extra_head=BUILD_LD)
 
 
 # ---- Public Android testers (Google Play closed/open testing) ----
