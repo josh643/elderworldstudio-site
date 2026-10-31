@@ -35,7 +35,7 @@ export default {
     ctx.menuOpen = !auto;
 
     if (!document.querySelector('link[href*="worlds.css"]')) {
-      const l = document.createElement('link'); l.rel = 'stylesheet'; l.href = '/worlds/worlds.css?v=1'; document.head.append(l);
+      const l = document.createElement('link'); l.rel = 'stylesheet'; l.href = '/worlds/worlds.css?v=2'; document.head.append(l);
     }
 
     const ui = document.createElement('div');
@@ -50,7 +50,7 @@ export default {
           <button type="button" class="ew-btn" data-act="pause">Pause</button>
         </div>
       </div>
-      <canvas class="ew-map" width="160" height="160" aria-label="Minimap"></canvas>
+      <div class="ew-map-wrap"><canvas class="ew-map" width="160" height="160" aria-label="Minimap"></canvas></div>
       <div class="ew-prompt" hidden data-prompt></div>
       <div class="ew-joy" hidden>
         <div class="ew-joy-stick" data-joy="move" aria-label="Move"><i></i></div>
@@ -149,7 +149,7 @@ export default {
     });
     ui.querySelector('[data-set=sensitivity]').addEventListener('input', e => { cfg.sensitivity = +e.target.value; ctx.lookSens = cfg.sensitivity; write(cfg); });
     ui.querySelector('[data-set=invertY]').addEventListener('change', e => { cfg.invertY = e.target.checked; write(cfg); });
-    ui.querySelector('[data-set=minimap]').addEventListener('change', e => { cfg.minimap = e.target.checked; write(cfg); ui.querySelector('.ew-map').hidden = !cfg.minimap; });
+    ui.querySelector('[data-set=minimap]').addEventListener('change', e => { cfg.minimap = e.target.checked; write(cfg); ui.querySelector('.ew-map-wrap').hidden = !cfg.minimap; });
     ui.querySelector('[data-set=ewsrender]').addEventListener('change', e => {
       try { localStorage.setItem('ews-render', e.target.checked ? '1' : '0'); } catch {}
       const u = new URL(location.href);
@@ -182,7 +182,7 @@ export default {
       });
       look.addEventListener('pointerup', () => { lp = null; });
     }
-    ui.querySelector('.ew-map').hidden = !cfg.minimap;
+    ui.querySelector('.ew-map-wrap').hidden = !cfg.minimap;
     this.map = ui.querySelector('.ew-map');
     this.prompt = ui.querySelector('[data-prompt]');
     this.loc = ui.querySelector('[data-loc]');

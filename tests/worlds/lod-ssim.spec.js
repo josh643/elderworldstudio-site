@@ -43,7 +43,7 @@ test('distant view: SSE LOD vs max LOD is perceptually lossless (SSIM ≥ 0.98)'
       window.__ewsWorlds.setView(0, 42, 170, 0, 2, 30);
     }, forceMax);
     await page.waitForTimeout(250);
-    return page.evaluate(() => document.querySelector('.office-root canvas').toDataURL('image/png'));
+    return page.evaluate(() => document.querySelector('.office-root > canvas').toDataURL('image/png'));
   }
 
   const maxShot = await grab(true);

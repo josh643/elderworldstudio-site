@@ -1,5 +1,5 @@
 .office-root{position:fixed;inset:0;z-index:50;background:#07040e;color:#f3ead7;font:15px/1.4 Inter,system-ui,sans-serif;touch-action:none;user-select:none;-webkit-user-select:none}
-.office-root canvas{display:block;width:100%;height:100%}
+.office-root > canvas{display:block;width:100%;height:100%} /* only the WebGL canvas; HUD canvases (minimap) must keep their own size */
 .office-load{position:absolute;inset:0;display:grid;place-items:center;font-family:Cinzel,serif;letter-spacing:.1em;color:#d9b45a;transition:opacity .6s}
 .office-hud{position:absolute;left:0;right:0;top:0;display:flex;gap:8px;align-items:center;padding:10px 12px;background:linear-gradient(#07040ecc,#07040e00);pointer-events:none}
 .office-hud>*{pointer-events:auto}
