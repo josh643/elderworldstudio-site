@@ -277,7 +277,7 @@ test('unknown return_to falls back to /demo/', async () => {
 });
 
 test('new product types are kept', async () => {
-  for (const type of ['POS', 'Kiosk', 'AI receptionist', 'Agent OS']) {
+  for (const type of ['POS', 'Kiosk', 'AI receptionist', 'Agent OS', 'Take it with you']) {
     const calls = mockFetch(async () => new Response('{}', { status: 200 }));
     const res = await onRequestPost({
       request: post({ type }),

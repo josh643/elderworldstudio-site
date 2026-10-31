@@ -21,6 +21,9 @@ test.describe("/build/ web builder page", () => {
     for (const tier of ["Starter", "Business", "Plus"]) await expect(page.locator(`[data-tier="${tier.toLowerCase()}"]`)).toBeVisible();
     expect(text).toContain("first 10 Memphis shops");
     expect(text).toContain("Custom domain available");
+    expect(text).toContain("Already have hosting? Take it with you: $99 one time.");
+    expect(text).toContain("No monthly fee; edits and support not included.");
+    await expect(page.locator("#faq-take-it")).toContainText("Take it with you");
     expect(text).toMatch(/not a template/i);
     await expect(page).toHaveTitle(/AI Web Builder/);
     await expect(page.locator('link[rel="canonical"]')).toHaveAttribute("href", "https://elderworldstudio.com/build/");

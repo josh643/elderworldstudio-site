@@ -125,6 +125,12 @@ def demo_cta(type_value, label="Request a free demo"):
     from urllib.parse import quote
     return f'<p><a class="btn btn-primary" href="{{P}}demo/index.html?type={quote(type_value)}#request">{label}</a></p>'
 
+TAKE_IT = "Already have hosting? Take it with you: $99 one time. We hand over your finished site files with an upload guide, or upload it to your host for you. No monthly fee; edits and support not included."
+TAKE_IT_LINE = f'<p class="meta take-it">{TAKE_IT}</p>'
+TAKE_IT_FAQ = f""" <h2>FAQ</h2>
+ <div class="panel" id="faq-take-it"><h3 class="card-title">Take it with you</h3>
+  <p>{TAKE_IT}</p></div>"""
+
 HOME = f"""
 <section class="hero">
  <div class="wrap">
@@ -411,7 +417,7 @@ LEAD_FORM = f"""
   <label>Email *<input name="email" type="email" required maxlength="200" autocomplete="email"></label>
   <label>Phone (optional)<input name="phone" type="tel" maxlength="40" autocomplete="tel"></label>
   <label>Business name *<input name="business" required maxlength="150" autocomplete="organization"></label>
-  <label>What do you need? *<select name="type" required><option>Website</option><option>POS</option><option>Kiosk</option><option>AI receptionist</option><option>Agent OS</option><option>AI tool</option><option>Custom software</option><option selected>Not sure</option></select></label>
+  <label>What do you need? *<select name="type" required><option>Website</option><option>Take it with you</option><option>POS</option><option>Kiosk</option><option>AI receptionist</option><option>Agent OS</option><option>AI tool</option><option>Custom software</option><option selected>Not sure</option></select></label>
   <label>Tell us about it *<textarea name="description" required maxlength="4000" rows="6" placeholder="What does your business do, and what would you like to fix or build?"></textarea></label>
   <label>Budget (optional)<input name="budget" maxlength="60" placeholder="e.g. under $500, not sure yet"></label>
   <label class="sms-opt"><input type="checkbox" name="sms_optin" value="yes"> <span>By checking this box, I agree to receive text messages from Elder World Studio about my service request (confirmations, project questions, and demo scheduling). Up to 4 msgs per request. Message and data rates may apply. Reply STOP to opt out and HELP for help. Optional &mdash; not required to get a demo. <a class="link" href="{{P}}sms-terms/index.html">SMS Terms</a> &middot; <a class="link" href="{{P}}privacy-policy/index.html#sms">Privacy Policy</a></span></label>
@@ -479,7 +485,9 @@ WEBSITES = f"""
   <article class="panel tier" data-tier="plus"><h3 class="card-title">Plus</h3><p class="price">$1,299 setup</p><p class="price-mo">+ $69/mo</p><p>The full build: more pages, a simple online store or catalog, and priority changes every month.</p></article>
  </div>
  <p class="meta">Custom domain available. Prices shown are what you pay: one-time setup plus a flat monthly plan for hosting, updates and support.</p>
+ {TAKE_IT_LINE}
  <div class="btns" style="justify-content:flex-start;margin-top:24px"><a class="btn btn-primary" href="{{P}}build/index.html">Open the web builder</a><a class="btn btn-ghost" href="{{P}}demo/index.html?type=Website#request">Request a free demo</a></div>
+{TAKE_IT_FAQ}
 </div></div>
 """
 AI_RECEPTIONIST = f"""
@@ -537,6 +545,8 @@ BUILD = f"""
   <article class="panel tier" data-tier="plus"><h3 class="card-title">Plus</h3><p class="price">$1,299 setup</p><p class="price-mo">+ $69/mo</p><p>The full build: more pages, a simple online store or catalog, and priority changes every month.</p><a class="btn btn-primary" href="#reserve" data-plan="Plus">Reserve your spot</a></article>
  </div>
  <p class="meta" style="margin-top:16px">Custom domain available. Prices shown are what you pay: one-time setup plus a flat monthly plan for hosting, updates and support.</p>
+ {TAKE_IT_LINE}
+{TAKE_IT_FAQ}
  <h2 id="reserve" style="margin-top:40px">Reserve your spot</h2>
  <p>We&rsquo;re opening the builder to local businesses in small batches. Get started below and we&rsquo;ll email you when your spot is ready. No payment now.</p>
  <div id="form-status" class="panel" hidden style="margin-bottom:16px"></div>

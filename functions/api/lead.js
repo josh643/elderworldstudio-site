@@ -2,7 +2,7 @@
 // CT 111 inbox_watch turns that into needs-anna/*-inbound-lead-*.md (route: joshua). Secrets: AGENTMAIL_SEND_KEY, TURNSTILE_SECRET (optional).
 // Optional voice copy: EWS_LEADS_URL + EWS_LEADS_SECRET. Both unset → no-op. Fire-and-forget; never blocks the email.
 const INBOX = 'annaews@agentmail.to';
-const TYPES = ['Website', 'AI tool', 'Custom software', 'Not sure', 'POS', 'Kiosk', 'AI receptionist', 'Agent OS', 'web-builder', 'POS system'];
+const TYPES = ['Website', 'AI tool', 'Custom software', 'Not sure', 'POS', 'Kiosk', 'AI receptionist', 'Agent OS', 'web-builder', 'POS system', 'Take it with you'];
 const RETURNS = { '/demo/': '#request', '/build/': '#reserve', '/services/': '#request' };
 const LEAD_FORWARD_MS = 2000;
 const ANON = new Set(['', 'anonymous', 'restricted', 'unknown', 'private', 'blocked', 'anon', 'unavailable', '266696687']);

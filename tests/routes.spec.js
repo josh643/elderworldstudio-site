@@ -93,7 +93,16 @@ test.describe("product routes", () => {
       expect(text, `missing ${p}`).toContain(p);
     }
     await expect(page.locator('a[href$="build/index.html"]').first()).toBeVisible();
+    expect(text).toContain("Already have hosting? Take it with you: $99 one time.");
+    expect(text).toContain("No monthly fee; edits and support not included.");
+    await expect(page.locator("#faq-take-it")).toContainText("Take it with you");
     expect(text).not.toMatch(/markup|mark-up|wholesale|our cost/i);
+  });
+
+  test("/demo/ offers Take it with you as a request type", async ({ page }) => {
+    await blockAds(page);
+    await page.goto("/demo/", { waitUntil: "domcontentloaded" });
+    await expect(page.locator('.lead-form [name="type"] option', { hasText: "Take it with you" })).toHaveCount(1);
   });
 
   test("no client names on public product pages", async ({ request }) => {
