@@ -1,0 +1,17 @@
+{
+  "name": "@ews/render",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "description": "EWS WebGPU renderer: meshlet LOD, visibility buffer, GPU CDLOD, cube-sphere planets. Self-hosted, no CDN.",
+  "exports": {
+    ".": "./src/index.js",
+    "./math": "./src/math/sse.js",
+    "./format": "./src/format/clusters.js",
+    "./build": "./src/build/index.js"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.mjs",
+    "build:clusters": "node src/build/cli.mjs"
+  }
+}

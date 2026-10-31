@@ -4,6 +4,7 @@ COPY package.json package-lock.json* ./
 RUN npm install --omit=dev
 COPY incoming/world-server/ews-world-src ./incoming/world-server/ews-world-src
 COPY tools/worlds-lod-build.mjs tools/worlds-build.mjs ./tools/
+COPY packages/ews-render ./packages/ews-render
 COPY site ./site
 COPY incoming/elderverse-baked ./incoming/elderverse-baked
 RUN node tools/worlds-build.mjs --assets

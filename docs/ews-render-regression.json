@@ -1,0 +1,69 @@
+{
+  "at": "2026-10-31T15:32:55.655Z",
+  "paths": {
+    "town": {
+      "before": {
+        "fps": 0,
+        "calls": 226,
+        "tris": 610102,
+        "memGeometries": 232,
+        "memTextures": 75,
+        "backend": "webgpu-ready",
+        "viewDist": 2400
+      },
+      "after": {
+        "fps": 0,
+        "calls": 247,
+        "tris": 612841,
+        "memGeometries": 249,
+        "memTextures": 77,
+        "memBytes": 0,
+        "backend": "ews-render",
+        "viewDist": 2400
+      }
+    },
+    "space": {
+      "before": {
+        "fps": 21.81818181818182,
+        "calls": 10,
+        "tris": 11388,
+        "memGeometries": 242,
+        "memTextures": 75,
+        "backend": "webgpu-ready",
+        "viewDist": 2169.40991232
+      },
+      "after": {
+        "fps": 21.81818181818182,
+        "calls": 10,
+        "tris": 15036,
+        "memGeometries": 259,
+        "memTextures": 77,
+        "memBytes": 0,
+        "backend": "ews-render",
+        "viewDist": 2083.5012797921277
+      }
+    },
+    "omnivael": {
+      "before": {
+        "fps": 20.000000000000004,
+        "calls": 54,
+        "tris": 4666,
+        "memGeometries": 296,
+        "memTextures": 75,
+        "backend": "webgpu-ready",
+        "viewDist": 1845.6537342242493
+      },
+      "after": {
+        "fps": 20.000000000000004,
+        "calls": 54,
+        "tris": 4666,
+        "memGeometries": 313,
+        "memTextures": 77,
+        "memBytes": 0,
+        "backend": "ews-render",
+        "viewDist": 1772.565846348969
+      }
+    }
+  },
+  "note": "Same camera paths. before = Phase 1 three.js (flag off). after = ewsrender=1. CI fps is SwiftShader."
+}

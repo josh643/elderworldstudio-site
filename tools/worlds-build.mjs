@@ -37,6 +37,7 @@ function copyDir(src, dst) {
 
 fs.rmSync(dist, { recursive: true, force: true });
 copyDir(path.join(ROOT, 'site'), dist);
+copyDir(path.join(ROOT, 'packages'), path.join(dist, 'packages'));
 fs.writeFileSync(path.join(dist, 'WORLDS-STATIC.txt'),
   'Elderverse worlds static tree. Serve this folder with worlds-host.mjs (STATIC_ROOT) or any gzip/brotli static host.\n');
 console.log('wrote', dist);

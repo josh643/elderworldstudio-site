@@ -106,6 +106,7 @@ export default {
           </label>
           <label class="ew-check"><input type="checkbox" data-set="invertY"> Invert look Y</label>
           <label class="ew-check"><input type="checkbox" data-set="minimap"> Show minimap</label>
+          <label class="ew-check"><input type="checkbox" data-set="ewsrender"> EWS renderer (Phase 2)</label>
           <label>Builder token
             <input type="password" data-set="modtoken" autocomplete="off" placeholder="configured on the host">
           </label>
@@ -119,6 +120,7 @@ export default {
     ui.querySelector('[data-set=sensitivity]').value = cfg.sensitivity;
     ui.querySelector('[data-set=invertY]').checked = cfg.invertY;
     ui.querySelector('[data-set=minimap]').checked = cfg.minimap;
+    try { ui.querySelector('[data-set=ewsrender]').checked = localStorage.getItem('ews-render') === '1' || /[?&]ewsrender=1/.test(location.search); } catch {}
 
     const show = (name) => {
       ui.querySelectorAll('.ew-screen').forEach(s => s.classList.toggle('hide', s.getAttribute('data-screen') !== name));
@@ -148,6 +150,12 @@ export default {
     ui.querySelector('[data-set=sensitivity]').addEventListener('input', e => { cfg.sensitivity = +e.target.value; ctx.lookSens = cfg.sensitivity; write(cfg); });
     ui.querySelector('[data-set=invertY]').addEventListener('change', e => { cfg.invertY = e.target.checked; write(cfg); });
     ui.querySelector('[data-set=minimap]').addEventListener('change', e => { cfg.minimap = e.target.checked; write(cfg); ui.querySelector('.ew-map').hidden = !cfg.minimap; });
+    ui.querySelector('[data-set=ewsrender]').addEventListener('change', e => {
+      try { localStorage.setItem('ews-render', e.target.checked ? '1' : '0'); } catch {}
+      const u = new URL(location.href);
+      if (e.target.checked) u.searchParams.set('ewsrender', '1'); else u.searchParams.delete('ewsrender');
+      location.href = u.toString();
+    });
     addEventListener('keydown', e => {
       if (e.target.closest?.('input,textarea,select')) return;
       if (e.code === 'Escape') { if (ctx.menuOpen && !ui.querySelector('[data-screen=start]:not(.hide)')) { show(null); ctx.menuOpen = false; ctx.paused = false; ui.querySelectorAll('.ew-screen').forEach(s => s.classList.add('hide')); } else show('pause'); }

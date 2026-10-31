@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>EWS Render lab</title>
+  <style>
+    html, body { margin: 0; height: 100%; background: #05070d; color: #d7e0ea; font: 14px/1.4 Inter, system-ui, sans-serif; }
+    canvas { display: block; width: 100%; height: 100%; }
+    #hud { position: fixed; left: 12px; top: 12px; padding: 8px 10px; background: #041018cc; border: 1px solid #3ee8ff55; }
+  </style>
+</head>
+<body>
+  <canvas id="c"></canvas>
+  <div id="hud">EWS Render lab</div>
+  <script type="module">
+    import { create, defaultCatalogDoc, flattenGpuClusters } from '/packages/ews-render/src/index.js';
+
+    const canvas = document.getElementById('c');
+    const hud = document.getElementById('hud');
+    const dpr = Math.min(devicePixelRatio || 1, 1.5);
+    const resize = () => {
+      canvas.width = Math.max(1, (innerWidth * dpr) | 0);
+      canvas.height = Math.max(1, (innerHeight * dpr) | 0);
+    };
+    resize();
+    addEventListener('resize', resize);
+
+    const doc = defaultCatalogDoc();
+    const instances = [];
+    let n = 0;
+    for (let z = -8; z <= 8; z += 4) for (let x = -8; x <= 8; x += 4) {
+      const ids = ['block', 'tree', 'bench', 'shrub'];
+      instances.push({ id: 'c' + (n++), catalog: ids[n % ids.length], x, y: 0.5, z: z - 20 });
+    }
+    instances.push({ id: 'elder', catalog: 'planet', x: -36, y: -2, z: -80 });
+    instances.push({ id: 'omni', catalog: 'planet', x: 42, y: 6, z: -70 });
+
+    const extra = {
+      v: 1, pixelLimit: 1,
+      catalog: [
+        ...doc.catalog,
+        { id: 'planet', radius: 12, levels: [{ lod: 0, geomErr: 0, meshlets: 16 }, { lod: 1, geomErr: 0.4, meshlets: 4 }, { lod: 2, geomErr: 1.2, meshlets: 1 }] },
+      ],
+    };
+    extra.catalog.find(c => c.id === 'planet').levels.forEach(l => { l.clusters = undefined; });
+
+    // Flat heightfield so clipmap geomorph is a no-op (fine == coarse). A sculpted
+    // field is still supported; the SSIM gate compares LOD, not terrain morph.
+    const height = { n: 48, h: new Array(48 * 48).fill(0) };
+
+    const R = await create({
+      canvas,
+      fallback: 'webgl2',
+      clusters: extra,
+      instances,
+      heightfield: height,
+    });
+    R.setSize(canvas.width, canvas.height);
+
+    let eye = [0, 42, 170], target = [0, 2, 30], forceMax = false, paused = false;
+    const gpuClusters = () => {
+      const rec = flattenGpuClusters(extra, instances);
+      for (const c of rec) {
+        if (c.catalog === 'planet') {
+          c.drawRadius = c.instance === 'elder' ? 12 : 10;
+          c.color = c.instance === 'elder' ? [0.24, 0.42, 0.29] : [0.42, 0.56, 0.30];
+        }
+      }
+      return rec;
+    };
+
+    function frame(t) {
+      if (!paused) {
+        R.tick(1 / 60);
+        R.forceMaxLod(forceMax);
+        R.render({
+          eye, target, fov: 62, far: 4000,
+          clusters: gpuClusters(),
+          heightfield: height,
+          terrain: true,
+          forceMax,
+        });
+        const m = R.metrics();
+        hud.textContent = `${m.backend} · calls ${m.calls} · tris ${m.tris} · ${forceMax ? 'maxLOD' : 'SSE'}`;
+      }
+      requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+
+    window.__ewsRenderLab = {
+      get ready() { return true; },
+      forceMaxLod(on) { forceMax = !!on; R.forceMaxLod(forceMax); },
+      setPaused(v) { paused = !!v; },
+      setView(x, y, z, lx, ly, lz) { eye = [x, y, z]; target = [lx, ly, lz]; },
+      metrics() { return R.metrics(); },
+      backend() { return R.backend; },
+      grab() { return canvas.toDataURL('image/png'); },
+    };
+  </script>
+</body>
+</html>

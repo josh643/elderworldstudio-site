@@ -1,6 +1,6 @@
 # Elderverse worlds
 
-Standalone browser world for **worlds.elderworldstudio.com**. It is the existing office/town engine (`/office/`) with worlds mode (`?worlds=1` or this folder), not a second renderer.
+Standalone browser world for **worlds.elderworldstudio.com**. It is the existing office/town engine (`/office/`) with worlds mode (`?worlds=1` or this folder). Phase 2 `packages/ews-render` is behind `?ewsrender=1` (off by default).
 
 ## Run locally
 
@@ -21,7 +21,9 @@ Office-only still works at `/office/`.
 | `site/office/modules/worlds-*` | Travel, HUD, editor, Phase 1 LOD |
 | `site/office/modules/baked-props/` | Lazy EWS-owned GLBs |
 | `incoming/world-server/ews-world-src/worlds-host.mjs` | Static + stub world + moderator editor |
-| `docs/ews-render-design.md` | Phase 2 WebGPU renderer plan |
+| `docs/ews-render-design.md` | Phase 1 three.js LOD + Phase 2 WebGPU renderer |
+| `packages/ews-render` | Phase 2 renderer (WebGPU + WebGL2). Served at `/packages/ews-render/` |
+| `site/worlds/render-lab/` | Standalone ews-render canvas (SSIM / vis-buffer lab) |
 | `deploy/worlds/` | Docker, systemd, Caddy, cloudflared, env |
 
 ## Self-host (EWS datacenter)
@@ -43,4 +45,9 @@ npx playwright install --with-deps chromium
 npm test
 ```
 
-Covers: worlds load + walk + space + Omnivael, office still loads, moderator persist + visitor reject, `/healthz`, SSIM ≥ 0.98 vs max LOD at distance.
+Covers: worlds load + walk + space + Omnivael, office still loads, moderator persist + visitor reject, `/healthz`, SSIM ≥ 0.98 vs max LOD at distance, Phase 2 `?ewsrender=1` + render-lab SSIM / regression metrics.
+
+```bash
+npm run test:render            # headless ews-render unit tests
+npx playwright test tests/worlds/ews-render.spec.js
+```
