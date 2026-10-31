@@ -1,0 +1,21 @@
+services:
+  worlds:
+    build:
+      context: ../..
+      dockerfile: deploy/worlds/Dockerfile
+    ports:
+      - "127.0.0.1:8080:8080"
+    environment:
+      PUBLIC_BIND: "0.0.0.0"
+      PUBLIC_PORT: "8080"
+      EWS_WORLD_DATA: /var/lib/ews-worlds
+      WORLD_MODERATORS: ${WORLD_MODERATORS:-}
+      WORLD_KEY: ${WORLD_KEY:-}
+    volumes:
+      - worlds-data:/var/lib/ews-worlds
+    restart: unless-stopped
+    mem_limit: 1536m
+    cpus: 1.5
+
+volumes:
+  worlds-data:

@@ -1,0 +1,5 @@
+[Unit]
+Description=ews-world health check (restart after 3 consecutive failures)
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/ews-world-ctl watchdog

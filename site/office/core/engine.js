@@ -7,7 +7,7 @@ import { mergeGeometries } from '../vendor/jsm/utils/BufferGeometryUtils.js?v=16
 import * as kit from './kit.js?v=32';
 import * as DN from './daynight.js?v=2';
 import * as EX from './exterior.js?v=4';   /* real 3D exterior (campus + town reserve); ?ext=0 = old baked view */
-const V = 30, GOLD = 0xd9b45a;
+const V = 36, GOLD = 0xd9b45a;
 const $ = (t, a = {}, h = '') => { const e = document.createElement(t); for (const k in a) e.setAttribute(k, a[k]); e.innerHTML = h; return e; };
 export const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -33,7 +33,9 @@ export async function start(opts = {}) {
   // GPU class: integrated/mobile GPUs get a lower pixel-ratio cap and no MSAA
   const gpuName = (() => { try { const g = document.createElement('canvas').getContext('webgl'); const x = g.getExtension('WEBGL_debug_renderer_info'); const n = x ? g.getParameter(x.UNMASKED_RENDERER_WEBGL) : ''; g.getExtension('WEBGL_lose_context')?.loseContext(); return String(n); } catch { return ''; } })();
   const igpu = /intel|uhd|iris|mali|adreno|powervr|apple gpu|llvmpipe|swiftshader|videocore/i.test(gpuName);
-  const R = new THREE.WebGLRenderer({ antialias: !igpu && devicePixelRatio < 1.5, powerPreference: 'high-performance', stencil: true });   /* stencil: real window openings (kit.windowPane) */
+  const WORLDS = !!(opts.worlds || /\/worlds(\/|$)/.test(location.pathname) || /[?&]worlds=1/.test(location.search));
+  const TP = WORLDS || /[?&]tp=1/.test(location.search);
+  const R = new THREE.WebGLRenderer({ antialias: !igpu && devicePixelRatio < 1.5, powerPreference: 'high-performance', stencil: true, logarithmicDepthBuffer: WORLDS, preserveDrawingBuffer: WORLDS });   /* stencil: real window openings (kit.windowPane). Worlds: log depth so horizon + planets don't z-fight. */
   const lowEnd = (navigator.deviceMemory || 8) <= 4 || (navigator.hardwareConcurrency || 8) <= 4, RATIOS = [0.75, 1, 1.5];   // tier base ratios; DSCALE steps below these at runtime
   let tier = lowEnd ? 0 : devicePixelRatio > 1.5 ? 1 : 2; if (tier === 2 && matchMedia('(pointer: fine)').matches) RATIOS[2] = igpu ? 1.25 : 2;   // desktop: native res up to 2x, 1.25 on integrated GPUs
   if (igpu) { RATIOS[1] = Math.min(RATIOS[1], 1.0); if (tier > 1) tier = 1; }   /* integrated GPUs start on the mid tier: no 2K maps, no MSAA */
@@ -44,8 +46,8 @@ export async function start(opts = {}) {
   if (igpu && !matchMedia('(pointer: coarse)').matches && !/[?&]sharp=0/.test(location.search)) {   /* 0.85 render scale is upscaled by the compositor; a light unsharp kernel restores edge crispness */
     const sv = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); sv.setAttribute('width', 0); sv.setAttribute('height', 0); sv.style.position = 'absolute';
     sv.innerHTML = '<filter id="ews-sharp"><feConvolveMatrix order="3" preserveAlpha="true" kernelMatrix="0 -0.35 0 -0.35 2.4 -0.35 0 -0.35 0"/></filter>'; document.body.append(sv); R.domElement.style.filter = 'url(#ews-sharp)'; }
-  const scene = new THREE.Scene(); scene.background = new THREE.Color(0x0b0716); scene.fog = new THREE.Fog(0x0b0716, 25, 70);
-  const cam = new THREE.PerspectiveCamera(62, 1, 0.1, 120); const rig = new THREE.Group(); rig.add(cam); scene.add(rig);   // rig = player body (XR moves the camera inside it)
+  const scene = new THREE.Scene(); scene.background = new THREE.Color(0x0b0716); scene.fog = WORLDS ? null : new THREE.Fog(0x0b0716, 25, 70);
+  const cam = new THREE.PerspectiveCamera(62, 1, 0.1, WORLDS ? 4000 : 120); const rig = new THREE.Group(); rig.add(cam); scene.add(rig);   // rig = player body (XR moves the camera inside it)
   const hemi = new THREE.HemisphereLight(0xfff1d6, 0x1a1030, 1.3); scene.add(hemi); const sun = new THREE.DirectionalLight(0xffe2b0, 1.1); sun.position.set(8, 20, 6); scene.add(sun);
   const mcache = new Map(); const M = c => { if (!mcache.has(c)) mcache.set(c, M.standard ? new THREE.MeshStandardMaterial({ color: c, roughness: 0.7 }) : new THREE.MeshLambertMaterial({ color: c })); return mcache.get(c); };
   const mat = { floor: M(0x2a2236), wall: M(0x3a2f4a), trim: M(GOLD), dark: M(0x15101f), wood: M(0x6b4a2e), stone: M(0x4b4458), rack: M(0x1d1d24), glow: new THREE.MeshBasicMaterial({ color: GOLD }) };
@@ -78,8 +80,9 @@ export async function start(opts = {}) {
   const verb = xr ? 'Trigger' : touch ? 'Tap' : 'Click or press E';   // device-aware prompt for in-world signs
   /* PUBLIC-CONTENT-RULES: public mode on the production host (or ?public=1 for QA): roles-only nameplates, generic screens, no telemetry, no task text */
   let KIOSK = false; try { KIOSK = !!localStorage.getItem('ews-kiosk'); } catch {}
-const PUBLIC = /(^|\.)elderworldstudio\.com$/.test(location.hostname) || /[?&]public=1/.test(location.search);
-  const ctx = { igpu, publicMode: PUBLIC,
+  const PUBLIC = WORLDS || /(^|\.)elderworldstudio\.com$/.test(location.hostname) || /[?&]public=1/.test(location.search);
+  if (WORLDS) document.documentElement.classList.add('worlds-on');
+  const ctx = { igpu, publicMode: PUBLIC, worlds: WORLDS, thirdPerson: TP, paused: false, menuOpen: false, lookSens: 1,
     verb, touch, lod: 1,
     THREE, kit, scene, cam, rig, renderer: R, mat, get tier() { return tier; }, M, box, panel, image, textCanvas, label, site, roster, esc, root,
     onClick: (obj, handler) => { obj.userData.onPick = handler; clickables.push(obj); return obj; },
@@ -91,7 +94,7 @@ const PUBLIC = /(^|\.)elderworldstudio\.com$/.test(location.hostname) || /[?&]pu
     t: tr, lang: LANG, hudButton: (text, fn) => { const b = $('button', { class: 'ob', type: 'button' }, esc(tr(text))); b.onclick = fn; srNav.append(b); return b; },   // a11y only; visible UI is in-world
     sign: (text, sub, x, y, z, ry, fn, w = 2.6) => { const p = panel(textCanvas([text, sub || ''], { w: 768, h: 200, size: 64 }), w, w * 0.26, x, y, z, ry); if (fn) ctx.onClick(p, fn); return p; },
     get tours() { return tours; }, spotOf: k => spots[k],
-    player: { get pos() { return pos; }, get yaw() { return yaw; }, set yaw(v) { yaw = v; }, teleport: (x, z) => { pos.x = x; pos.z = z; glide = null; } },
+    player: { get pos() { return pos; }, get yaw() { return yaw; }, set yaw(v) { yaw = v; }, get pitch() { return pitch; }, set pitch(v) { pitch = v; }, teleport: (x, z) => { pos.x = x; pos.z = z; glide = null; } },
     activity: () => { lastInput = performance.now(); },
     setTitle: t => { hud.querySelector('.t').textContent = t; }, announce: t => { live.textContent = t; },
   };
@@ -103,6 +106,7 @@ const PUBLIC = /(^|\.)elderworldstudio\.com$/.test(location.hostname) || /[?&]pu
   ctx.classic = () => { try { if (localStorage.getItem('ews-kiosk')) return; } catch (e) {}   /* the kiosk always stays on 3D */ try { if (localStorage.getItem('ews-view') === '3d') localStorage.setItem('ews-view', 'classic'); } catch (e) {} if (opts.overlay) { close(); if (!document.querySelector('.ews-switch')) { const a = document.createElement('a'); a.href = '/?view=3d'; a.className = 'ews-switch'; a.textContent = tr('Switch to 3D'); document.body.append(a); } } else location.href = '/?view=classic'; };
   bClassic.onclick = () => ctx.classic();
   const live = $('div', { class: 'office-sr', 'aria-live': 'polite' }); root.append(live);
+  let yaw = Math.PI, pitch = 0; const pos = new THREE.Vector3(0, 1.65, 7.5); let glide = null;
 
   // load + set up modules in registry order
   const mods = [], byId = {};
@@ -223,7 +227,6 @@ const PUBLIC = /(^|\.)elderworldstudio\.com$/.test(location.hostname) || /[?&]pu
   for (const ev of ['keydown', 'pointerdown', 'wheel', 'touchstart']) addEventListener(ev, e => { if (glide && !e.target.closest?.('button,.office-card,a')) glide = null; }, true);   /* any input cancels a guided move instantly */
   let lastInput = performance.now(); addEventListener('pointerdown', () => lastInput = performance.now(), true); addEventListener('keydown', () => lastInput = performance.now(), true);
   ctx.idleMs = () => performance.now() - lastInput;
-  let yaw = Math.PI, pitch = 0; const pos = new THREE.Vector3(0, 1.65, 7.5); let glide = null;
   const lookAt = (p, l) => { const d = new THREE.Vector3(l[0] - p[0], l[1] - p[1], l[2] - p[2]); return { yaw: Math.atan2(-d.x, -d.z), pitch: Math.atan2(d.y, Math.hypot(d.x, d.z)) }; };
   const EYE = 1.65; function goTo(name) { const s = spots[name]; if (!s) return; const sp = [s.pos[0], EYE, s.pos[2]], t = lookAt(sp, s.look); t.pitch = Math.max(-0.5, Math.min(0.4, t.pitch)); glide = { from: pos.clone(), to: new THREE.Vector3(...sp), y0: yaw, y1: yaw + (((t.yaw - yaw) % (2 * Math.PI)) + 3 * Math.PI) % (2 * Math.PI) - Math.PI, p0: pitch, p1: t.pitch, t: 0 }; }
   if (spots.lobby) { pos.set(spots.lobby.pos[0], EYE, spots.lobby.pos[2]); ({ yaw, pitch } = lookAt([pos.x, EYE, pos.z], spots.lobby.look)); }
@@ -281,7 +284,8 @@ const PUBLIC = /(^|\.)elderworldstudio\.com$/.test(location.hostname) || /[?&]pu
   document.addEventListener('mousemove', e => { if (!locked()) return; if (skipMove) { skipMove--; return; }
     if (e.movementX === 0 && e.movementY === 0) { if (++zeroRun > 40) { lockBroken = true; try { sessionStorage.setItem('ews-nolock', '1'); } catch {} document.exitPointerLock(); } return; } zeroRun = 0;   // compositor without relative-pointer support (e.g. cage): fall back to steer mode   // first events after (re)lock carry bogus jumps
     const mx = Math.max(-80, Math.min(80, e.movementX)), my = Math.max(-80, Math.min(80, e.movementY)); if (Math.abs(e.movementY) > 200 || Math.abs(e.movementX) > 400) return;
-    yaw -= mx * 0.0022; pitch = Math.max(-PMAX, Math.min(PMAX, pitch - my * 0.0022)); yaw = (yaw + Math.PI * 4) % (Math.PI * 2); glide = null; });
+    const sens = ctx.lookSens || 1;
+    yaw -= mx * 0.0022 * sens; pitch = Math.max(-PMAX, Math.min(PMAX, pitch - my * 0.0022 * sens)); yaw = (yaw + Math.PI * 4) % (Math.PI * 2); glide = null; });
   addEventListener('keydown', e => { if (e.key.toLowerCase() === 'e' && !e.target.closest?.('input,textarea,select')) { const h = locked() ? centerPick() : null; if (h) { document.exitPointerLock?.(); h(); } } });
   if (fine) { const hint = $('div', { class: 'office-hint' }, 'WASD to move · Q/R or ←/→ to turn (or push the mouse to a screen edge) · click to look around · Shift to run · E or click to use · Esc to release'); root.append(hint); setTimeout(() => hint.classList.add('gone'), 6000); }
   el.addEventListener('pointerdown', e => {
@@ -290,7 +294,7 @@ const PUBLIC = /(^|\.)elderworldstudio\.com$/.test(location.hostname) || /[?&]pu
     drag = { x: e.clientX, y: e.clientY }; moved = 0; try { el.setPointerCapture(e.pointerId); } catch {} });
   el.addEventListener('pointermove', e => { if (!drag) { el.style.cursor = pickAt(e) ? 'pointer' : 'grab'; return; } if (locked()) { drag = null; return; } const dx = Math.max(-120, Math.min(120, e.clientX - drag.x)), dy = Math.max(-120, Math.min(120, e.clientY - drag.y)); moved += Math.abs(dx) + Math.abs(dy); yaw -= dx * 0.005; pitch = Math.max(-PMAX, Math.min(PMAX, pitch - dy * 0.004)); drag = { x: e.clientX, y: e.clientY }; glide = null; });
   el.addEventListener('pointerup', e => { if (drag && moved < 8) { const h = pickAt(e); if (h) h(); else walkTo(e); } drag = null; });
-  const jv = { x: 0, y: 0 };   // no on-screen joystick: tap the floor to walk, drag to look, WASD/arrows on keyboards
+  const jv = { x: 0, y: 0 };   // worlds: virtual joystick + gamepad write this; office-only stays at 0 (tap-to-walk)
   const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
   const floorPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), fhit = new THREE.Vector3();
   function walkTo(e) { const r = el.getBoundingClientRect(); ndc.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1); ray.setFromCamera(ndc, cam);
@@ -320,19 +324,55 @@ const PUBLIC = /(^|\.)elderworldstudio\.com$/.test(location.hostname) || /[?&]pu
       if (fps < 40 && ctx.lod > 0.5) { ctx.lod = Math.max(0.5, ctx.lod - 0.15); lowFor = 0; }
       else if (fps < 40 && (dstep < DSCALE.length - 1 || tier > 0)) { if (dstep < DSCALE.length - 1) dstep++; else { tier--; dstep = 0; ctx.tierChanged?.(tier); } applyRatio(); resize(); lowFor = 0; }
       else lowFor = 0; }   /* no 'running slowly' popup: quality steps down silently */
+    if (ctx.paused || ctx.menuOpen) { for (const m of mods) m.onFrame?.(0, t); const alt = ctx.use('worldsTravel'); R.render(alt?.scene && alt.zone !== 'town' ? alt.scene : scene, cam); return; }
+    const travel = ctx.use('worldsTravel');
+    if (travel?.zone && travel.zone !== 'town') {
+      travel.tick(dt, { keys, jv, yaw, pitch, pos, collide });
+      yaw = travel.yaw; pitch = travel.pitch;
+      if (rip.material.opacity > 0) { rip.material.opacity = Math.max(0, rip.material.opacity - dt * 1.5); rip.scale.multiplyScalar(1 + dt * 1.2); }
+      for (const m of mods) m.onFrame?.(dt, t);
+      R.render(travel.scene, cam);
+      return;
+    }
     if (glide) { glide.t = Math.min(1, glide.t + dt / 1.6); const k = glide.t * glide.t * (3 - 2 * glide.t); pos.lerpVectors(glide.from, glide.to, k); yaw = glide.y0 + (glide.y1 - glide.y0) * k; pitch = glide.p0 + (glide.p1 - glide.p0) * k; if (glide.t >= 1) glide = null; }
     const typing = (() => { const a = document.activeElement; return !!(a && (a.matches?.('input,textarea,select') || a.isContentEditable)) || !!document.querySelector('.office-chat:not([hidden]),.office-card form, .office-card[data-chat]'); })(); if (typing) for (const k in keys) keys[k] = 0;
-    const mvF = (keys.w || keys.arrowup ? 1 : 0) - (keys.s || keys.arrowdown ? 1 : 0) - jv.y, mvR = (keys.d ? 1 : 0) - (keys.a ? 1 : 0) + jv.x;
+    if (TP) { const pads = navigator.getGamepads?.() || []; const gp = [...pads].find(p => p && p.connected);
+      if (gp) { const dz = v => Math.abs(v) < 0.18 ? 0 : v; jv.x = dz(gp.axes[0] || 0); jv.y = dz(gp.axes[1] || 0);
+        yaw -= dz(gp.axes[2] || 0) * dt * 2.4 * (ctx.lookSens || 1); pitch -= dz(gp.axes[3] || 0) * dt * 1.8 * (ctx.lookSens || 1);
+        if (gp.buttons[0]?.pressed) keys[' '] = 1; if (gp.buttons[1]?.pressed) keys.e = 1; if (gp.buttons[5]?.pressed || gp.buttons[7]?.pressed || gp.buttons[10]?.pressed) keys.shift = 1;
+        if (gp.buttons[9]?.pressed) ctx.wantPause = true; }
+      if (ctx.joy) { jv.x = ctx.joy.x; jv.y = ctx.joy.y; } }
+    const joyX = ctx.joy?.x || 0, joyY = ctx.joy?.y || 0;
+    const mvF = (keys.w || keys.arrowup ? 1 : 0) - (keys.s || keys.arrowdown ? 1 : 0) - jv.y - joyY, mvR = (keys.d ? 1 : 0) - (keys.a ? 1 : 0) + jv.x + joyX;
     if (keys.arrowleft || keys.q) yaw += dt * 1.8; if (keys.arrowright || keys.r) yaw -= dt * 1.8;   // keyboard turning never needs the cursor
     if (edgeX && !locked() && !drag && !card) yaw -= edgeX * dt * 2.2;          // cursor parked at a screen edge = keep turning
-    if (mvF || mvR) { glide = null; fwd.set(-Math.sin(yaw), 0, -Math.cos(yaw)); right.set(-fwd.z, 0, fwd.x); const sp = keys.shift ? 8 : 4; pos.addScaledVector(fwd, mvF * dt * sp).addScaledVector(right, mvR * dt * sp); { const B = ctx.curBounds || ctx.exterior?.bounds || [fx, fX, fz, fZ]; pos.x = Math.max(B[0] + 1, Math.min(B[1] - 1, pos.x)); pos.z = Math.max(B[2] + 1, Math.min(B[3] - 1, pos.z)); } }
+    if (mvF || mvR) { glide = null; fwd.set(-Math.sin(yaw), 0, -Math.cos(yaw)); right.set(-fwd.z, 0, fwd.x); const sp = (keys.shift || ctx.joy?.run) ? 8 : 4; pos.addScaledVector(fwd, mvF * dt * sp).addScaledVector(right, mvR * dt * sp); { const B = ctx.curBounds || ctx.exterior?.bounds || [fx, fX, fz, fZ]; pos.x = Math.max(B[0] + 1, Math.min(B[1] - 1, pos.x)); pos.z = Math.max(B[2] + 1, Math.min(B[3] - 1, pos.z)); } }
     cullT += rdt; if (cullT > 0.4) { cullT = 0; const wp = new THREE.Vector3();   // distance-cull signs/displays (each is its own draw call)
-      for (const p of farCull) { const u = p.userData.fc; const far = u.c.distanceTo(pos) - u.r > 20; if (far && p.visible) { p.visible = false; p.userData.far = 1; } else if (!far && p.userData.far) { p.visible = true; p.userData.far = 0; } }
-      for (const p of displays) { p.getWorldPosition(wp); const far = wp.distanceToSquared(pos) > 18 * 18; if (far && p.visible) { p.visible = false; p.userData.far = 1; } else if (!far && p.userData.far) { p.visible = true; p.userData.far = 0; } } }
+      const farLim = WORLDS ? 800 : 20, dispLim = WORLDS ? 220 * 220 : 18 * 18;
+      for (const p of farCull) { const u = p.userData.fc; const far = u.c.distanceTo(pos) - u.r > farLim; if (far && p.visible) { p.visible = false; p.userData.far = 1; } else if (!far && p.userData.far) { p.visible = true; p.userData.far = 0; } }
+      for (const p of displays) { p.getWorldPosition(wp); const far = wp.distanceToSquared(pos) > dispLim; if (far && p.visible) { p.visible = false; p.userData.far = 1; } else if (!far && p.userData.far) { p.visible = true; p.userData.far = 0; } } }
     if (!glide || glide.walk) { const ox = pos.x, oz = pos.z; collide(pos); if (glide?.walk && Math.hypot(pos.x - ox, pos.z - oz) > 0.01) glide = null; }   // tours glide freely; walking (keys or tap-to-walk) is blocked by furniture
-    if (!window.__ewsFreeY) pos.y = EYE + (ctx.groundAt ? ctx.groundAt(pos) : 0);   // grounded at eye height; on the stairs (modules/stairs) the eye follows the stair pitch
-    if (R.xr.isPresenting) { rig.position.set(pos.x, 0, pos.z); rig.rotation.set(0, yaw, 0); cam.position.set(0, 0, 0); }
-    else { rig.position.set(0, 0, 0); rig.rotation.set(0, 0, 0); cam.position.copy(pos); cam.rotation.set(pitch, yaw, 0, 'YXZ'); }
+    const ground = (ctx.groundAt ? ctx.groundAt(pos) : 0);
+    if (ctx.lockCam) {
+      /* worlds visual tests / QA: camera is posed by __ewsWorlds.setView */
+    } else if (TP) {
+      if (keys[' '] && ctx._grounded !== false) { ctx._vy = 7.2; ctx._grounded = false; keys[' '] = 0; }
+      ctx._vy = (ctx._vy || 0) - 22 * dt;
+      let feet = (window.__ewsFreeY ? pos.y : ground) + (ctx._vy || 0) * dt;
+      if (feet <= ground && !window.__ewsFreeY) { feet = ground; ctx._vy = 0; ctx._grounded = true; }
+      pos.y = feet;
+      if (ctx.visitor) { ctx.visitor.position.set(pos.x, pos.y, pos.z); if (mvF || mvR) ctx.visitor.rotation.y = Math.atan2(-Math.sin(yaw) * mvF - Math.cos(yaw) * mvR, -Math.cos(yaw) * mvF + Math.sin(yaw) * mvR); ctx.visitor.userData.moving = !!(mvF || mvR); ctx.visitor.userData.running = !!(keys.shift || ctx.joy?.run); }
+      const dist = 4.1, lift = 1.55;
+      const cx = pos.x + Math.sin(yaw) * dist * Math.cos(pitch);
+      const cy = pos.y + lift + Math.sin(-pitch) * dist * 0.65 + 0.35;
+      const cz = pos.z + Math.cos(yaw) * dist * Math.cos(pitch);
+      if (R.xr.isPresenting) { rig.position.set(pos.x, 0, pos.z); rig.rotation.set(0, yaw, 0); cam.position.set(0, 0, 0); }
+      else { rig.position.set(0, 0, 0); rig.rotation.set(0, 0, 0); cam.position.set(cx, Math.max(pos.y + 0.4, cy), cz); cam.lookAt(pos.x, pos.y + 1.35, pos.z); }
+    } else {
+      if (!window.__ewsFreeY) pos.y = EYE + ground;   // grounded at eye height; stairs (modules/stairs) offset via groundAt
+      if (R.xr.isPresenting) { rig.position.set(pos.x, 0, pos.z); rig.rotation.set(0, yaw, 0); cam.position.set(0, 0, 0); }
+      else { rig.position.set(0, 0, 0); rig.rotation.set(0, 0, 0); cam.position.copy(pos); cam.rotation.set(pitch, yaw, 0, 'YXZ'); }
+    }
     if (rip.material.opacity > 0) { rip.material.opacity = Math.max(0, rip.material.opacity - dt * 1.5); rip.scale.multiplyScalar(1 + dt * 1.2); }
     for (const m of mods) m.onFrame?.(dt, t);
     ctx.exterior?.frame(dt, t, pos, cam);
@@ -463,5 +503,22 @@ const PUBLIC = /(^|\.)elderworldstudio\.com$/.test(location.hostname) || /[?&]pu
   setInterval(() => { if (wantUpdate && idleNow()) { saveState(); location.reload(); } }, 5000);
   window.__ewsOffice.reloadState = { save: saveState, idleNow, peek: () => sessionStorage.getItem('ews-state') };
   Object.assign(window.__ewsOffice, { health: () => ({ stallMs: Math.round(performance.now() - lastFrameT), idleMs: Math.round(ctx.idleMs()), busy: busy() }), applyUpdateWhenIdle: () => { wantUpdate = true; return 'deferred'; } });
+  {
+    const api = window.__ewsWorlds ||= {};
+    Object.defineProperties(api, {
+      ready: { configurable: true, get() { return !root.querySelector('.office-load'); } },
+      zone: { configurable: true, get() { return ctx.use('worldsTravel')?.zone || 'town'; } },
+      pos: { configurable: true, get() { return { x: pos.x, y: pos.y, z: pos.z, yaw, pitch }; } },
+      thirdPerson: { configurable: true, get() { return TP; } },
+      worlds: { configurable: true, get() { return WORLDS; } },
+    });
+    api.move = (f, r, secs = 0.35) => { keys.w = f > 0 ? 1 : 0; keys.s = f < 0 ? 1 : 0; keys.d = r > 0 ? 1 : 0; keys.a = r < 0 ? 1 : 0; return new Promise(res => setTimeout(() => { keys.w = keys.s = keys.d = keys.a = 0; res({ x: pos.x, y: pos.y, z: pos.z }); }, secs * 1000)); };
+    api.jump = () => { keys[' '] = 1; };
+    api.travel = z => ctx.use('worldsTravel')?.go(z);
+    api.interact = () => { keys.e = 1; ctx.use('worldsTravel')?.interact?.(); };
+    api.setPaused = v => { ctx.paused = !!v; };
+    api.setView = (x, y, z, lx, ly, lz) => { ctx.lockCam = true; cam.position.set(x, y, z); cam.lookAt(lx, ly, lz); cam.updateMatrixWorld(); };
+    api.quality = () => ({ tier, mode: ctx.qualityMode || 'auto' });
+  }
   const frame0 = frame; R.setAnimationLoop(t => { lastFrameT = performance.now(); frame0(t); }); return { goTo, close, ctx };   // setAnimationLoop also drives WebXR frames
 }

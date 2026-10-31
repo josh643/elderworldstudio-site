@@ -1,0 +1,9 @@
+# Example cloudflared config for an LXC with no inbound ports.
+# Install cloudflared, set tunnel credentials, point the hostname at this ingress.
+tunnel: REPLACE_TUNNEL_ID
+credentials-file: /etc/cloudflared/REPLACE_TUNNEL_ID.json
+
+ingress:
+  - hostname: worlds.elderworldstudio.com
+    service: http://127.0.0.1:8080
+  - service: http_status:404

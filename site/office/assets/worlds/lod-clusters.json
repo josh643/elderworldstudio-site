@@ -1,0 +1,271 @@
+{
+  "v": 1,
+  "pixelLimit": 1,
+  "note": "Switch to LOD n only when sse(levels[n].geomErr) < 1.0 pixel. Impostors only after the last level is also < 1 px and projected size < 2 px.",
+  "backend": {
+    "prefer": "webgpu",
+    "fallback": "webgl2"
+  },
+  "catalog": [
+    {
+      "id": "block",
+      "radius": 1,
+      "levels": [
+        {
+          "lod": 0,
+          "geomErr": 0,
+          "meshlets": 64
+        },
+        {
+          "lod": 1,
+          "geomErr": 0.04,
+          "meshlets": 16
+        },
+        {
+          "lod": 2,
+          "geomErr": 0.12,
+          "meshlets": 4
+        },
+        {
+          "lod": 3,
+          "geomErr": 0.35,
+          "meshlets": 1
+        }
+      ]
+    },
+    {
+      "id": "tree",
+      "radius": 1.4,
+      "levels": [
+        {
+          "lod": 0,
+          "geomErr": 0,
+          "meshlets": 64
+        },
+        {
+          "lod": 1,
+          "geomErr": 0.06,
+          "meshlets": 16
+        },
+        {
+          "lod": 2,
+          "geomErr": 0.18,
+          "meshlets": 4
+        },
+        {
+          "lod": 3,
+          "geomErr": 0.5,
+          "meshlets": 1
+        }
+      ]
+    },
+    {
+      "id": "shrub",
+      "radius": 0.6,
+      "levels": [
+        {
+          "lod": 0,
+          "geomErr": 0,
+          "meshlets": 64
+        },
+        {
+          "lod": 1,
+          "geomErr": 0.03,
+          "meshlets": 16
+        },
+        {
+          "lod": 2,
+          "geomErr": 0.1,
+          "meshlets": 4
+        },
+        {
+          "lod": 3,
+          "geomErr": 0.28,
+          "meshlets": 1
+        }
+      ]
+    },
+    {
+      "id": "arch",
+      "radius": 1.6,
+      "levels": [
+        {
+          "lod": 0,
+          "geomErr": 0,
+          "meshlets": 64
+        },
+        {
+          "lod": 1,
+          "geomErr": 0.05,
+          "meshlets": 16
+        },
+        {
+          "lod": 2,
+          "geomErr": 0.16,
+          "meshlets": 4
+        },
+        {
+          "lod": 3,
+          "geomErr": 0.42,
+          "meshlets": 1
+        }
+      ]
+    },
+    {
+      "id": "bench",
+      "radius": 0.8,
+      "levels": [
+        {
+          "lod": 0,
+          "geomErr": 0,
+          "meshlets": 64
+        },
+        {
+          "lod": 1,
+          "geomErr": 0.03,
+          "meshlets": 16
+        },
+        {
+          "lod": 2,
+          "geomErr": 0.09,
+          "meshlets": 4
+        },
+        {
+          "lod": 3,
+          "geomErr": 0.24,
+          "meshlets": 1
+        }
+      ]
+    },
+    {
+      "id": "lot-small",
+      "radius": 2.8,
+      "levels": [
+        {
+          "lod": 0,
+          "geomErr": 0,
+          "meshlets": 64
+        },
+        {
+          "lod": 1,
+          "geomErr": 0.02,
+          "meshlets": 16
+        },
+        {
+          "lod": 2,
+          "geomErr": 0.08,
+          "meshlets": 4
+        },
+        {
+          "lod": 3,
+          "geomErr": 0.2,
+          "meshlets": 1
+        }
+      ]
+    },
+    {
+      "id": "well",
+      "radius": 0.7,
+      "levels": [
+        {
+          "lod": 0,
+          "geomErr": 0,
+          "meshlets": 64
+        },
+        {
+          "lod": 1,
+          "geomErr": 0.03,
+          "meshlets": 16
+        },
+        {
+          "lod": 2,
+          "geomErr": 0.1,
+          "meshlets": 4
+        },
+        {
+          "lod": 3,
+          "geomErr": 0.26,
+          "meshlets": 1
+        }
+      ]
+    },
+    {
+      "id": "shrine",
+      "radius": 0.8,
+      "levels": [
+        {
+          "lod": 0,
+          "geomErr": 0,
+          "meshlets": 64
+        },
+        {
+          "lod": 1,
+          "geomErr": 0.03,
+          "meshlets": 16
+        },
+        {
+          "lod": 2,
+          "geomErr": 0.1,
+          "meshlets": 4
+        },
+        {
+          "lod": 3,
+          "geomErr": 0.28,
+          "meshlets": 1
+        }
+      ]
+    },
+    {
+      "id": "pad",
+      "radius": 1.6,
+      "levels": [
+        {
+          "lod": 0,
+          "geomErr": 0,
+          "meshlets": 64
+        },
+        {
+          "lod": 1,
+          "geomErr": 0.02,
+          "meshlets": 16
+        },
+        {
+          "lod": 2,
+          "geomErr": 0.06,
+          "meshlets": 4
+        },
+        {
+          "lod": 3,
+          "geomErr": 0.16,
+          "meshlets": 1
+        }
+      ]
+    },
+    {
+      "id": "awning",
+      "radius": 1.2,
+      "levels": [
+        {
+          "lod": 0,
+          "geomErr": 0,
+          "meshlets": 64
+        },
+        {
+          "lod": 1,
+          "geomErr": 0.04,
+          "meshlets": 16
+        },
+        {
+          "lod": 2,
+          "geomErr": 0.12,
+          "meshlets": 4
+        },
+        {
+          "lod": 3,
+          "geomErr": 0.3,
+          "meshlets": 1
+        }
+      ]
+    }
+  ]
+}
