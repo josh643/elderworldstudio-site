@@ -155,6 +155,24 @@ HOME = f"""
  </div>
 </section>
 
+<section class="block" id="in-action">
+ <div class="wrap">
+  <div class="center"><h2>See it in action</h2><p class="lead">Watch short demos of Agent OS and Kiosk OS.</p></div>
+  <div class="grid two">
+   <div>
+    <h3 class="card-title">Agent OS</h3>
+    {yt_embed("_2jDV6lu-2k", title="Agent OS demo")}
+    <p class="meta"><a class="link" href="{{P}}agent-os/index.html" title="Agent OS">See Agent OS &rarr;</a></p>
+   </div>
+   <div>
+    <h3 class="card-title">Kiosk OS</h3>
+    {yt_embed("iNfnsQ5NIK0", "PLCT7Yo3HThzs", "EWS Kiosk OS demo")}
+    <p class="meta"><a class="link" href="{{P}}kiosk/index.html" title="Kiosk OS">See Kiosk OS &rarr;</a></p>
+   </div>
+  </div>
+ </div>
+</section>
+
 <section class="block alt" id="tools">
  <div class="wrap grid two">
   <div>
@@ -506,6 +524,7 @@ AGENT_OS = f"""
  <div class="panel" style="margin-bottom:24px"><h2 class="card-title">Assistants that are not locked to one model</h2>
   <p>Agent OS is our platform for small-shop assistants: phone, website chat, or a counter. It is model-agnostic, so we can pick the model that fits the job instead of locking you to one vendor.</p>
   <p>The first product on Agent OS is the <a class="link" href="{{P}}ai-receptionist/index.html">AI receptionist</a>. Ask for a free demo of either.</p></div>
+ {yt_embed("_2jDV6lu-2k", title="Agent OS demo")}
  {yt_embed(None, "PLOHxOgCCKH8s", "Agent OS playlist")}
  <div class="panel"><h2 class="card-title">Price</h2><p class="product-price">Free demo / contact us</p>{demo_cta("Agent OS")}</div>
 </div></div>
@@ -749,6 +768,16 @@ def _merch_body():
 {chr(10).join(cards)}
   </div>
   <p class="meta center" style="margin-top:28px">Print-on-demand: each item is made when you order it, so nothing goes to waste. Questions? <a href="mailto:{MC.NOTIFY_EMAIL}">{MC.NOTIFY_EMAIL}</a></p>
+ </div>
+</section>
+<section class="block alt" id="shops">
+ <div class="wrap">
+  <div class="center"><h2>Our shops</h2><p class="lead">More stores from Elder World Studio.</p></div>
+  <div class="grid cards">
+   <article class="panel"><h3 class="card-title">Bluff City Made</h3><p>Shop the store at <a class="link" href="https://bluffcitymade.com" rel="noopener" title="Bluff City Made">bluffcitymade.com</a>.</p></article>
+   <article class="panel"><h3 class="card-title">Riverbend Tackle</h3><p>Shop the store at <a class="link" href="https://riverbendtackle.com" rel="noopener" title="Riverbend Tackle">riverbendtackle.com</a>.</p></article>
+   <article class="panel"><h3 class="card-title">Third Shot Goods</h3><p>Shop the store at <a class="link" href="https://thirdshotgoods.com" rel="noopener" title="Third Shot Goods">thirdshotgoods.com</a>.</p></article>
+  </div>
  </div>
 </section>
 """

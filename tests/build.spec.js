@@ -106,6 +106,23 @@ test.describe("site-wide repositioning", () => {
     }
     const ld = JSON.parse(await page.locator('script[type="application/ld+json"]').textContent());
     expect(ld["@graph"].map((x) => x["@type"])).toEqual(["Organization", "LocalBusiness"]);
+    await expect(page.locator("#in-action h2")).toHaveText(/See it in action/i);
+    await expect(page.locator('#in-action iframe[title="Agent OS demo"]')).toHaveAttribute("src", /\/embed\/_2jDV6lu-2k/);
+    await expect(page.locator('#in-action iframe[title="EWS Kiosk OS demo"]')).toHaveAttribute("src", /\/embed\/iNfnsQ5NIK0/);
+    for (const frame of await page.locator("#in-action iframe").all()) {
+      await expect(frame).toHaveAttribute("loading", "lazy");
+    }
+  });
+
+  test("merch lists our shops without client names", async ({ page }) => {
+    await blockAds(page);
+    await page.goto("/merch/", { waitUntil: "domcontentloaded" });
+    await expect(page.locator("#shops h2")).toHaveText(/Our shops/i);
+    const html = await page.content();
+    expect(html).not.toMatch(CLIENT_NAMES);
+    for (const host of ["bluffcitymade.com", "riverbendtackle.com", "thirdshotgoods.com"]) {
+      await expect(page.locator(`#shops a[href="https://${host}"]`)).toBeVisible();
+    }
   });
 
   test("sitemap lists /build/ and /services/", async ({ request }) => {
