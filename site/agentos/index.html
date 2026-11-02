@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Agent OS: Your own AI employee | Elder World Studio Inc</title>
+<meta name="description" content="Agent OS gives your business its own AI employee that answers, handles tasks and asks before it acts. Join the waitlist.">
+<link rel="canonical" href="https://elderworldstudio.com/agentos/">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon.png?v=4">
+<meta name="theme-color" content="#0B0D12">
+<meta property="og:title" content="Agent OS: Your own AI employee">
+<meta property="og:description" content="Hire an AI employee for your business. Join the Agent OS waitlist.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://elderworldstudio.com/agentos/">
+<meta property="og:image" content="https://elderworldstudio.com/agentos/img/16-chat.webp">
+<meta name="twitter:card" content="summary_large_image">
+<style>
+@font-face{font-family:Manrope;src:url(/assets/fonts/manrope.woff2) format("woff2");font-weight:600 800;font-display:swap}
+@font-face{font-family:Inter;src:url(/assets/fonts/inter.woff2) format("woff2");font-weight:400 700;font-display:swap}
+*{box-sizing:border-box;margin:0}
+body{background:#0B0D12;color:#F4F6FB;font:16px/1.6 Inter,system-ui,sans-serif;overflow-x:hidden}
+h1,h2,h3,.d{font-family:Manrope,Inter,sans-serif;letter-spacing:-.02em;line-height:1.15}
+a{color:#B9A8FF}
+.wrap{max-width:1120px;margin:0 auto;padding:0 20px}
+.aurora{position:absolute;inset:0;z-index:-1;overflow:hidden;pointer-events:none}
+.aurora::before,.aurora::after{content:"";position:absolute;width:720px;height:720px;border-radius:50%;filter:blur(120px);opacity:.35}
+.aurora::before{background:#7C5CFF;top:-280px;left:-200px}.aurora::after{background:#22D3EE;top:-160px;right:-260px;opacity:.22}
+header{position:relative}
+nav{display:flex;align-items:center;justify-content:space-between;padding:20px 0}
+.logo{display:flex;align-items:center;gap:10px;font-weight:800;font-family:Manrope;font-size:19px;color:#fff;text-decoration:none}
+.logo i{width:30px;height:30px;border-radius:10px;background:linear-gradient(135deg,#7C5CFF,#22D3EE);display:block}
+.grad{background:linear-gradient(135deg,#9B87FF,#22D3EE);-webkit-background-clip:text;background-clip:text;color:transparent}
+.btn{display:inline-flex;align-items:center;justify-content:center;height:52px;padding:0 26px;border-radius:16px;font:700 15px Manrope,Inter,sans-serif;border:0;cursor:pointer;text-decoration:none;color:#fff}
+.pri{background:linear-gradient(135deg,#7C5CFF,#22D3EE);box-shadow:0 10px 30px rgba(124,92,255,.35)}
+.sec{background:#1B2030;border:1px solid rgba(255,255,255,.1)}
+.hero{display:grid;grid-template-columns:1.1fr .9fr;gap:40px;align-items:center;padding:48px 0 72px}
+.chip{display:inline-flex;gap:8px;align-items:center;padding:6px 14px;border-radius:99px;background:rgba(124,92,255,.18);border:1px solid #7C5CFF;color:#CFC4FF;font-size:13px;font-weight:600}
+.dot{width:8px;height:8px;border-radius:50%;background:#34D399;box-shadow:0 0 8px #34D399}
+h1{font-size:clamp(40px,6vw,68px);font-weight:800;margin:18px 0}
+.lead{font-size:19px;color:#9AA3B5;max-width:540px}
+.phones{position:relative;height:560px}
+.phone{position:absolute;width:250px;border-radius:34px;border:6px solid #1B2030;box-shadow:0 30px 80px rgba(0,0,0,.55);overflow:hidden;background:#0B0D12}
+.phone img{display:block;width:100%;height:auto}
+.p1{left:10%;top:0;transform:rotate(-5deg)}.p2{right:4%;top:60px;transform:rotate(4deg)}
+section{padding:72px 0}
+h2{font-size:clamp(30px,4vw,44px);font-weight:800;margin-bottom:12px}
+.sub{color:#9AA3B5;max-width:640px;margin-bottom:36px}
+.grid{display:grid;gap:18px}.g3{grid-template-columns:repeat(3,1fr)}.g4{grid-template-columns:repeat(4,1fr)}
+.card{background:#141821;border:1px solid rgba(255,255,255,.07);border-radius:20px;padding:24px}
+.card h3{font-size:19px;margin:12px 0 6px}.card p{color:#9AA3B5;font-size:15px}
+.n{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;font:800 17px Manrope;background:linear-gradient(135deg,#7C5CFF,#22D3EE)}
+.ico{width:40px;height:40px;border-radius:12px;background:rgba(124,92,255,.18);border:1px solid rgba(124,92,255,.5);display:flex;align-items:center;justify-content:center;font-size:20px}
+.shots{position:relative;display:flex;gap:18px;overflow-x:auto;padding-bottom:10px;scroll-snap-type:x mandatory}
+.shots figure{flex:0 0 220px;scroll-snap-align:start}.shots img{width:100%;border-radius:24px;border:5px solid #1B2030;display:block}
+.shots figcaption{color:#9AA3B5;font-size:14px;text-align:center;margin-top:8px}
+.video{aspect-ratio:16/9;border-radius:24px;border:1px solid rgba(255,255,255,.1);background:radial-gradient(circle at 30% 20%,rgba(124,92,255,.25),transparent 60%),#141821;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;color:#9AA3B5;overflow:hidden}
+.video iframe{width:100%;height:100%;border:0}
+.play{width:76px;height:76px;border-radius:50%;background:linear-gradient(135deg,#7C5CFF,#22D3EE);display:flex;align-items:center;justify-content:center;font-size:28px;color:#fff}
+.signup{background:linear-gradient(135deg,rgba(124,92,255,.22),rgba(34,211,238,.12));border:1px solid rgba(124,92,255,.45);border-radius:28px;padding:44px;text-align:center}
+form{display:flex;gap:12px;max-width:620px;margin:24px auto 0;flex-wrap:wrap;justify-content:center}
+input[type=email],input[type=text],select{height:52px;border-radius:14px;background:#141821;border:1px solid rgba(255,255,255,.12);padding:0 16px;color:#F4F6FB;font:15px Inter,sans-serif;flex:1 1 220px}
+input:focus,select:focus{outline:none;border-color:#7C5CFF}
+.hp{position:absolute;left:-9999px}
+#msg{margin-top:14px;min-height:24px;font-weight:600}
+.ok{color:#34D399}.err{color:#F87171}
+.price{display:inline-block;margin-top:18px;padding:8px 16px;border-radius:99px;border:1px dashed rgba(255,255,255,.25);color:#CFC4FF;font-size:14px}
+footer{border-top:1px solid rgba(255,255,255,.07);padding:28px 0;color:#6B7385;font-size:14px}
+footer a{color:#9AA3B5;margin-right:16px}
+@media(max-width:900px){.hero{grid-template-columns:1fr}.phones{height:440px}.phone{width:200px}.g3,.g4{grid-template-columns:1fr 1fr}}
+@media(max-width:560px){.g3,.g4{grid-template-columns:1fr}.phones{height:380px}.phone{width:170px}.p1{left:0}.p2{right:0}.signup{padding:28px 18px}nav .btn{display:none}}
+html{overflow-x:hidden}img{max-width:100%}
+.sdots{display:none;justify-content:center;gap:8px;margin-top:14px}.sdots button{width:8px;height:8px;padding:0;border:0;border-radius:99px;background:rgba(255,255,255,.25);cursor:pointer;transition:all .2s}.sdots button.on{width:22px;background:linear-gradient(135deg,#7C5CFF,#22D3EE)}
+@media(max-width:560px){
+.wrap{padding:0 18px}
+.hero{gap:28px;padding:20px 0 48px;text-align:left}
+h1{font-size:clamp(34px,10vw,44px);margin:14px 0}
+.lead{font-size:17px}
+.hero .btn{flex:1 1 100%;min-height:52px}
+.phones{height:auto;display:flex;justify-content:center;align-items:flex-start;padding:10px 0 20px;max-width:100%;overflow:hidden}
+.phone{position:relative;width:min(44vw,180px);left:auto!important;right:auto!important;top:auto;border-width:5px;border-radius:26px}
+.p1{transform:rotate(-4deg);margin-right:-14px;z-index:1}.p2{transform:rotate(4deg);margin-top:36px}
+section{padding:48px 0}
+h2{font-size:clamp(26px,7.5vw,32px)}
+.card{padding:20px}
+.shots{margin:0 -18px;padding:0 7.5vw 6px;gap:14px;scroll-padding:0 7.5vw;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.shots::-webkit-scrollbar{display:none}
+.shots figure{flex:0 0 78vw;max-width:85vw;scroll-snap-align:center}
+.sdots{display:flex}.sdots button{position:relative}.sdots button::after{content:"";position:absolute;inset:-18px -6px}
+.signup{padding:28px 18px;border-radius:22px}
+form{flex-direction:column;gap:10px}
+form input[type=email],form input[type=text],form .btn{flex:none;width:100%;min-height:52px}
+input{font-size:16px!important}
+footer a{display:inline-block;padding:10px 0;margin-right:14px}
+}
+</style>
+</head>
+<body>
+<header><div class="aurora"></div><div class="wrap">
+<nav><a class="logo" href="/agentos/"><i></i>Agent OS</a><a class="btn sec" href="#waitlist">Join the waitlist</a></nav>
+<div class="hero">
+ <div>
+  <span class="chip"><span class="dot"></span>Early access waitlist open</span>
+  <h1>Your own <span class="grad">AI employee</span></h1>
+  <p class="lead">Agent OS gives your business a teammate that answers customers, handles everyday tasks and sends you a daily report. It always asks before it does anything important. Manage it all from your phone.</p>
+  <p style="margin-top:28px;display:flex;gap:12px;flex-wrap:wrap"><a class="btn pri" href="#waitlist">Get early access</a><a class="btn sec" href="#how">See how it works</a></p>
+ </div>
+ <div class="phones" aria-hidden="true">
+  <div class="phone p1"><img src="img/15-home-dashboard.webp" alt="" width="412" height="915"></div>
+  <div class="phone p2"><img src="img/16-chat.webp" alt="" width="412" height="915"></div>
+ </div>
+</div></div></header>
+
+<main>
+<section id="how"><div class="wrap">
+ <h2>How it works</h2><p class="sub">You can be up and running in about ten minutes, all from the Android app.</p>
+ <div class="grid g4">
+  <div class="card"><div class="n">1</div><h3>Install the app</h3><p>Download Agent OS and create your account in under a minute.</p></div>
+  <div class="card"><div class="n">2</div><h3>Pick or build a role</h3><p>Start from a ready-made role like receptionist or assistant, or design your own from scratch.</p></div>
+  <div class="card"><div class="n">3</div><h3>Connect your tools</h3><p>Link your email, calendar and phone line, then set clear limits on what it can do.</p></div>
+  <div class="card"><div class="n">4</div><h3>Put it to work</h3><p>It works around the clock and checks with you before any important action.</p></div>
+ </div>
+</div></section>
+
+<section><div class="wrap">
+ <h2>Built for real work, with you in control</h2><p class="sub">It's not just a chatbot. It's an employee with memory, judgment and limits that you set.</p>
+ <div class="grid g3">
+  <div class="card"><div class="ico">💬</div><h3>Chat or talk</h3><p>Text it or use voice mode, just like you would message a teammate.</p></div>
+  <div class="card"><div class="ico">✅</div><h3>Approvals first</h3><p>Anything that costs money or goes out under your name waits for one tap from you.</p></div>
+  <div class="card"><div class="ico">🌙</div><h3>Works 24/7</h3><p>It runs securely in the cloud, so it keeps working even when your phone is off.</p></div>
+  <div class="card"><div class="ico">🧠</div><h3>Remembers your business</h3><p>Teach it your hours, prices and policies once. You can edit its memory whenever you like.</p></div>
+  <div class="card"><div class="ico">📊</div><h3>Daily report</h3><p>Each day you get a clear summary of what it did, what it's waiting on and what it learned.</p></div>
+  <div class="card"><div class="ico">🔒</div><h3>Private by design</h3><p>Each business gets its own isolated workspace, and your data is never shared.</p></div>
+ </div>
+</div></section>
+
+<section><div class="wrap">
+ <h2>A look inside the app</h2><p class="sub">These are real screens from the Agent OS design.</p>
+ <div class="shots">
+  <figure><img src="img/06-choose-role.webp" alt="Choosing a role for your AI employee" loading="lazy" width="412" height="915"><figcaption>Choose or build a role</figcaption></figure>
+  <figure><img src="img/08-name-personality.webp" alt="Naming the agent and setting its personality" loading="lazy" width="412" height="915"><figcaption>Give it a name and personality</figcaption></figure>
+  <figure><img src="img/16-chat.webp" alt="Chatting with the agent" loading="lazy" width="412" height="915"><figcaption>Chat like a teammate</figcaption></figure>
+  <figure><img src="img/19-approval-request.webp" alt="An approval request" loading="lazy" width="412" height="915"><figcaption>Approve with one tap</figcaption></figure>
+  <figure><img src="img/23-daily-report.webp" alt="The daily report" loading="lazy" width="412" height="915"><figcaption>Daily report</figcaption></figure>
+ </div>
+ <div class="sdots" id="sdots" aria-label="Screens"></div>
+</div></section>
+
+<section id="video"><div class="wrap">
+ <h2>Watch Agent OS in action</h2><p class="sub">Follow the whole journey, from installing the app to a full day of work.</p>
+ <!-- YOUTUBE SLOT: set data-youtube-id to the video ID (e.g. dQw4w9WgXcQ) to embed it. -->
+ <div class="video" id="yt" data-youtube-id="_2jDV6lu-2k"><div class="play">▶</div><div>The video is coming soon</div></div>
+</div></section>
+
+<section id="waitlist"><div class="wrap"><div class="signup">
+ <h2>Join the <span class="grad">Agent OS</span> waitlist</h2>
+ <p class="sub" style="margin:0 auto">Get early access, along with launch pricing for the first businesses on the list.</p>
+ <form id="wl" method="post" action="/api/waitlist">
+  <input type="email" name="email" required placeholder="you@yourbusiness.com" aria-label="Email address" autocomplete="email">
+  <input type="text" name="business" placeholder="Business type (optional)" aria-label="Business type" maxlength="120">
+  <input class="hp" type="text" name="website_url" tabindex="-1" autocomplete="off" aria-hidden="true">
+  <input type="hidden" name="t" id="t">
+  <button class="btn pri" type="submit">Join waitlist</button>
+ </form>
+ <div id="msg" role="status"></div>
+ <span class="price">Pricing announced soon</span>
+ <p style="color:#6B7385;font-size:13px;margin-top:14px">We'll only email you about Agent OS. You can unsubscribe anytime. See our <a href="/privacy-policy/">Privacy Policy</a>.</p>
+</div></div></section>
+</main>
+
+<footer><div class="wrap"><a href="/">Elder World Studio Inc</a><a href="/privacy-policy/">Privacy</a><a href="/terms/">Terms</a><a href="/contact/">Contact</a></div></footer>
+<script>
+(function(){
+ var sh=document.querySelector('.shots'),sd=document.getElementById('sdots');
+ if(sh&&sd){var fs=sh.querySelectorAll('figure');fs.forEach(function(fg,i){var b=document.createElement('button');b.type='button';b.setAttribute('aria-label','Screen '+(i+1));b.onclick=function(){sh.scrollTo({left:fg.offsetLeft-(sh.clientWidth-fg.clientWidth)/2,behavior:'smooth'})};sd.appendChild(b)});
+  var upd=function(){var c=sh.scrollLeft+sh.clientWidth/2,best=0,bd=1e9;fs.forEach(function(fg,i){var d=Math.abs(fg.offsetLeft+fg.clientWidth/2-c);if(d<bd){bd=d;best=i}});sd.querySelectorAll('button').forEach(function(b,i){b.classList.toggle('on',i===best)})};
+  sh.addEventListener('scroll',upd,{passive:true});upd()}
+ var t=document.getElementById('t');t.value=Date.now();
+ var v=document.getElementById('yt'),id=(v.dataset.youtubeId||'').trim();
+ if(/^[\w-]{6,20}$/.test(id))v.innerHTML='<iframe src="https://www.youtube-nocookie.com/embed/'+id+'" title="Agent OS walkthrough" allow="accelerometer; encrypted-media; picture-in-picture" allowfullscreen loading="lazy"></iframe>';
+ var f=document.getElementById('wl'),m=document.getElementById('msg');
+ if(location.search.indexOf('joined=1')>-1){m.className='ok';m.textContent="You're on the list! We'll be in touch."}
+ f.addEventListener('submit',function(e){e.preventDefault();m.className='';m.textContent='Joining…';
+  fetch('/api/waitlist',{method:'POST',body:new FormData(f),headers:{accept:'application/json'}}).then(function(r){return r.json()}).then(function(j){
+   if(j.ok){m.className='ok';m.textContent="You're on the list! We'll be in touch.";f.reset();t.value=Date.now()}else{m.className='err';m.textContent=j.error||'Something went wrong. Please try again.'}
+  }).catch(function(){m.className='err';m.textContent='Network error. Please try again.'})});
+})();
+</script>
+</body>
+</html>
