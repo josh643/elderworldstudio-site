@@ -179,9 +179,10 @@ HOME = f"""
    <h2>Game Asset Packs</h2>
    <p class="lead">We publish game-ready assets on the Unity Asset Store as <strong>Elder Worlds Publishing</strong>, built from the same pipeline we use for our own games.</p>
    <div class="panel">
-    <span class="tag soon">Coming to the Unity Asset Store</span>
-    <h3>Medieval Village Props</h3>
+    <span class="tag live">Available now &middot; $9.99</span>
+    <h3><a href="{{P}}products/medieval-village-props/index.html">Medieval Village Props</a></h3>
     <p>A pack of medieval village and market props: barrels, baskets, bread, bottles, crates, tools and more, with modular crate and liquid fills.</p>
+    <p class="meta"><a class="link" href="{{P}}products/medieval-village-props/index.html">See the pack &rarr;</a></p>
    </div>
   </div>
   <img src="{{P}}assets/img/medieval-village-props.jpg" width="1200" height="800" alt="Renders of props from the Medieval Village Props pack: a barrel, basket, bread, bottle, barrel tap and axe" loading="lazy" style="border-radius:16px;border:1px solid var(--line)">
@@ -844,6 +845,72 @@ GAMES = f"""
 </section>
 """
 page("games/index.html", f"Games | {STUDIO}", f"Games by {STUDIO}: Astro Dodge and Star Wayfarer on Google Play, Omnivael and Chronicles of the Realm on Steam, and casual mobile games coming soon.", GAMES, "/games/", "games")
+# ---- Blog: posts are markdown files in content/blog/ (front matter + body) ----
+import html as _html, json as _json, re as _re
+BLOG_DIR = ROOT.parent / "content" / "blog"
+BLOG_ORDER = ["medieval-village-props-unity-asset-pack", "devlog-building-a-medieval-world", "pos-kiosk-tips-small-shops"]
+BLOG_DATE = "2026-11-02"
+
+def _inline(t):
+    t = _html.escape(t, quote=False)
+    t = _re.sub(r"\[([^\]]+)\]\(([^)\s]+)\)", lambda m: f'<a class="link" href="{m.group(2)}"' + (' rel="noopener"' if m.group(2).startswith("http") else "") + f'>{m.group(1)}</a>', t)
+    t = _re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", t)
+    t = _re.sub(r"(?<![\w*])\*(?!\s)(.+?)(?<!\s)\*(?![\w*])", r"<em>\1</em>", t)
+    return t
+
+def _md(src):
+    out, para, lst = [], [], None
+    def flush():
+        nonlocal para, lst
+        if para:
+            out.append("<p>" + _inline(" ".join(para)) + "</p>"); para = []
+        if lst:
+            out.append(f"<{lst[0]}>" + "".join(f"<li>{_inline(i)}</li>" for i in lst[1]) + f"</{lst[0]}>"); lst = None
+    for line in src.splitlines():
+        s = line.strip()
+        if not s:
+            flush(); continue
+        m = _re.match(r"^(#{1,3})\s+(.*)", s)
+        if m:
+            flush(); n = len(m.group(1)); out.append(f"<h{n}>{_inline(m.group(2))}</h{n}>"); continue
+        ul = _re.match(r"^[-*]\s+(.*)", s); ol = _re.match(r"^\d+\.\s+(.*)", s)
+        if ul or ol:
+            kind = "ul" if ul else "ol"
+            if para or (lst and lst[0] != kind): flush()
+            if not lst: lst = (kind, [])
+            lst[1].append((ul or ol).group(1)); continue
+        if lst: flush()
+        para.append(s)
+    flush()
+    return "\n".join(out)
+
+def _post(slug):
+    raw = (BLOG_DIR / f"{slug}.md").read_text(encoding="utf-8")
+    _, fm, body = raw.split("---", 2)
+    meta = {}
+    for l in fm.splitlines():
+        mm = _re.match(r'^(\w+):\s*"?(.*?)"?\s*$', l)
+        if mm and mm.group(2): meta[mm.group(1)] = mm.group(2)
+    h1 = _re.search(r"^#\s+(.*)$", body, _re.M).group(1)
+    body = _re.sub(r"^#\s+.*$", "", body, count=1, flags=_re.M)
+    first = next(b for b in body.strip().split("\n\n") if not b.startswith("#"))
+    first = _re.sub(r"\[([^\]]+)\]\([^)]+\)", r"\1", first.replace("\n", " "))
+    return dict(slug=slug, title=meta["seo_title"], desc=meta["meta_description"], h1=h1, html=_md(body), excerpt=_inline(first))
+
+POSTS = [_post(s) for s in BLOG_ORDER]
+for p_ in POSTS:
+    ld = '<script type="application/ld+json">' + _json.dumps({"@context": "https://schema.org", "@type": "BlogPosting", "headline": p_["h1"], "description": p_["desc"], "datePublished": BLOG_DATE, "url": f"{DOMAIN}/blog/{p_['slug']}/", "image": f"{DOMAIN}/assets/img/brand/ews-og.png", "author": {"@type": "Organization", "name": STUDIO}, "publisher": {"@type": "Organization", "name": STUDIO}}) + "</script>"
+    body = (f'\n<section class="block">\n <div class="wrap" style="max-width:760px">\n'
+            f'  <p class="meta"><a class="link" href="{{P}}blog/index.html">&larr; Blog</a> &middot; <time datetime="{BLOG_DATE}">November 2, 2026</time></p>\n'
+            f'  <article class="post">\n  <h1>{p_["h1"]}</h1>\n{p_["html"]}\n  </article>\n </div>\n</section>\n')
+    page(f"blog/{p_['slug']}/index.html", p_["title"], _html.escape(p_["desc"]), body, f"/blog/{p_['slug']}/", "blog", extra_head=ld)
+cards = "\n".join(
+    f'   <article class="card"><div class="body"><h3><a class="link" href="{{P}}blog/{p_["slug"]}/index.html">{p_["h1"]}</a></h3>'
+    f'<p>{p_["excerpt"]}</p><p class="meta"><a class="link" href="{{P}}blog/{p_["slug"]}/index.html">Read post &rarr;</a></p></div></article>'
+    for p_ in POSTS)
+BLOG = (f'\n<section class="hero">\n <div class="wrap">\n  <h1>Blog</h1>\n  <p>Devlogs, asset packs and practical tips for small shops from {STUDIO}.</p>\n </div>\n</section>\n'
+        f'<section class="block">\n <div class="wrap">\n  <div class="grid cards">\n{cards}\n  </div>\n </div>\n</section>\n')
+page("blog/index.html", f"Blog | {STUDIO}", f"The {STUDIO} blog: game devlogs, Unity asset packs, and practical POS and kiosk tips for small shops.", BLOG, "/blog/", "blog")
 # 404 uses root-absolute links (served for any missing path)
 page("404.html", f"Page not found | {STUDIO}", "Page not found.", NOTFOUND, "/404.html", noindex=True, abs_urls=True)
 print("built", sum(1 for _ in ROOT.rglob("*.html")), "html files")
