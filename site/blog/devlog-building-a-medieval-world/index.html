@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Devlog: Building a Living Medieval World for Omnivael | Elder World Studio</title>
+<meta name="description" content="An Elder World Studio devlog on building Omnivael&#x27;s medieval frontier: a living sandbox RPG where trade, people, and time shape the world, not a chosen one.">
+<meta name="robots" content="index,follow">
+<link rel="canonical" href="https://elderworldstudio.com/blog/devlog-building-a-medieval-world/">
+<link rel="icon" type="image/svg+xml" href="../../assets/img/brand/ews-mark.svg?v=4">
+<link rel="icon" type="image/png" sizes="32x32" href="../../favicon.png?v=4">
+<link rel="apple-touch-icon" href="../../apple-touch-icon.png?v=4">
+<meta name="theme-color" content="#0A0614">
+<meta property="og:title" content="Devlog: Building a Living Medieval World for Omnivael | Elder World Studio">
+<meta property="og:description" content="An Elder World Studio devlog on building Omnivael&#x27;s medieval frontier: a living sandbox RPG where trade, people, and time shape the world, not a chosen one.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Elder World Studio Inc">
+<meta property="og:url" content="https://elderworldstudio.com/blog/devlog-building-a-medieval-world/">
+<meta property="og:image" content="https://elderworldstudio.com/assets/img/brand/ews-og.png?v=4">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Devlog: Building a Living Medieval World for Omnivael | Elder World Studio">
+<meta name="twitter:description" content="An Elder World Studio devlog on building Omnivael&#x27;s medieval frontier: a living sandbox RPG where trade, people, and time shape the world, not a chosen one.">
+<meta name="twitter:image" content="https://elderworldstudio.com/assets/img/brand/ews-og.png?v=4">
+<link rel="preload" href="../../assets/fonts/michroma.woff" as="font" type="font/woff" crossorigin>
+<link rel="stylesheet" href="../../assets/css/site.css?v=7">
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9120677014955697" crossorigin="anonymous"></script>
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "BlogPosting", "headline": "Devlog: Building a Living Medieval World", "description": "An Elder World Studio devlog on building Omnivael's medieval frontier: a living sandbox RPG where trade, people, and time shape the world, not a chosen one.", "datePublished": "2026-11-02", "url": "https://elderworldstudio.com/blog/devlog-building-a-medieval-world/", "image": "https://elderworldstudio.com/assets/img/brand/ews-og.png", "author": {"@type": "Organization", "name": "Elder World Studio Inc"}, "publisher": {"@type": "Organization", "name": "Elder World Studio Inc"}}</script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="site-header">
+ <div class="wrap">
+  <div class="header-bar">
+  <a class="brand" href="../../index.html"><img src="../../assets/img/brand/ews-mark.svg?v=4" width="36" height="36" alt=""><span>Elder World Studio Inc</span></a>
+  <button type="button" class="nav-toggle" aria-expanded="false" aria-controls="site-nav" aria-label="Menu"><span class="nav-toggle-bars" aria-hidden="true"></span><span class="nav-toggle-text">Menu</span></button>
+  </div>
+  <nav id="site-nav" class="nav" aria-label="Main"><a href="../../index.html">Home</a><a href="../../services/index.html">Products</a><a href="../../games/index.html">Games</a><a href="../../merch/index.html">Merch</a><a href="../../contact/index.html">Contact</a><a class="nav-cta" href="../../demo/index.html">Free demo</a></nav>
+ </div>
+</header>
+<main id="main">
+
+<section class="block">
+ <div class="wrap" style="max-width:760px">
+  <p class="meta"><a class="link" href="../../blog/index.html">&larr; Blog</a> &middot; <time datetime="2026-11-02">November 2, 2026</time></p>
+  <article class="post">
+  <h1>Devlog: Building a Living Medieval World</h1>
+<p>Elder World Studio started in Memphis making games, and games are still the heart of what we do. Our biggest project is <strong>Omnivael: Wayfarer's Life</strong>, a living sandbox RPG set on a medieval frontier, headed to Steam Early Access. This devlog is about the thinking behind that world: why we built it the way we did, and what we've learned about making a medieval setting feel <em>lived in</em> instead of staged.</p>
+<h2>No chosen one. No war to win.</h2>
+<p>Most fantasy RPGs hand you a destiny. You're the prophesied hero, there's a dark lord, and the world exists to wait for you to save it. We wanted the opposite.</p>
+<p>Our tagline for Omnivael is simple: <em>"No Chosen One. No war to win. Just a world to live in."</em> Your legacy unfolds through trade, exploration, relationships, and time itself. You're one wayfarer among many, and the frontier would keep turning without you.</p>
+<p>That one design decision changes everything downstream. If the player isn't the center of the world, the world needs its own reasons to exist.</p>
+<h2>An economy that runs on its people</h2>
+<p>The core idea of Omnivael is a medieval frontier whose economy runs on its people. Goods don't just appear in shops; they come from somewhere and go somewhere. That gives every location a job:</p>
+<ul><li><strong>Farms</strong> grow the food that ends up in the market.</li><li><strong>Smithies</strong> turn ore and ingots into tools.</li><li><strong>Taverns</strong> are where travelers rest, talk, and spend.</li><li><strong>Markets</strong> are where it all meets, and where a sharp trader can make a living.</li></ul>
+<p>When we design a village, we start from that question: what does this place make, and what does it need? A village that only makes sense as scenery feels hollow. A village with a reason to exist feels real, even before you talk to anyone.</p>
+<h2>Making props tell the story</h2>
+<p>A medieval world is built as much from small objects as from big buildings. Barrels, crates, baskets, bread, bottles, tools, ingots, and timber stacks do a surprising amount of storytelling. A smithy with ore piles and half-worked ingots tells you the forge is busy. A tavern with bottles at different fill levels tells you someone was just drinking.</p>
+<p>We built a large library of village and market props for this, organized by the same categories we design around: containers, farm, food, goods, ingots, ores, smithy, storage, tavern, and timber. A few details turned out to matter more than we expected:</p>
+<ul><li><strong>Fill levels.</strong> Open crates with different contents, barrels with adjustable liquid, and bottles and vials with fill levels let one prop say many different things.</li><li><strong>Real-world scale.</strong> When every prop is built to real scale, scenes come together quickly and nothing looks oddly giant or tiny next to the player.</li><li><strong>Consistent materials.</strong> Keeping a consistent texture approach across the whole set keeps a market stall from looking like it was assembled from five different games.</li></ul>
+<p>Our pipeline mixes procedural modeling in Blender with AI-assisted mesh generation, and every AI-assisted mesh gets cleaned, retopologized, re-textured, and checked by hand. The tools help us move faster; the hand pass is what makes the result usable.</p>
+<p>We liked the results enough that we packaged them up for other developers as <strong><a class="link" href="/products/medieval-village-props/">Medieval Village Props</a></strong>. More on that in <a class="link" href="/blog/medieval-village-props-unity-asset-pack/">its own post</a>.</p>
+<h2>Time as a mechanic</h2>
+<p>"Time itself" is in Omnivael's description for a reason. In a world built around a life rather than a quest, time is what gives your choices weight. Relationships grow over time. Legacy is what's left after time passes.</p>
+<p>Designing for time means thinking about what changes in a place as the hours pass. Here's what's in place in our current development builds:</p>
+<ul><li><strong>A world clock.</strong> By default, one in-game day lasts 24 real minutes, so one real minute is one game hour. The clock pauses with the game and is stored in your save, so the day and hour pick up where you left off.</li><li><strong>A full day/night cycle.</strong> The sun moves across the sky, a dim blue moon takes over at night, and light colour, ambient light, and fog all shift with the hour. After dark, your character carries a lantern.</li><li><strong>Villagers with daily schedules.</strong> Townsfolk follow schedules built from simple time blocks: sleep, work, eat, the tavern, the market, or a wander through town. They walk between homes, workplaces, the market, the well, and the tavern yard, head indoors when their schedule says so, and come back out the same door. If you stop to talk to someone, they stay put until you're done.</li></ul>
+<p>In practice, the same village plays differently at 7:30 in the morning, at midday, at dusk, and close to midnight. The town keeps moving through its day whether you're watching or not, and that's the frontier we want you to live in.</p>
+<h2>A smaller window into the same world</h2>
+<p>Not every Omnivael experience has to be a sprawling sandbox. <strong><a class="link" href="https://store.steampowered.com/app/2559510/" rel="noopener">Chronicles of the Realm</a></strong> is a free first-person dungeon game set in the world of Omnivael, also coming to Steam. You take up sword and shield, survive wave after wave of slimes and goblins in a torch-lit cave, and pick a boon between waves.</p>
+<p>It's a tighter, action-focused slice of the same setting, and a good way for us to test how the world's look and feel hold up in fast combat.</p>
+<h2>What we've learned so far</h2>
+<p>A few lessons from building a medieval world as a small indie studio:</p>
+<ol><li><strong>Start from purpose, not scenery.</strong> Ask what a place does before you decide what it looks like.</li><li><strong>Small props carry big stories.</strong> Spend time on the clutter. It's what players actually look at up close.</li><li><strong>Build reusable libraries.</strong> A well-organized prop set pays off across every village, every game, and even other studios' projects.</li><li><strong>Use new tools, but keep a human pass.</strong> AI and procedural tools speed up production; hand cleanup is what makes assets shippable.</li><li><strong>Let the world not need you.</strong> The less the world revolves around the player, the more the player wants to be part of it.</li></ol>
+<h2>Follow along</h2>
+<p>Omnivael: Wayfarer's Life is coming to Steam Early Access. <strong><a class="link" href="https://store.steampowered.com/app/4121760/" rel="noopener">Wishlist it on Steam</a></strong>, check out <strong><a class="link" href="/games/">all our games</a></strong>, and if you want to get your hands on builds early, <strong><a class="link" href="/testers/">sign up as a tester</a></strong>.</p>
+<p>More devlogs to come as we get closer to launch.</p>
+  </article>
+ </div>
+</section>
+
+</main>
+<footer class="site-footer">
+ <div class="wrap">
+  <div>&copy; 2026 Elder World Studio Inc. All rights reserved.</div>
+  <nav aria-label="Footer"><a href="../../services/index.html">Products</a><a href="../../pos/index.html">Elder POS</a><a href="../../kiosk/index.html">Kiosk OS</a><a href="../../websites/index.html">Websites</a><a href="../../build/index.html">Web builder</a><a href="../../ai-receptionist/index.html">AI receptionist</a><a href="../../agent-os/index.html">Agent OS</a><a href="../../custom-software/index.html">Custom software</a><a href="../../demo/index.html">Free demo</a><a href="../../games/index.html">Games</a><a href="../../testers/index.html">Testers</a><a href="../../merch/index.html">Merch</a><a href="../../contact/index.html">Contact</a><a href="../../privacy-policy/index.html">Privacy Policy</a><a href="mailto:annaews@agentmail.to">annaews@agentmail.to</a></nav>
+ </div>
+</footer>
+<script src="../../assets/js/nav.js?v=1" defer></script>
+<noscript><style>@media (max-width:899px){.nav{display:flex!important;flex-direction:column;width:100%}.nav-toggle{display:none!important}}</style></noscript>
+</body>
+</html>
