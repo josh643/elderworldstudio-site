@@ -85,4 +85,7 @@ export const SESSION_DAYS = 30;
 
 // Launch offer: $249 Starter setup for the first 10 PAID shops. Counted only by the webhook on paid checkout.
 export const LAUNCH_PROMO = { code: 'MEMPHIS249', plan: 'starter', limit: 10, priceEnv: 'STRIPE_PRICE_STARTER_SETUP_PROMO' };
+// Referral code: $100 off setup on Starter, Business and Plus. No cap. Each paid use is logged for referral payouts.
+export const REFERRAL_PROMO = { code: 'FRIEND100', plans: ['starter', 'business', 'plus'], off: 100 };
+export function referralPriceEnv(plan) { return `STRIPE_PRICE_${String(plan).toUpperCase()}_SETUP_REF`; }
 export function normPromo(raw) { return String(raw || '').trim().toUpperCase(); }

@@ -36,3 +36,14 @@ test('only paid webhooks count, cap of 10 enforced, idempotent per session', asy
   assert.equal(db.rows.size, 10);
   assert.match((await checkPromo(e, 'starter', 'MEMPHIS249')).message, /All 10/);
 });
+test('FRIEND100 swaps in the $100-off setup price on all three tiers and logs paid uses', async () => {
+  const rows = []; const db = { prepare(sql) { let a = []; const st = { bind(...x) { a = x; return st; }, async run() { if (/referral_redemptions \(session_id/.test(sql) && /INSERT/.test(sql)) rows.push(a); return {}; }, async first() { return { n: 0 }; } }; return st; } };
+  const e = { ...env(db), STRIPE_PRICE_STARTER_SETUP_REF: 'price_sref', STRIPE_PRICE_BUSINESS_SETUP_REF: 'price_bref', STRIPE_PRICE_PLUS_SETUP_REF: 'price_pref' };
+  assert.equal((await checkPromo(e, 'starter', 'friend100')).price, 'price_sref');
+  assert.equal((await checkPromo(e, 'business', 'FRIEND100')).price, 'price_bref');
+  assert.equal((await checkPromo(e, 'plus', 'FRIEND100')).price, 'price_pref');
+  assert.equal((await checkPromo(e, 'take_it', 'FRIEND100')).applied, false);
+  const shop = { seenEvent: async () => false, markEvent: async () => {} };
+  try { await handleStripeEvent(e, { id: 'evt_r', type: 'checkout.session.completed', data: { object: { id: 'cs_r', payment_status: 'paid', status: 'complete', customer_details: { email: 'x@y.co' }, metadata: { promo: 'FRIEND100', plan: 'business' } } } }, { shop }); } catch {}
+  assert.deepEqual(rows[0].slice(0, 4), ['cs_r', 'FRIEND100', 'business', 'x@y.co']);
+});
