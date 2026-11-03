@@ -11,6 +11,7 @@ const PAGES = [
   { name: "demo", path: "/demo/" },
   { name: "contact", path: "/contact/" },
   { name: "merch", path: "/merch/" },
+  { name: "blog", path: "/blog/" },
   { name: "games", path: "/games/" },
   { name: "testers", path: "/testers/" },
   { name: "privacy", path: "/privacy-policy/" },
@@ -39,7 +40,7 @@ const PHONE_VIEWPORTS = [
   { name: "768x1024", width: 768, height: 1024 },
 ];
 
-const NAV_LINK_COUNT = 6;
+const NAV_LINK_COUNT = 7;
 
 const SMS_CONSENT =
   "By checking this box, I agree to receive text messages from Elder World Studio about my service request (confirmations, project questions, and demo scheduling). Up to 4 msgs per request. Message and data rates may apply. Reply STOP to opt out and HELP for help. Optional — not required to get a demo.";

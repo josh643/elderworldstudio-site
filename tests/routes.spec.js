@@ -31,6 +31,18 @@ test.describe("product routes", () => {
     }
   });
 
+  test("main nav includes Blog on every public page", async ({ page }) => {
+    const { PAGES } = require("./helpers");
+    await blockAds(page);
+    for (const pageInfo of PAGES) {
+      await page.goto(pageInfo.path, { waitUntil: "domcontentloaded" });
+      const blog = page.locator('#site-nav a', { hasText: /^Blog$/ });
+      await expect(blog, pageInfo.path).toHaveCount(1);
+      const href = await blog.getAttribute("href");
+      expect(href, pageInfo.path).toMatch(/blog/);
+    }
+  });
+
   test("nav links resolve from /services/", async ({ page }) => {
     await blockAds(page);
     await page.goto("/services/", { waitUntil: "domcontentloaded" });

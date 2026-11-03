@@ -3,6 +3,8 @@ const { defineConfig } = require("@playwright/test");
 
 module.exports = defineConfig({
   testDir: "tests",
+  testMatch: /.*\.spec\.(js|mjs)/,
+  testIgnore: ["**/e2e/**", "**/e2e_*.spec.*", "e2e_client_area.spec.mjs"],
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,

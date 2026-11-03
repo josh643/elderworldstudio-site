@@ -28,7 +28,7 @@ def page(path, title, desc, body, canonical, current="", noindex=False, abs_urls
     P = "/" if abs_urls else "../" * depth
     nav = [("index.html", "Home", "home"), ("services/index.html", "Products", "products"),
            ("games/index.html", "Games", "games"), ("merch/index.html", "Merch", "merch"),
-           ("contact/index.html", "Contact", "contact")]
+           ("blog/index.html", "Blog", "blog"), ("contact/index.html", "Contact", "contact")]
     navhtml = "".join(f'<a href="{P}{h}"{" aria-current=\"page\"" if k == current else ""}>{t}</a>' for h, t, k in nav)
     navhtml += f'<a class="nav-cta" href="{P}demo/index.html"{" aria-current=\"page\"" if current == "demo" else ""}>Free demo</a>'
     robots = '<meta name="robots" content="noindex">' if noindex else '<meta name="robots" content="index,follow">'
@@ -73,7 +73,7 @@ def page(path, title, desc, body, canonical, current="", noindex=False, abs_urls
 <meta name="twitter:description" content="{desc}">
 <meta name="twitter:image" content="{DOMAIN}/assets/img/brand/ews-og.png?v=4">
 <link rel="preload" href="{P}assets/fonts/michroma.woff" as="font" type="font/woff" crossorigin>
-<link rel="stylesheet" href="{P}assets/css/site.css?v=7">
+<link rel="stylesheet" href="{P}assets/css/site.css?v=8">
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9120677014955697" crossorigin="anonymous"></script>
 {extra_head}
 </head>
@@ -563,9 +563,26 @@ BUILD = f"""
   <article class="panel tier" data-tier="starter"><h3 class="card-title">Starter</h3><p class="price">$349 setup</p><p class="price-mo">+ $19/mo</p><p>A clean, fast site for a single-location shop: home, services or menu, hours, map and contact.</p><a class="btn btn-primary" href="#reserve" data-plan="Starter">Reserve your spot</a></article>
   <article class="panel tier" data-tier="business"><h3 class="card-title">Business</h3><p class="price">$699 setup</p><p class="price-mo">+ $39/mo</p><p>More pages and room to grow: booking or quote forms, photo galleries, specials and a lead form that emails you.</p><a class="btn btn-primary" href="#reserve" data-plan="Business">Reserve your spot</a></article>
   <article class="panel tier" data-tier="plus"><h3 class="card-title">Plus</h3><p class="price">$1,299 setup</p><p class="price-mo">+ $69/mo</p><p>The full build: more pages, a simple online store or catalog, and priority changes every month.</p><a class="btn btn-primary" href="#reserve" data-plan="Plus">Reserve your spot</a></article>
+  <article class="panel tier" data-tier="take-it"><h3 class="card-title">Take it with you</h3><p class="price">$99 one time</p><p class="price-mo">No monthly fee</p><p>Already have hosting? We hand over a zip of your finished site files with an upload guide. Edits and support not included.</p><a class="btn btn-primary" href="#reserve" data-plan="Take it">Reserve your spot</a></article>
  </div>
  <p class="meta" style="margin-top:16px">Custom domain available. Prices shown are what you pay: one-time setup plus a flat monthly plan for hosting, updates and support.</p>
  {TAKE_IT_LINE}
+ <p class="meta" id="plans">Signed in? <a class="link" href="{{P}}account/">Open your account</a> to design, preview, publish or download.</p>
+ <link rel="stylesheet" href="{{P}}build/builder.css?v=4">
+ <h2 id="designer" style="margin-top:40px">Try a draft</h2>
+ <p>Describe your business and our AI designer drafts a layout unique to you. The reservation form below stays available. Nothing is charged on this page unless we have turned payments on for your visit.</p>
+ <div id="builder" class="bld">
+  <div class="panel"><ol class="steps" id="steps"></ol><div id="panel"></div>
+   <div class="nav-btns"><button type="button" class="btn btn-ghost" id="back">&larr; Back</button><button type="button" class="btn btn-primary" id="next">Next &rarr;</button></div>
+   <p class="exp">Your draft is saved in this browser so you can come back to it.</p></div>
+  <div class="stage">
+   <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px"><strong>Live preview <span class="tag" id="rev-badge">v1</span></strong>
+    <span><button type="button" class="tab on" data-device="desktop">Desktop</button> <button type="button" class="tab" data-device="mobile">Phone</button></span></div>
+   <div class="tabs" id="tabs"></div>
+   <div id="frame-wrap" class="frame desktop"><div class="chrome"><span>&#9679; &#9679; &#9679;</span><span class="u" id="url">yourbusiness.com</span></div>
+    <iframe id="preview" title="Live preview of your draft website" sandbox=""></iframe></div>
+  </div>
+ </div>
 {TAKE_IT_FAQ}
  <h2 id="reserve" style="margin-top:40px">Reserve your spot</h2>
  <p>We&rsquo;re opening the builder to local businesses in small batches. Get started below and we&rsquo;ll email you when your spot is ready. No payment now.</p>
@@ -577,7 +594,7 @@ BUILD = f"""
   <label>Email *<input name="email" type="email" required maxlength="200" autocomplete="email"></label>
   <label>Phone (optional)<input name="phone" type="tel" maxlength="40" autocomplete="tel"></label>
   <label>Business name *<input name="business" required maxlength="150" autocomplete="organization"></label>
-  <label>Plan you&rsquo;re interested in<select name="budget" id="plan-select"><option value="Starter ($349 + $19/mo)">Starter ($349 + $19/mo)</option><option value="Business ($699 + $39/mo)">Business ($699 + $39/mo)</option><option value="Plus ($1,299 + $69/mo)">Plus ($1,299 + $69/mo)</option><option value="Not sure yet" selected>Not sure yet</option></select></label>
+  <label>Plan you&rsquo;re interested in<select name="budget" id="plan-select"><option value="Starter ($349 + $19/mo)">Starter ($349 + $19/mo)</option><option value="Business ($699 + $39/mo)">Business ($699 + $39/mo)</option><option value="Plus ($1,299 + $69/mo)">Plus ($1,299 + $69/mo)</option><option value="Take it with you ($99 one time)">Take it with you ($99 one time)</option><option value="Not sure yet" selected>Not sure yet</option></select></label>
   <label>Tell us about your business *<textarea name="description" required maxlength="4000" rows="5" placeholder="What does your business do, and how should your site look and feel?"></textarea></label>
   <label class="sms-opt"><input type="checkbox" name="sms_optin" value="yes"> <span>By checking this box, I agree to receive text messages from Elder World Studio about my service request (confirmations, project questions, and demo scheduling). Up to 4 msgs per request. Message and data rates may apply. Reply STOP to opt out and HELP for help. Optional &mdash; not required to get a demo. <a class="link" href="{{P}}sms-terms/index.html">SMS Terms</a> &middot; <a class="link" href="{{P}}privacy-policy/index.html#sms">Privacy Policy</a></span></label>
   <div class="hp" aria-hidden="true"><label>Leave this empty<input name="website_url" tabindex="-1" autocomplete="off"></label></div>
@@ -588,6 +605,10 @@ BUILD = f"""
  </form>
 </div></div>
 <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+<script src="{{P}}build/samples.js?v=2" defer></script>
+<script src="{{P}}build/builder.js?v=8" defer></script>
+<script src="{{P}}build/account-bridge.js?v=1" defer></script>
+<script src="{{P}}build/pay.js?v=1" defer></script>
 <script>document.getElementById('lead-t').value=Date.now();document.querySelectorAll('[data-plan]').forEach(function(a){{a.addEventListener('click',function(){{var s=document.getElementById('plan-select');for(var i=0;i<s.options.length;i++)if(s.options[i].value.indexOf(a.dataset.plan+' ')===0)s.selectedIndex=i;}});}});(function(){{var q=new URLSearchParams(location.search),s=document.getElementById('form-status');if(!q.has('sent'))return;s.hidden=false;s.textContent=q.get('sent')==='1'?'Thanks! Your spot is reserved. We will email you soon.':('Sorry, that did not go through: '+(q.get('e')||'please try again')+' You can also email annaews@agentmail.to.');}})();</script>
 """
 SMSTERMS = f"""

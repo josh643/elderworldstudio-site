@@ -19,6 +19,7 @@ const PAGES = [
   { name: "demo", path: "/demo/" },
   { name: "contact", path: "/contact/" },
   { name: "merch", path: "/merch/" },
+  { name: "blog", path: "/blog/" },
   { name: "games", path: "/games/" },
   { name: "testers", path: "/testers/" },
   { name: "privacy", path: "/privacy-policy/" },
