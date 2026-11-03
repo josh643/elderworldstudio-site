@@ -9,11 +9,10 @@ test('no "website free" / free-website wording on the builder', () => {
   const h = read('../site/build/index.html');
   for (const m of h.match(/<(title|meta)[^>]*>[^<]*/gi) || []) assert.ok(!/\bfree\b/i.test(m), m);
 });
-test('pricing page keeps the approved numbers, reservation form, and designer', () => {
+test('pricing page keeps the approved numbers, launch code, and designer (no reservation form)', () => {
   const h = read('../site/build/index.html');
   assert.ok(h.includes('<h1>AI Web Builder</h1>'));
   assert.ok(h.includes('$349') && h.includes('$19/mo') && h.includes('$699') && h.includes('$1,299') && h.includes('$99'));
-  assert.ok(h.includes('id="build-form"') && h.includes('action="/api/lead"') && h.includes('Reserve your spot'));
+  assert.ok(!h.includes('id="build-form"') && h.includes('MEMPHIS249'));
   assert.ok(h.includes('id="builder"') && h.includes('sandbox=""'));
-  assert.ok(h.includes('cf-turnstile'));
 });

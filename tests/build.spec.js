@@ -19,7 +19,8 @@ test.describe("/build/ web builder page", () => {
     const text = (await page.locator("main").innerText()).replace(/\s+/g, " ");
     for (const p of PRICES) expect(text, `missing ${p}`).toContain(p);
     for (const tier of ["Starter", "Business", "Plus"]) await expect(page.locator(`[data-tier="${tier.toLowerCase()}"]`)).toBeVisible();
-    expect(text).toContain("first 10 Memphis shops");
+    expect(text).toContain("first 10 shops");
+    expect(text).toContain("MEMPHIS249");
     expect(text).toContain("Custom domain available");
     expect(text).toContain("Already have hosting? Take it with you: $99 one time.");
     expect(text).toContain("No monthly fee; edits and support not included.");
@@ -29,13 +30,13 @@ test.describe("/build/ web builder page", () => {
     await expect(page.locator('link[rel="canonical"]')).toHaveAttribute("href", "https://elderworldstudio.com/build/");
   });
 
-  test("has no markup math, client names, checkout or extra ad scripts", async ({ page }) => {
+  test("has no markup math, client names, Stripe embeds or extra ad scripts", async ({ page }) => {
     await open(page);
     const html = await page.content();
     const visible = await page.locator("body").innerText();
     expect(visible).not.toMatch(MARKUP);
     expect(html).not.toMatch(CLIENT_NAMES);
-    expect(html).not.toMatch(/checkout|stripe\.com|googletagmanager|fbq\(|gtag\(/i);
+    expect(html).not.toMatch(/stripe\.com|googletagmanager|fbq\(|gtag\(/i);
   });
 
   test("structured data lists the three tiers as Product/Offer", async ({ page }) => {
@@ -46,35 +47,11 @@ test.describe("/build/ web builder page", () => {
     expect(prices).toEqual(["349", "699", "1299"]);
   });
 
-  test("CTA leads to the lead form, which submits type web-builder to /api/lead", async ({ page }) => {
+  test("plan CTAs replace the reservation form and the launch code is shown", async ({ page }) => {
     await open(page);
-    let posted = null;
-    await page.route("**/api/lead", async (route) => {
-      posted = route.request().postData() || "";
-      await route.fulfill({ status: 303, headers: { Location: "/build/?sent=1#reserve" } });
-    });
-    await page.locator('[data-tier="business"] a', { hasText: "Reserve your spot" }).click();
-    await expect(page.locator("#plan-select")).toHaveValue(/^Business/);
-    const form = page.locator("#build-form");
-    await expect(form).toHaveAttribute("action", "/api/lead");
-    await form.locator('[name="name"]').fill("Test Person");
-    await form.locator('[name="email"]').fill("test@example.com");
-    await form.locator('[name="business"]').fill("Test Shop");
-    await form.locator('[name="description"]').fill("A small test shop.");
-    await form.locator('button[type="submit"]', { hasText: "Get started" }).click();
-    await expect.poll(() => posted).not.toBeNull();
-    const f = new URLSearchParams(posted);
-    expect(f.get("type")).toBe("web-builder");
-    expect(f.get("business")).toBe("Test Shop");
-    expect(f.get("return_to")).toBe("/build/");
-    expect(f.get("budget")).toMatch(/^Business/);
-    await expect(page.locator("#form-status")).toContainText("Thanks");
-  });
-
-  test("SMS consent wording matches the approved text", async ({ page }) => {
-    await open(page);
-    const text = (await page.locator(".sms-opt span").innerText()).replace(/\s+/g, " ").trim();
-    expect(text.startsWith(SMS_CONSENT)).toBeTruthy();
+    await expect(page.locator("#build-form")).toHaveCount(0);
+    await expect(page.locator(".launch-offer")).toContainText("MEMPHIS249");
+    await expect(page.locator('[data-tier="starter"] a[data-plan="Starter"]')).toBeVisible();
   });
 
   test("mobile: no overflow, hamburger works, 44px tap targets", async ({ page }) => {
@@ -83,7 +60,7 @@ test.describe("/build/ web builder page", () => {
     expect(audit.docW).toBeLessThanOrEqual(audit.vw + 1);
     expect(audit.overflowing).toEqual([]);
     await expect(page.locator(".nav-toggle")).toBeVisible();
-    for (const el of await page.locator(".tier .btn, #build-form button[type=submit], .nav-toggle").all()) {
+    for (const el of await page.locator(".tier .btn, .nav-toggle").all()) {
       const b = await el.boundingBox();
       expect(b.height).toBeGreaterThanOrEqual(44);
     }

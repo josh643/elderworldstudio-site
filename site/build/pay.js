@@ -1,4 +1,4 @@
-/* Paid CTAs on /build/. No-ops unless /api/shop-config says livePayments. Static page stays reservation-only. */
+/* Paid CTAs on /build/. No-ops unless /api/shop-config says livePayments. Paid checkout replaces the old reservation form. */
 (function () {
   'use strict';
   var PLAN = { Starter: 'starter', Business: 'business', Plus: 'plus', 'Take it': 'take_it' };
@@ -31,11 +31,11 @@
       if (j && j.ok && j.url) { location.href = j.url; return; }
       var s = statusEl();
       if (s) s.textContent = (j && j.error === 'payments-off')
-        ? 'Online payment is not on yet. Reserve your spot below.'
-        : ((j && j.error) || 'Could not start that order.') + ' You can still reserve your spot below.';
+        ? 'Online payment is not on yet. Email annaews@agentmail.to and we will help.'
+        : ((j && j.error) || 'Could not start that order.') + ' Please try again.';
     }).catch(function () {
       var s = statusEl();
-      if (s) s.textContent = 'Could not start that order. Reserve your spot below.';
+      if (s) s.textContent = 'Could not start that order. Please try again.';
     });
   }
   fetch('/api/shop-config', { headers: { accept: 'application/json' } }).then(function (r) { return r.ok ? r.json() : {}; }).then(function (cfg) {

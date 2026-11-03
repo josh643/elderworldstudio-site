@@ -120,22 +120,14 @@ test('signup, pay (test card), generate, edit, publish, download, cancel', async
   expect(after.canDownload).toBeTruthy();
 });
 
-test('reservation form still posts web-builder leads', async ({ page }) => {
+test('paid checkout replaces the reservation form on /build/', async ({ page }) => {
   await page.route('**/challenges.cloudflare.com/**', (r) => r.abort());
   await page.goto('/build/');
-  const form = page.locator('#build-form');
-  await expect(form).toHaveAttribute('action', '/api/lead');
-  await form.locator('[name="name"]').fill('Test Person');
-  await form.locator('[name="email"]').fill('test@example.com');
-  await form.locator('[name="business"]').fill('Test Shop');
-  await form.locator('[name="description"]').fill('A small test shop.');
-  await form.locator('button[type="submit"]').click();
-  await expect(page.locator('#form-status')).toContainText(/Thanks|reserved|try again|not configured/i);
+  await expect(page.locator('#build-form')).toHaveCount(0);
+  await expect(page.locator('.launch-offer')).toContainText('MEMPHIS249');
 });
 
-test('Turnstile widget is present and the lead path does not require a token when the secret is unset', async ({ page, request }) => {
-  await page.goto('/build/');
-  await expect(page.locator('.cf-turnstile')).toHaveCount(1);
+test('web-builder lead API still works without a token when the secret is unset', async ({ request }) => {
   const r = await request.post('/api/lead', {
     headers: { accept: 'application/json' },
     multipart: {

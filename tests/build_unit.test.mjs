@@ -57,9 +57,10 @@ test('regression: existing services lead form and pages untouched', () => {
   const b = fs.readFileSync(new URL('../site/build/index.html', import.meta.url), 'utf8');
   assert.ok(b.includes('$349 + $19/mo'), 'approved Starter price on page'); assert.ok(!b.includes('Pricing on request'));
   const js = fs.readFileSync(new URL('../site/build/builder.js', import.meta.url), 'utf8');
-  for (const want of ['$349 one-time + $19/mo', '$699 one-time + $39/mo', '$1,299 one-time + $69/mo', 'From $13/yr', 'Starter $249', 'first 10 Memphis shops']) assert.ok(js.includes(want), want);
+  for (const want of ['$349 one-time + $19/mo', '$699 one-time + $39/mo', '$1,299 one-time + $69/mo', 'From $13/yr', 'Starter $249', 'MEMPHIS249', 'first 10 shops']) assert.ok(js.includes(want), want);
   assert.ok(!js.includes('PROPOSED') && !js.includes('NOT FINAL') && !js.includes('pricing=proposed'), 'no proposed label/flag');
-  assert.ok(!/checkout|stripe|card number/i.test(js + b), 'static builder + page stay reservation-only');
+  assert.ok(!/card number/i.test(js + b), 'no card fields on the static page');
+  assert.ok(b.includes('MEMPHIS249') && b.includes('first 10 shops'), 'launch code shown');
   assert.ok(b.includes('sandbox=""'));
-  assert.ok(b.includes('id="build-form"') && b.includes('Reserve your spot'));
+  assert.ok(!b.includes('id="build-form"') && !/reserve/i.test(b.replace('All rights reserved', '')), 'reservation form removed; paid checkout replaces it');
 });

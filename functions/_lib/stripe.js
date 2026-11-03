@@ -86,6 +86,7 @@ export async function createCheckout({ env, plan, email, customerId, origin, fet
     customer_email: email || undefined,
     metadata,
     integration_identifier: integration,
+    allow_promotion_codes: true,
   };
   if (catalog.kind === 'one_time') {
     params.line_items = [{ price: prices.setup, quantity: 1 }];
