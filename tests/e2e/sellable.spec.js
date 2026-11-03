@@ -7,7 +7,11 @@ async function payStripeCheckout(page, email) {
     const cur = await emailBox.inputValue().catch(() => '');
     if (!cur) await emailBox.fill(email);
   }
+  const cardTab = page.locator('[data-testid="card-accordion-item"], #payment-method-accordion-item-title-card, input[value="card"]').first();
+  await cardTab.waitFor({ state: 'attached', timeout: 20000 }).catch(() => {});
+  if (await cardTab.count()) await cardTab.click({ force: true }).catch(() => {});
   const hostCard = page.locator('#cardNumber, input[name="cardNumber"], input[placeholder*="Card number" i]').first();
+  await hostCard.waitFor({ state: 'visible', timeout: 15000 }).catch(() => {});
   if (await hostCard.count()) {
     await hostCard.fill('4242424242424242');
     const exp = page.locator('#cardExpiry, input[name="cardExpiry"], input[placeholder*="MM" i]').first();
@@ -24,7 +28,9 @@ async function payStripeCheckout(page, email) {
   if (await name.count()) await name.fill('Test Buyer');
   const zip = page.locator('#billingPostalCode, input[name="billingPostalCode"]').first();
   if (await zip.count()) await zip.fill('38103');
-  await page.getByRole('button', { name: /pay|subscribe|start|submit/i }).first().click();
+  const link = page.getByRole('checkbox', { name: /save my information with link/i }).first();
+  if (await link.count() && await link.isChecked().catch(() => false)) await link.uncheck({ force: true }).catch(() => {});
+  await page.locator('button[type="submit"], [data-testid="hosted-payment-submit-button"]').first().click();
   await page.waitForURL(/paid=1/, { timeout: 60000 });
 }
 
