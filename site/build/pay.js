@@ -13,6 +13,7 @@
     s.hidden = false;
     return s;
   }
+  function promoVal() { var i = document.getElementById('promo-code'); return i ? i.value.trim() : ''; }
   function startPay(plan) {
     var email = '';
     var form = document.getElementById('build-form');
@@ -26,9 +27,12 @@
       method: 'POST',
       headers: { 'content-type': 'application/json', accept: 'application/json' },
       credentials: 'same-origin',
-      body: JSON.stringify({ plan: plan, email: email }),
+      body: JSON.stringify({ plan: plan, email: email, promo: plan === 'starter' ? promoVal() : '' }),
     }).then(function (r) { return r.json(); }).then(function (j) {
-      if (j && j.ok && j.url) { location.href = j.url; return; }
+      if (j && j.ok && j.url) {
+        if (j.promo === 'rejected' && j.message) { var m = statusEl(); if (m) m.textContent = j.message + ' Taking you to checkout\u2026'; window.alert(j.message); }
+        location.href = j.url; return;
+      }
       var s = statusEl();
       if (s) s.textContent = (j && j.error === 'payments-off')
         ? 'Online payment is not on yet. Email annaews@agentmail.to and we will help.'

@@ -17,7 +17,7 @@ export async function onRequestPost({ request, env }) {
   if (!isEmail(email)) return json({ ok: false, error: 'Enter a valid email address.' }, 400);
   try {
     const session = await createCheckout({
-      env, plan, email, customerId: customer?.id || '', origin: originOf(request, env),
+      env, plan, email, customerId: customer?.id || '', origin: originOf(request, env), promo: body.promo,
     });
     return json(session, session.ok ? 200 : session.status || 400);
   } catch (e) {

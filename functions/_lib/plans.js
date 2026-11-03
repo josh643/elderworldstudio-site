@@ -82,3 +82,7 @@ export function canEdit(customer) {
 
 export const COOKIE = 'ews_session';
 export const SESSION_DAYS = 30;
+
+// Launch offer: $249 Starter setup for the first 10 PAID shops. Counted only by the webhook on paid checkout.
+export const LAUNCH_PROMO = { code: 'MEMPHIS249', plan: 'starter', limit: 10, priceEnv: 'STRIPE_PRICE_STARTER_SETUP_PROMO' };
+export function normPromo(raw) { return String(raw || '').trim().toUpperCase(); }

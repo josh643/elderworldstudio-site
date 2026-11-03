@@ -1,5 +1,5 @@
 // Stripe Checkout + webhook + portal. TEST mode by default. Fulfillment is webhook-only.
-import { PLANS, livePayments, parsePlan, resolvePriceIds, stripeSecret } from './plans.js';
+import { LAUNCH_PROMO, normPromo, PLANS, livePayments, parsePlan, resolvePriceIds, stripeSecret } from './plans.js';
 import { newCustomer, newOrder, newSite, shopFromEnv } from './shop.js';
 import { sendWelcome, sendReceipt } from './email.js';
 
@@ -54,7 +54,32 @@ export function mockStripe(env) {
   return env.EWS_STRIPE_MOCK === '1' || String(env.STRIPE_SECRET_KEY || '').startsWith('sk_test_mock');
 }
 
-export async function createCheckout({ env, plan, email, customerId, origin, fetcher = fetch }) {
+const PROMO_SCHEMA = 'CREATE TABLE IF NOT EXISTS promo_redemptions (session_id TEXT PRIMARY KEY, code TEXT NOT NULL, created TEXT NOT NULL)';
+export async function promoRedeemed(db, code) {
+  if (!db) return null;
+  await db.prepare(PROMO_SCHEMA).run();
+  const r = await db.prepare('SELECT COUNT(*) AS n FROM promo_redemptions WHERE code = ?').bind(code).first();
+  return Number(r && r.n || 0);
+}
+export async function recordPromo(db, sessionId, code) {
+  if (!db || !sessionId || !code) return;
+  await db.prepare(PROMO_SCHEMA).run();
+  await db.prepare('INSERT OR IGNORE INTO promo_redemptions (session_id, code, created) VALUES (?,?,?)').bind(sessionId, code, new Date().toISOString()).run();
+}
+/** Decide whether the launch code applies. Returns { applied, price?, message? }. */
+export async function checkPromo(env, plan, raw) {
+  const code = normPromo(raw);
+  if (!code) return { applied: false };
+  if (code !== LAUNCH_PROMO.code) return { applied: false, message: 'That code isn\u2019t valid, so normal pricing applies.' };
+  if (plan !== LAUNCH_PROMO.plan) return { applied: false, message: 'MEMPHIS249 is for the Starter plan only, so normal pricing applies.' };
+  const price = String(env[LAUNCH_PROMO.priceEnv] || '').trim();
+  if (!/^price_[A-Za-z0-9]+$/.test(price) && !mockStripe(env)) return { applied: false, message: 'The launch code isn\u2019t available right now, so normal pricing applies.' };
+  const used = await promoRedeemed(env.BUILD_LEADS, code);
+  if (used == null || used >= LAUNCH_PROMO.limit) return { applied: false, message: 'All 10 launch spots are taken, so normal pricing applies.' };
+  return { applied: true, code, price: price || 'price_test_starter_setup_promo' };
+}
+
+export async function createCheckout({ env, plan, email, customerId, origin, promo = '', fetcher = fetch }) {
   if (!livePayments(env)) return { ok: false, error: 'payments-off', status: 403 };
   const id = parsePlan(plan);
   if (!id) return { ok: false, error: 'Unknown plan.', status: 400 };
@@ -65,6 +90,9 @@ export async function createCheckout({ env, plan, email, customerId, origin, fet
   const success = `${base}/account/?paid=1&plan=${id}`;
   const cancel = `${base}/build/?canceled=1#plans`;
   const metadata = { plan: id, ews_customer_id: customerId || '' };
+  const pr = await checkPromo(env, id, promo);
+  if (pr.applied) metadata.promo = pr.code;
+  const promoOut = pr.applied ? { promo: 'applied' } : (pr.message ? { promo: 'rejected', message: pr.message } : {});
   const integration = 'ews-web-' + Math.random().toString(36).slice(2, 10);
 
   if (mockStripe(env)) {
@@ -75,6 +103,7 @@ export async function createCheckout({ env, plan, email, customerId, origin, fet
       url: `${base}/__pay/${sid}?plan=${id}&email=${encodeURIComponent(email || '')}`,
       id: sid,
       plan: id,
+      ...promoOut,
     };
   }
 
@@ -86,20 +115,19 @@ export async function createCheckout({ env, plan, email, customerId, origin, fet
     customer_email: email || undefined,
     metadata,
     integration_identifier: integration,
-    allow_promotion_codes: true,
   };
   if (catalog.kind === 'one_time') {
     params.line_items = [{ price: prices.setup, quantity: 1 }];
     params.payment_intent_data = { metadata };
   } else {
     params.line_items = [
-      { price: prices.setup, quantity: 1 },
+      { price: pr.applied ? pr.price : prices.setup, quantity: 1 },
       { price: prices.monthly, quantity: 1 },
     ];
     params.subscription_data = { metadata };
   }
   const session = await stripeFetch(env, '/checkout/sessions', params, fetcher);
-  return { ok: true, url: session.url, id: session.id, plan: id };
+  return { ok: true, url: session.url, id: session.id, plan: id, ...promoOut };
 }
 
 export async function createPortal({ env, customer, origin, fetcher = fetch }) {
@@ -235,6 +263,7 @@ export async function handleStripeEvent(env, event, { shop, mailer } = {}) {
   const obj = event.data && event.data.object ? event.data.object : {};
   if (event.type === 'checkout.session.completed' || event.type === 'checkout.session.async_payment_succeeded') {
     if (!sessionPaid(obj) && event.type === 'checkout.session.completed') return { ok: true, skipped: 'unpaid' };
+    if (obj.metadata && normPromo(obj.metadata.promo) === LAUNCH_PROMO.code) await recordPromo(env.BUILD_LEADS, obj.id, LAUNCH_PROMO.code);
     return provisionFromSession(shop, obj, env, mailer);
   }
   if (event.type === 'customer.subscription.updated' || event.type === 'customer.subscription.deleted') {
