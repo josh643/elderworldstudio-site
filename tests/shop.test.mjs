@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { PLANS, livePayments, parsePlan, publicPlans, resolvePriceIds, stripeSecret, canDownload, canPublish, canEdit } from '../functions/_lib/plans.js';
+import { PLANS, livePayments, parsePlan, publicPlans, resolvePriceIds, stripeSecret, canDownload, canPublish, canEdit, useRealStripeTest } from '../functions/_lib/plans.js';
+import { ensureTestCatalog, refuseLiveCatalogKey, formatCatalogEnv } from '../functions/_lib/stripe-catalog.js';
 import { createMemoryShop, newCustomer, newSite, shopFromEnv } from '../functions/_lib/shop.js';
 import { isEmail, requestLoginLink, consumeLoginLink, currentCustomer, sha256Hex } from '../functions/_lib/auth.js';
 import { handleStripeEvent, provisionFromSession, verifyStripeSignature, hmacHex, sessionPaid, createCheckout } from '../functions/_lib/stripe.js';
@@ -106,6 +107,52 @@ test('webhook signature verifies', async () => {
   const v1 = await hmacHex(secret, `${t}.${payload}`);
   assert.ok(await verifyStripeSignature(payload, `t=${t},v1=${v1}`, secret));
   assert.ok(!(await verifyStripeSignature(payload, `t=${t},v1=deadbeef`, secret)));
+});
+
+test('real Stripe TEST is detected from sk_test_/rk_test_ keys', () => {
+  assert.equal(useRealStripeTest({ STRIPE_SECRET_KEY: 'sk_test_abc' }), true);
+  assert.equal(useRealStripeTest({ STRIPE_SECRET_KEY: 'rk_test_abc' }), true);
+  assert.equal(useRealStripeTest({ STRIPE_SECRET_KEY: 'sk_test_mock' }), false);
+  assert.equal(useRealStripeTest({ STRIPE_SECRET_KEY: 'sk_test_abc', EWS_STRIPE_MOCK: '1' }), false);
+  assert.equal(useRealStripeTest({ STRIPE_SECRET_KEY: 'sk_live_abc' }), false);
+});
+
+test('TEST catalog script refuses live keys and creates four plans', async () => {
+  assert.throws(() => refuseLiveCatalogKey('sk_live_abc'), /live/);
+  assert.throws(() => refuseLiveCatalogKey('sk_test_mock'), /TEST key/);
+  const products = [];
+  const prices = [];
+  let n = 1;
+  const fetcher = async (url, opts = {}) => {
+    const u = new URL(url);
+    const method = opts.method || 'GET';
+    const body = opts.body ? Object.fromEntries(new URLSearchParams(opts.body)) : {};
+    if (method === 'GET' && u.pathname === '/v1/products') return new Response(JSON.stringify({ data: products, has_more: false }), { headers: { 'content-type': 'application/json' } });
+    if (method === 'GET' && u.pathname === '/v1/prices') {
+      const prod = u.searchParams.get('product');
+      return new Response(JSON.stringify({ data: prices.filter((p) => !prod || p.product === prod), has_more: false }), { headers: { 'content-type': 'application/json' } });
+    }
+    if (method === 'POST' && u.pathname === '/v1/products') {
+      const p = { id: 'prod_' + n++, name: body.name, metadata: { ews_catalog: body['metadata[ews_catalog]'], ews_plan: body['metadata[ews_plan]'] } };
+      products.push(p);
+      return new Response(JSON.stringify(p), { headers: { 'content-type': 'application/json' } });
+    }
+    if (method === 'POST' && u.pathname === '/v1/prices') {
+      const p = { id: 'price_' + n++, product: body.product, unit_amount: Number(body.unit_amount), currency: body.currency, recurring: body['recurring[interval]'] ? { interval: body['recurring[interval]'] } : null, metadata: { ews_catalog: body['metadata[ews_catalog]'], ews_plan: body['metadata[ews_plan]'], ews_price: body['metadata[ews_price]'] } };
+      prices.push(p);
+      return new Response(JSON.stringify(p), { headers: { 'content-type': 'application/json' } });
+    }
+    return new Response(JSON.stringify({ error: { message: 'unexpected ' + method + ' ' + u.pathname } }), { status: 400 });
+  };
+  const catalog = await ensureTestCatalog('sk_test_unit', fetcher);
+  assert.equal(Object.keys(catalog).length, 4);
+  assert.match(catalog.starter.setup, /^price_/);
+  assert.match(catalog.starter.monthly, /^price_/);
+  assert.match(catalog.take_it.setup, /^price_/);
+  assert.equal(catalog.take_it.monthly, '');
+  const again = await ensureTestCatalog('sk_test_unit', fetcher);
+  assert.equal(again.starter.setup, catalog.starter.setup);
+  assert.match(formatCatalogEnv(catalog), /STRIPE_PRICE_TAKE_IT=price_/);
 });
 
 test('sessionPaid and mock checkout url', async () => {

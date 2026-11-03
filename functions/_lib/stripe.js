@@ -32,6 +32,24 @@ export async function stripeFetch(env, path, params, fetcher = fetch) {
   return json;
 }
 
+export async function stripeGet(env, path, fetcher = fetch) {
+  const key = stripeSecret(env);
+  if (!key) throw new Error('stripe-unconfigured');
+  const r = await fetcher(STRIPE + path, { headers: { Authorization: `Bearer ${key}` } });
+  const json = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(json.error?.message || `stripe ${r.status}`);
+  return json;
+}
+
+export async function stripeDelete(env, path, fetcher = fetch) {
+  const key = stripeSecret(env);
+  if (!key) throw new Error('stripe-unconfigured');
+  const r = await fetcher(STRIPE + path, { method: 'DELETE', headers: { Authorization: `Bearer ${key}` } });
+  const json = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(json.error?.message || `stripe ${r.status}`);
+  return json;
+}
+
 export function mockStripe(env) {
   return env.EWS_STRIPE_MOCK === '1' || String(env.STRIPE_SECRET_KEY || '').startsWith('sk_test_mock');
 }

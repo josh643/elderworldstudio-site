@@ -45,6 +45,14 @@ export function isTestStripeKey(key) {
   return /^(sk_test_|rk_test_)/.test(String(key || ''));
 }
 
+/** Real Stripe TEST (not the local mock). sk_test_mock and EWS_STRIPE_MOCK=1 stay mocked. */
+export function useRealStripeTest(env) {
+  const key = String(env && env.STRIPE_SECRET_KEY || '');
+  const mockFlag = String(env && env.EWS_STRIPE_MOCK || '').toLowerCase();
+  if (mockFlag === '1' || mockFlag === 'true' || mockFlag === 'on' || mockFlag === 'yes') return false;
+  return isTestStripeKey(key) && !key.startsWith('sk_test_mock');
+}
+
 export function isLiveStripeKey(key) {
   return /^(sk_live_|rk_live_)/.test(String(key || ''));
 }

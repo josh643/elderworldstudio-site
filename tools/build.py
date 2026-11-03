@@ -28,7 +28,7 @@ def page(path, title, desc, body, canonical, current="", noindex=False, abs_urls
     P = "/" if abs_urls else "../" * depth
     nav = [("index.html", "Home", "home"), ("services/index.html", "Products", "products"),
            ("games/index.html", "Games", "games"), ("merch/index.html", "Merch", "merch"),
-           ("contact/index.html", "Contact", "contact")]
+           ("blog/index.html", "Blog", "blog"), ("contact/index.html", "Contact", "contact")]
     navhtml = "".join(f'<a href="{P}{h}"{" aria-current=\"page\"" if k == current else ""}>{t}</a>' for h, t, k in nav)
     navhtml += f'<a class="nav-cta" href="{P}demo/index.html"{" aria-current=\"page\"" if current == "demo" else ""}>Free demo</a>'
     robots = '<meta name="robots" content="noindex">' if noindex else '<meta name="robots" content="index,follow">'
@@ -73,7 +73,7 @@ def page(path, title, desc, body, canonical, current="", noindex=False, abs_urls
 <meta name="twitter:description" content="{desc}">
 <meta name="twitter:image" content="{DOMAIN}/assets/img/brand/ews-og.png?v=4">
 <link rel="preload" href="{P}assets/fonts/michroma.woff" as="font" type="font/woff" crossorigin>
-<link rel="stylesheet" href="{P}assets/css/site.css?v=7">
+<link rel="stylesheet" href="{P}assets/css/site.css?v=8">
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9120677014955697" crossorigin="anonymous"></script>
 {extra_head}
 </head>

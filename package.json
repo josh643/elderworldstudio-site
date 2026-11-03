@@ -7,7 +7,10 @@
     "test:unit": "node --test functions/api/lead.test.js tests/*.test.mjs",
     "test:audit": "node tools/audit-mobile.mjs",
     "test:e2e-shop": "playwright test -c playwright.shop.config.js",
-    "e2e:client": "playwright test tests/e2e_client_area.spec.mjs"
+    "e2e:client": "playwright test tests/e2e_client_area.spec.mjs",
+    "stripe:test-catalog": "node tools/stripe-test-catalog.mjs",
+    "qa": "npm run test:unit && npm test && npm run test:e2e-shop",
+    "ews-qa": "npm run qa"
   },
   "devDependencies": {
     "@electric-sql/pglite": "^0.3.0",

@@ -160,7 +160,9 @@ h1{text-shadow:0 0 28px rgba(255,43,214,.45)}
 .nav a.nav-cta{background:var(--accent);color:#111;font-weight:700}
 .nav a.nav-cta:hover,.nav a.nav-cta[aria-current=page]{background:#FF7BE6;color:#111}
 @media (min-width:900px){
- .nav a.nav-cta{padding:6px 14px}
+ .nav{flex-wrap:nowrap}
+ .nav a{padding:6px 8px;white-space:nowrap}
+ .nav a.nav-cta{padding:6px 12px}
 }
 .price-mo{color:var(--muted);margin-top:-6px}
 .tier .btn{margin-top:8px}

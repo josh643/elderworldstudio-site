@@ -1,8 +1,38 @@
 const { test, expect } = require('@playwright/test');
 
+async function payStripeCheckout(page, email) {
+  await page.waitForURL(/checkout\.stripe\.com/, { timeout: 45000 });
+  const emailBox = page.locator('#email, input[name="email"], input[type="email"]').first();
+  if (await emailBox.count()) {
+    const cur = await emailBox.inputValue().catch(() => '');
+    if (!cur) await emailBox.fill(email);
+  }
+  const hostCard = page.locator('#cardNumber, input[name="cardNumber"], input[placeholder*="Card number" i]').first();
+  if (await hostCard.count()) {
+    await hostCard.fill('4242424242424242');
+    const exp = page.locator('#cardExpiry, input[name="cardExpiry"], input[placeholder*="MM" i]').first();
+    if (await exp.count()) await exp.fill('1234');
+    const cvc = page.locator('#cardCvc, input[name="cardCvc"], input[placeholder*="CVC" i]').first();
+    if (await cvc.count()) await cvc.fill('123');
+  } else {
+    const cardFrame = page.frameLocator('iframe[name*="cardNumber"], iframe[title*="card number" i]').first();
+    await cardFrame.locator('input').fill('4242424242424242');
+    await page.frameLocator('iframe[name*="cardExpiry"], iframe[title*="expir" i]').locator('input').fill('1234');
+    await page.frameLocator('iframe[name*="cardCvc"], iframe[title*="CVC" i]').locator('input').fill('123');
+  }
+  const name = page.locator('#billingName, input[name="billingName"], input[placeholder*="Name on card" i]').first();
+  if (await name.count()) await name.fill('Test Buyer');
+  const zip = page.locator('#billingPostalCode, input[name="billingPostalCode"]').first();
+  if (await zip.count()) await zip.fill('38103');
+  await page.getByRole('button', { name: /pay|subscribe|start|submit/i }).first().click();
+  await page.waitForURL(/paid=1/, { timeout: 60000 });
+}
+
 test('signup, pay (test card), generate, edit, publish, download, cancel', async ({ page }) => {
   const email = 'buyer@example.com';
   const api = page.request;
+  const mode = await (await api.get('/__pay/mode')).json();
+  if (mode.real) test.setTimeout(120000);
 
   await page.goto('/account/');
   await expect(page.getByRole('heading', { name: 'Sign in' })).toBeVisible();
@@ -19,10 +49,14 @@ test('signup, pay (test card), generate, edit, publish, download, cancel', async
 
   page.once('dialog', (d) => d.accept(email));
   await page.locator('[data-tier="business"] a').click();
-  await expect(page.getByRole('heading', { name: 'Test card' })).toBeVisible();
-  await expect(page.locator('#card')).toHaveValue('4242424242424242');
-  await page.click('button[type=submit]');
-  await expect(page).toHaveURL(/paid=1/);
+  if (mode.real) {
+    await payStripeCheckout(page, email);
+  } else {
+    await expect(page.getByRole('heading', { name: 'Test card' })).toBeVisible();
+    await expect(page.locator('#card')).toHaveValue('4242424242424242');
+    await page.click('button[type=submit]');
+    await expect(page).toHaveURL(/paid=1/);
+  }
   await expect(page.getByRole('heading', { name: 'Your websites' })).toBeVisible();
 
   const me = await (await api.get('/api/me')).json();

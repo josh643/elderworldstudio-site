@@ -12,7 +12,9 @@ Static website for Elder World Studio Inc. No build step is needed to deploy: th
 - `tools/shots.py` – Playwright screenshot/overflow/console check.
 - `npm test` – Playwright e2e: phone overflow + viewport meta on every page, hamburger nav, SMS consent wording, and desktop header regression.
 - `npm run test:unit` – lead form, builder, client area, and shop/billing unit tests.
-- `npm run test:e2e-shop` – sellable path: sign-up, test-card pay, generate, edit, publish, download, cancel.
+- `npm run test:e2e-shop` – sellable path: sign-up, test-card pay, generate, edit, publish, download, cancel. Uses mock Stripe unless `STRIPE_SECRET_KEY` is a real `sk_test_` / `rk_test_` key (and `EWS_STRIPE_MOCK` is not `1`).
+- `npm run stripe:test-catalog` – create or reuse Stripe TEST products/prices for the four plans and print the `STRIPE_PRICE_*` IDs. Refuses live keys.
+- `npm run qa` (alias `ews-qa`) – unit + site Playwright + shop E2E.
 
 ## Web builder prices (current)
 
@@ -42,12 +44,20 @@ D1 binding already used by the site: `BUILD_LEADS` (shop customers, sessions, si
 
 Production keeps the reservation form until every item below is set. Do **not** create live Stripe products from this repo; create them in the Stripe Dashboard, then paste the IDs.
 
-1. **Stripe test first.** In Stripe test mode (or a sandbox), create four products and seven prices:
+1. **Stripe test first.** In Stripe test mode (or a sandbox), create four products and seven prices — either in the Dashboard or with:
+
+   ```
+   STRIPE_SECRET_KEY=rk_test_… npm run stripe:test-catalog
+   ```
+
+   That script only talks to TEST mode and prints the IDs. It refuses `sk_live_` / `rk_live_`. Manual equivalent:
    - Starter setup `$349` one-time + Starter monthly `$19`
    - Business setup `$699` one-time + Business monthly `$39`
    - Plus setup `$1,299` one-time + Plus monthly `$69`
    - Take it with you `$99` one-time
    Use a [restricted API key](https://docs.stripe.com/keys.md#manage-your-api-keys) (`rk_test_…`) with Checkout Sessions, Customers, Subscriptions, and Customer Portal. Never commit keys.
+
+   Optional: `STRIPE_SECRET_KEY=sk_test_… npm run test:e2e-shop` runs checkout against hosted Stripe Checkout (card `4242…`). Leave the key unset (or set `EWS_STRIPE_MOCK=1`) for the local mock.
 2. **Pages preview env** (a non-`main` branch or Preview environment — not production):
 
    | Variable | Example / notes |

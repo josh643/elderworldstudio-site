@@ -1,16 +1,19 @@
 #!/usr/bin/env node
-// Local shop harness for Playwright: static site/ + the same Functions handlers + a fake Stripe pay page.
+// Local shop harness for Playwright: static site/ + Functions handlers.
+// Default: mock Stripe. If STRIPE_SECRET_KEY is sk_test_/rk_test_ (not sk_test_mock)
+// and EWS_STRIPE_MOCK is not 1, checkout hits real Stripe TEST Checkout.
 import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createMemoryShop } from '../functions/_lib/shop.js';
-import { handleStripeEvent } from '../functions/_lib/stripe.js';
+import { handleStripeEvent, stripeGet, stripeDelete } from '../functions/_lib/stripe.js';
+import { useRealStripeTest, resolvePriceIds, PLAN_IDS } from '../functions/_lib/plans.js';
+import { ensureTestCatalog, envFromCatalog } from '../functions/_lib/stripe-catalog.js';
 import { onRequestGet as shopConfigGet } from '../functions/api/shop-config.js';
 import { onRequestGet as authGet, onRequestPost as authPost } from '../functions/api/auth.js';
 import { onRequestPost as checkoutPost } from '../functions/api/checkout.js';
 import { onRequestPost as webhookPost } from '../functions/api/stripe-webhook.js';
-import { onRequestPost as portalPost } from '../functions/api/portal.js';
 import { onRequestGet as meGet } from '../functions/api/me.js';
 import { onRequestGet as sitesGet, onRequestPost as sitesPost } from '../functions/api/sites.js';
 import { onRequestGet as siteGet, onRequestPost as sitePost } from '../functions/api/sites/[id].js';
@@ -20,6 +23,8 @@ import { onRequestGet as downloadGet } from '../functions/api/sites/[id]/downloa
 import { onRequestGet as publishedGet } from '../functions/s/[slug].js';
 import { onRequestPost as leadPost } from '../functions/api/lead.js';
 import { onRequestPost as buildAiPost } from '../functions/api/build-ai.js';
+import { json } from '../functions/_lib/http.js';
+import { currentCustomer } from '../functions/_lib/auth.js';
 
 const realFetch = globalThis.fetch;
 globalThis.fetch = async (url, opts) => {
@@ -35,25 +40,37 @@ const PORT = Number(process.env.E2E_PORT || 8877);
 const HOST = process.env.E2E_HOST || '127.0.0.1';
 const shop = createMemoryShop();
 const mail = [];
+
+const incomingKey = String(process.env.STRIPE_SECRET_KEY || '');
+const realStripe = useRealStripeTest({ STRIPE_SECRET_KEY: incomingKey, EWS_STRIPE_MOCK: process.env.EWS_STRIPE_MOCK });
+
 const env = {
   SHOP: shop,
   EWS_LIVE_PAYMENTS: '1',
-  EWS_STRIPE_MOCK: '1',
   EWS_AUTH_DEMO: '1',
-  STRIPE_SECRET_KEY: 'sk_test_mock',
-  STRIPE_WEBHOOK_SECRET: '',
-  STRIPE_PRICE_STARTER_SETUP: 'price_test_starter_setup',
-  STRIPE_PRICE_STARTER_MONTHLY: 'price_test_starter_mo',
-  STRIPE_PRICE_BUSINESS_SETUP: 'price_test_business_setup',
-  STRIPE_PRICE_BUSINESS_MONTHLY: 'price_test_business_mo',
-  STRIPE_PRICE_PLUS_SETUP: 'price_test_plus_setup',
-  STRIPE_PRICE_PLUS_MONTHLY: 'price_test_plus_mo',
-  STRIPE_PRICE_TAKE_IT: 'price_test_take_it',
   PUBLIC_ORIGIN: `http://${HOST}:${PORT}`,
   AGENTMAIL_SEND_KEY: '',
   E2E_TOKEN: 'e2e-shop',
   _mail: mail,
 };
+
+if (realStripe) {
+  env.STRIPE_SECRET_KEY = incomingKey;
+  env.STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || '';
+} else {
+  env.EWS_STRIPE_MOCK = '1';
+  env.STRIPE_SECRET_KEY = 'sk_test_mock';
+  env.STRIPE_WEBHOOK_SECRET = '';
+  Object.assign(env, {
+    STRIPE_PRICE_STARTER_SETUP: 'price_test_starter_setup',
+    STRIPE_PRICE_STARTER_MONTHLY: 'price_test_starter_mo',
+    STRIPE_PRICE_BUSINESS_SETUP: 'price_test_business_setup',
+    STRIPE_PRICE_BUSINESS_MONTHLY: 'price_test_business_mo',
+    STRIPE_PRICE_PLUS_SETUP: 'price_test_plus_setup',
+    STRIPE_PRICE_PLUS_MONTHLY: 'price_test_plus_mo',
+    STRIPE_PRICE_TAKE_IT: 'price_test_take_it',
+  });
+}
 
 const TYPES = {
   '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8',
@@ -93,13 +110,45 @@ function portalPage(customer) {
   <button type="submit" id="cancel">Cancel plan</button></form></body></html>`;
 }
 
+async function fulfillStripeSession(sid) {
+  const session = await stripeGet(env, `/checkout/sessions/${encodeURIComponent(sid)}`);
+  return handleStripeEvent(env, {
+    id: 'evt_e2e_' + sid,
+    type: 'checkout.session.completed',
+    data: { object: session },
+  }, { shop, mailer: false });
+}
+
+async function cancelStripeCustomer(cus) {
+  if (realStripe && cus) {
+    try {
+      const list = await stripeGet(env, `/subscriptions?customer=${encodeURIComponent(cus)}&status=active`);
+      for (const sub of list.data || []) {
+        await stripeDelete(env, `/subscriptions/${sub.id}`);
+      }
+    } catch (e) {
+      console.warn('stripe cancel', e.message || e);
+    }
+  }
+  return handleStripeEvent(env, {
+    id: 'evt_cancel_' + Date.now(),
+    type: 'customer.subscription.deleted',
+    data: { object: { id: 'sub_test', customer: cus, status: 'canceled' } },
+  }, { shop, mailer: false });
+}
+
 const routes = [
   ['GET', /^\/api\/shop-config\/?$/, () => shopConfigGet({ env })],
   ['GET', /^\/api\/auth\/?$/, (ctx) => authGet(ctx)],
   ['POST', /^\/api\/auth\/?$/, (ctx) => authPost(ctx)],
   ['POST', /^\/api\/checkout\/?$/, (ctx) => checkoutPost(ctx)],
   ['POST', /^\/api\/stripe-webhook\/?$/, (ctx) => webhookPost(ctx)],
-  ['POST', /^\/api\/portal\/?$/, (ctx) => portalPost(ctx)],
+  ['POST', /^\/api\/portal\/?$/, async (ctx) => {
+    const customer = await currentCustomer(ctx.request, env, shop);
+    if (!customer) return json({ ok: false, error: 'Sign in first.' }, 401);
+    const id = customer.stripe_customer_id || customer.id;
+    return json({ ok: true, url: `http://${HOST}:${PORT}/__pay/portal?customer=${encodeURIComponent(id)}` });
+  }],
   ['GET', /^\/api\/me\/?$/, (ctx) => meGet(ctx)],
   ['GET', /^\/api\/sites\/?$/, (ctx) => sitesGet(ctx)],
   ['POST', /^\/api\/sites\/?$/, (ctx) => sitesPost(ctx)],
@@ -113,84 +162,106 @@ const routes = [
   ['POST', /^\/api\/build-ai\/?$/, (ctx) => buildAiPost(ctx)],
 ];
 
-const server = http.createServer(async (req, res) => {
-  const chunks = [];
-  for await (const c of req) chunks.push(c);
-  const raw = Buffer.concat(chunks);
-  const url = new URL(req.url, `http://${HOST}:${PORT}`);
-
-  if (req.method === 'GET' && url.pathname.startsWith('/__pay/portal')) {
-    res.writeHead(200, { 'content-type': 'text/html' });
-    return res.end(portalPage(url.searchParams.get('customer') || ''));
-  }
-  if (req.method === 'POST' && url.pathname === '/__pay/portal') {
-    const body = new URLSearchParams(raw.toString());
-    const cus = body.get('customer');
-    await handleStripeEvent(env, {
-      id: 'evt_cancel_' + Date.now(),
-      type: 'customer.subscription.deleted',
-      data: { object: { id: 'sub_test', customer: cus, status: 'canceled' } },
-    }, { shop, mailer: false });
-    res.writeHead(303, { Location: '/account/#/billing' });
-    return res.end();
-  }
-  if (req.method === 'GET' && url.pathname.startsWith('/__pay/')) {
-    res.writeHead(200, { 'content-type': 'text/html' });
-    return res.end(payPage(url.pathname.slice(7), url.searchParams.get('plan') || 'starter', url.searchParams.get('email') || ''));
-  }
-  if (req.method === 'POST' && url.pathname.startsWith('/__pay/')) {
-    const sid = url.pathname.slice(7);
-    const body = new URLSearchParams(raw.toString());
-    const email = body.get('email') || 'buyer@example.com';
-    const plan = body.get('plan') || 'starter';
-    if (!/^4242/.test(body.get('card') || '')) {
-      res.writeHead(400, { 'content-type': 'text/plain' });
-      return res.end('Use the test card 4242…');
+async function boot() {
+  if (realStripe) {
+    if (PLAN_IDS.every((id) => resolvePriceIds(process.env, id))) {
+      Object.assign(env, envFromCatalog(Object.fromEntries(PLAN_IDS.map((id) => {
+        const p = resolvePriceIds(process.env, id);
+        return [id, { setup: p.setup, monthly: p.monthly || '' }];
+      }))));
+    } else {
+      console.log('e2e shop: creating/reusing Stripe TEST catalog…');
+      Object.assign(env, envFromCatalog(await ensureTestCatalog(incomingKey)));
     }
-    await handleStripeEvent(env, {
-      id: 'evt_' + sid,
-      type: 'checkout.session.completed',
-      data: {
-        object: {
-          id: 'cs_test_mock_' + sid.replace(/^cs_test_mock_/, ''),
-          payment_status: 'paid',
-          customer: 'cus_test_' + email.replace(/[^a-z0-9]/g, ''),
-          customer_email: email,
-          customer_details: { email, name: 'Test Buyer' },
-          metadata: { plan },
-          amount_total: plan === 'take_it' ? 9900 : 0,
-          invoice: 'in_test_' + sid.slice(-6),
+  }
+
+  const server = http.createServer(async (req, res) => {
+    const chunks = [];
+    for await (const c of req) chunks.push(c);
+    const raw = Buffer.concat(chunks);
+    const url = new URL(req.url, `http://${HOST}:${PORT}`);
+
+    if (req.method === 'GET' && url.pathname === '/__pay/mode') {
+      res.writeHead(200, { 'content-type': 'application/json' });
+      return res.end(JSON.stringify({ ok: true, real: realStripe, mock: !realStripe }));
+    }
+    if (req.method === 'GET' && url.pathname.startsWith('/__pay/portal')) {
+      res.writeHead(200, { 'content-type': 'text/html' });
+      return res.end(portalPage(url.searchParams.get('customer') || ''));
+    }
+    if (req.method === 'POST' && url.pathname === '/__pay/portal') {
+      const body = new URLSearchParams(raw.toString());
+      await cancelStripeCustomer(body.get('customer'));
+      res.writeHead(303, { Location: '/account/#/billing' });
+      return res.end();
+    }
+    if (!realStripe && req.method === 'GET' && url.pathname.startsWith('/__pay/')) {
+      res.writeHead(200, { 'content-type': 'text/html' });
+      return res.end(payPage(url.pathname.slice(7), url.searchParams.get('plan') || 'starter', url.searchParams.get('email') || ''));
+    }
+    if (!realStripe && req.method === 'POST' && url.pathname.startsWith('/__pay/')) {
+      const sid = url.pathname.slice(7);
+      const body = new URLSearchParams(raw.toString());
+      const email = body.get('email') || 'buyer@example.com';
+      const plan = body.get('plan') || 'starter';
+      if (!/^4242/.test(body.get('card') || '')) {
+        res.writeHead(400, { 'content-type': 'text/plain' });
+        return res.end('Use the test card 4242…');
+      }
+      await handleStripeEvent(env, {
+        id: 'evt_' + sid,
+        type: 'checkout.session.completed',
+        data: {
+          object: {
+            id: 'cs_test_mock_' + sid.replace(/^cs_test_mock_/, ''),
+            payment_status: 'paid',
+            customer: 'cus_test_' + email.replace(/[^a-z0-9]/g, ''),
+            customer_email: email,
+            customer_details: { email, name: 'Test Buyer' },
+            metadata: { plan },
+            amount_total: plan === 'take_it' ? 9900 : 0,
+            invoice: 'in_test_' + sid.slice(-6),
+          },
         },
-      },
-    }, { shop, mailer: false });
-    res.writeHead(303, { Location: `/account/?paid=1&plan=${plan}#/sites` });
-    return res.end();
-  }
-
-  const request = toReq(req, raw.length ? raw : undefined);
-  const ctx = { request, env };
-  for (const [method, re, fn] of routes) {
-    if (req.method !== method) continue;
-    const m = url.pathname.match(re);
-    if (!m) continue;
-    try { return await send(res, await fn(ctx, m)); }
-    catch (e) {
-      res.writeHead(500, { 'content-type': 'application/json' });
-      return res.end(JSON.stringify({ ok: false, error: String(e.message || e) }));
+      }, { shop, mailer: false });
+      res.writeHead(303, { Location: `/account/?paid=1&plan=${plan}#/sites` });
+      return res.end();
     }
-  }
 
-  let file = path.join(SITE, decodeURIComponent(url.pathname));
-  if (file.endsWith('/')) file = path.join(file, 'index.html');
-  if (!path.extname(file) && fs.existsSync(file) && fs.statSync(file).isDirectory()) file = path.join(file, 'index.html');
-  if (!fs.existsSync(file) || !file.startsWith(SITE)) {
-    res.writeHead(404); return res.end('not found');
-  }
-  const ext = path.extname(file);
-  res.writeHead(200, { 'content-type': TYPES[ext] || 'application/octet-stream' });
-  fs.createReadStream(file).pipe(res);
-});
+    if (realStripe && req.method === 'GET' && url.pathname.startsWith('/account') && url.searchParams.get('session_id')) {
+      try { await fulfillStripeSession(url.searchParams.get('session_id')); }
+      catch (e) { console.warn('fulfill', e.message || e); }
+    }
 
-server.listen(PORT, HOST, () => {
-  console.log(`e2e shop server http://${HOST}:${PORT}`);
+    const request = toReq(req, raw.length ? raw : undefined);
+    const ctx = { request, env };
+    for (const [method, re, fn] of routes) {
+      if (req.method !== method) continue;
+      const m = url.pathname.match(re);
+      if (!m) continue;
+      try { return await send(res, await fn(ctx, m)); }
+      catch (e) {
+        res.writeHead(500, { 'content-type': 'application/json' });
+        return res.end(JSON.stringify({ ok: false, error: String(e.message || e) }));
+      }
+    }
+
+    let file = path.join(SITE, decodeURIComponent(url.pathname));
+    if (file.endsWith('/')) file = path.join(file, 'index.html');
+    if (!path.extname(file) && fs.existsSync(file) && fs.statSync(file).isDirectory()) file = path.join(file, 'index.html');
+    if (!fs.existsSync(file) || !file.startsWith(SITE)) {
+      res.writeHead(404); return res.end('not found');
+    }
+    const ext = path.extname(file);
+    res.writeHead(200, { 'content-type': TYPES[ext] || 'application/octet-stream' });
+    fs.createReadStream(file).pipe(res);
+  });
+
+  await new Promise((resolve) => server.listen(PORT, HOST, resolve));
+  console.log(`e2e shop server http://${HOST}:${PORT} stripe=${realStripe ? 'test' : 'mock'}`);
+}
+
+boot().catch((e) => {
+  console.error(e);
+  process.exit(1);
 });
