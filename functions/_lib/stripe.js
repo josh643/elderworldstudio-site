@@ -1,5 +1,5 @@
 // Stripe Checkout + webhook + portal. TEST mode by default. Fulfillment is webhook-only.
-import { LAUNCH_PROMO, normPromo, PLANS, livePayments, parsePlan, resolvePriceIds, stripeSecret } from './plans.js';
+import { LAUNCH_PROMO, REFERRAL_PROMO, referralPriceEnv, normPromo, PLANS, livePayments, parsePlan, resolvePriceIds, stripeSecret } from './plans.js';
 import { newCustomer, newOrder, newSite, shopFromEnv } from './shop.js';
 import { sendWelcome, sendReceipt } from './email.js';
 
@@ -66,10 +66,22 @@ export async function recordPromo(db, sessionId, code) {
   await db.prepare(PROMO_SCHEMA).run();
   await db.prepare('INSERT OR IGNORE INTO promo_redemptions (session_id, code, created) VALUES (?,?,?)').bind(sessionId, code, new Date().toISOString()).run();
 }
+const REF_SCHEMA = 'CREATE TABLE IF NOT EXISTS referral_redemptions (session_id TEXT PRIMARY KEY, code TEXT NOT NULL, plan TEXT, email TEXT, created TEXT NOT NULL)';
+export async function recordReferral(db, sessionId, code, plan, email) {
+  if (!db || !sessionId || !code) return;
+  await db.prepare(REF_SCHEMA).run();
+  await db.prepare('INSERT OR IGNORE INTO referral_redemptions (session_id, code, plan, email, created) VALUES (?,?,?,?,?)').bind(sessionId, code, plan || '', email || '', new Date().toISOString()).run();
+}
 /** Decide whether the launch code applies. Returns { applied, price?, message? }. */
 export async function checkPromo(env, plan, raw) {
   const code = normPromo(raw);
   if (!code) return { applied: false };
+  if (code === REFERRAL_PROMO.code) {
+    if (!REFERRAL_PROMO.plans.includes(plan)) return { applied: false, message: 'FRIEND100 is for the Starter, Business and Plus plans, so normal pricing applies.' };
+    const rp = String(env[referralPriceEnv(plan)] || '').trim();
+    if (!/^price_[A-Za-z0-9]+$/.test(rp) && !mockStripe(env)) return { applied: false, message: 'That code isn\u2019t available right now, so normal pricing applies.' };
+    return { applied: true, code, price: rp || `price_test_${plan}_setup_ref` };
+  }
   if (code !== LAUNCH_PROMO.code) return { applied: false, message: 'That code isn\u2019t valid, so normal pricing applies.' };
   if (plan !== LAUNCH_PROMO.plan) return { applied: false, message: 'MEMPHIS249 is for the Starter plan only, so normal pricing applies.' };
   const price = String(env[LAUNCH_PROMO.priceEnv] || '').trim();
@@ -264,6 +276,7 @@ export async function handleStripeEvent(env, event, { shop, mailer } = {}) {
   if (event.type === 'checkout.session.completed' || event.type === 'checkout.session.async_payment_succeeded') {
     if (!sessionPaid(obj) && event.type === 'checkout.session.completed') return { ok: true, skipped: 'unpaid' };
     if (obj.metadata && normPromo(obj.metadata.promo) === LAUNCH_PROMO.code) await recordPromo(env.BUILD_LEADS, obj.id, LAUNCH_PROMO.code);
+    if (obj.metadata && normPromo(obj.metadata.promo) === REFERRAL_PROMO.code) await recordReferral(env.BUILD_LEADS, obj.id, REFERRAL_PROMO.code, obj.metadata.plan, (obj.customer_details && obj.customer_details.email) || obj.customer_email || '');
     return provisionFromSession(shop, obj, env, mailer);
   }
   if (event.type === 'customer.subscription.updated' || event.type === 'customer.subscription.deleted') {

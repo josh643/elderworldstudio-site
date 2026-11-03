@@ -27,7 +27,7 @@
       method: 'POST',
       headers: { 'content-type': 'application/json', accept: 'application/json' },
       credentials: 'same-origin',
-      body: JSON.stringify({ plan: plan, email: email, promo: plan === 'starter' ? promoVal() : '' }),
+      body: JSON.stringify({ plan: plan, email: email, promo: plan !== 'take_it' ? promoVal() : '' }),
     }).then(function (r) { return r.json(); }).then(function (j) {
       if (j && j.ok && j.url) {
         if (j.promo === 'rejected' && j.message) { var m = statusEl(); if (m) m.textContent = j.message + ' Taking you to checkout\u2026'; window.alert(j.message); }
