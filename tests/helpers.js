@@ -16,7 +16,11 @@ const PAGES = [
   { name: "testers", path: "/testers/" },
   { name: "privacy", path: "/privacy-policy/" },
   { name: "sms-terms", path: "/sms-terms/" },
+  { name: "sms", path: "/sms/" },
   { name: "terms", path: "/terms/" },
+  { name: "dmca", path: "/dmca/" },
+  { name: "cookies", path: "/cookies/" },
+  { name: "stores-privacy", path: "/stores-privacy/" },
   { name: "sw-privacy", path: "/star-wayfarer/privacy/" },
   { name: "notfound", path: "/404.html" },
 ];
