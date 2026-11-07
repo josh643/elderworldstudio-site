@@ -6,6 +6,8 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent / "site"
 DOMAIN = "https://elderworldstudio.com"
 STUDIO = "Elder World Studio Inc"
 EMAIL = "annaews@agentmail.to"
+# Public correspondence mailbox (not a registered-office or filings change).
+PUBLIC_MAILING = "800 N King Street, Suite 304-3191, Wilmington, DE 19801"
 EFFECTIVE = "October 8, 2026"
 # Attribution (see /workspace/marketing/attribution.md): outbound store links from our own site carry utm_source=website.
 def utm(url, campaign, source="website", medium="site", content=None):
@@ -93,7 +95,7 @@ def page(path, title, desc, body, canonical, current="", noindex=False, abs_urls
 </main>
 <footer class="site-footer">
  <div class="wrap">
-  <div>&copy; 2026 {STUDIO}. All rights reserved.</div>
+  <div>&copy; 2026 {STUDIO}. All rights reserved.<br>{PUBLIC_MAILING}</div>
   <nav aria-label="Footer">{footer}</nav>
  </div>
 </footer>
@@ -408,7 +410,7 @@ POLICY = f"""
 
   <h2 id="contact">16. Contact us</h2>
   <p>If you have any questions about this Privacy Policy or want to make a privacy request, contact:</p>
-  <p><strong>{STUDIO}</strong><br>Email: <a href="mailto:{EMAIL}">{EMAIL}</a><br>Website: <a href="{DOMAIN}/">elderworldstudio.com</a></p>
+  <p><strong>{STUDIO}</strong><br>Public mailing address: {PUBLIC_MAILING}<br>Email: <a href="mailto:{EMAIL}">{EMAIL}</a><br>Website: <a href="{DOMAIN}/">elderworldstudio.com</a></p>
  </article>
 </div></div>
 """
@@ -422,7 +424,7 @@ NOTFOUND = """
 """
 
 PDESC = f"Privacy Policy for {STUDIO} and its games, including Star Wayfarer on Google Play: what data our games store, collect and share (none), retention, deletion and contact."
-HOME_LD = """<script type="application/ld+json">{"@context": "https://schema.org", "@graph": [{"@type": "Organization", "@id": "https://elderworldstudio.com/#org", "name": "Elder World Studio Inc", "url": "https://elderworldstudio.com/", "logo": "https://elderworldstudio.com/assets/img/brand/ews-og.png", "email": "annaews@agentmail.to"}, {"@type": "LocalBusiness", "@id": "https://elderworldstudio.com/#business", "name": "Elder World Studio", "url": "https://elderworldstudio.com/", "image": "https://elderworldstudio.com/assets/img/brand/ews-og.png", "email": "annaews@agentmail.to", "priceRange": "$$", "address": {"@type": "PostalAddress", "addressLocality": "Memphis", "addressRegion": "TN", "addressCountry": "US"}, "areaServed": {"@type": "City", "name": "Memphis"}, "parentOrganization": {"@id": "https://elderworldstudio.com/#org"}}]}</script>"""
+HOME_LD = """<script type="application/ld+json">{"@context": "https://schema.org", "@graph": [{"@type": "Organization", "@id": "https://elderworldstudio.com/#org", "name": "Elder World Studio Inc", "url": "https://elderworldstudio.com/", "logo": "https://elderworldstudio.com/assets/img/brand/ews-og.png", "email": "annaews@agentmail.to", "address": {"@type": "PostalAddress", "streetAddress": "800 N King Street, Suite 304-3191", "addressLocality": "Wilmington", "addressRegion": "DE", "postalCode": "19801", "addressCountry": "US"}}, {"@type": "LocalBusiness", "@id": "https://elderworldstudio.com/#business", "name": "Elder World Studio", "url": "https://elderworldstudio.com/", "image": "https://elderworldstudio.com/assets/img/brand/ews-og.png", "email": "annaews@agentmail.to", "priceRange": "$$", "address": {"@type": "PostalAddress", "streetAddress": "800 N King Street, Suite 304-3191", "addressLocality": "Wilmington", "addressRegion": "DE", "postalCode": "19801", "addressCountry": "US"}, "areaServed": {"@type": "City", "name": "Memphis"}, "parentOrganization": {"@id": "https://elderworldstudio.com/#org"}}]}</script>"""
 page("index.html", f"{STUDIO} | AI Websites, Receptionists and Shop Systems for Local Businesses in Memphis", "Elder World Studio in Memphis, TN builds AI websites, AI receptionists and point-of-sale and kiosk systems for local businesses. AI-designed sites from $349 setup.", HOME, "/", "home", extra_head=HOME_LD)
 page("contact/index.html", f"Contact | {STUDIO}", f"Contact {STUDIO} for support, privacy requests and business enquiries.", CONTACT, "/contact/", "contact")
 for p in ["privacy-policy/index.html", "privacy/index.html", "privacy-policy.html", "privacy.html", "star-wayfarer/privacy/index.html", "star-wayfarer/privacy-policy/index.html"]:
@@ -627,7 +629,7 @@ SMSTERMS = f"""
    <li>Carriers are not liable for delayed or undelivered messages.</li>
    <li><strong>Privacy:</strong> No mobile information will be shared with third parties/affiliates for marketing/promotional purposes. All the above categories exclude text messaging originator opt-in data and consent; this information will not be shared with any third parties. See our <a href="{{P}}privacy-policy/index.html#sms">Privacy Policy</a>.</li>
   </ul>
-  <p><strong>{STUDIO}</strong><br>Email: <a href="mailto:{EMAIL}">{EMAIL}</a><br>Website: <a href="{DOMAIN}/">elderworldstudio.com</a></p>
+  <p><strong>{STUDIO}</strong><br>{PUBLIC_MAILING}<br>Email: <a href="mailto:{EMAIL}">{EMAIL}</a><br>Website: <a href="{DOMAIN}/">elderworldstudio.com</a></p>
  </article>
 </div></div>
 """

@@ -12,7 +12,7 @@ test("homepage no longer claims live phone answering", () => {
   assert.doesNotMatch(html, /answer every customer/i);
   assert.doesNotMatch(html, /answers your phone/i);
   assert.match(html, /in development/i);
-  assert.match(html, /6212 Village Grove Dr Apt 1/);
+  assert.match(html, /800 N King Street, Suite 304-3191/);
   assert.match(html, /legal@elderworldstudio\.com/);
 });
 
