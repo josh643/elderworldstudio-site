@@ -1,8 +1,12 @@
 import assert from "node:assert/strict";
+import { createRequire } from "node:module";
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
+
+const require = createRequire(import.meta.url);
+const { hrefLooksLikeTemplateLeftover } = require("./console_classify.js");
 
 const repo = join(dirname(fileURLToPath(import.meta.url)), "..");
 const site = join(repo, "site");
@@ -34,7 +38,7 @@ test("no template leftovers in href/src and internal targets exist", () => {
       if (!href || href.startsWith("mailto:") || href.startsWith("tel:") || href.startsWith("data:") || href.startsWith("javascript:") || href.startsWith("#")) {
         continue;
       }
-      if (href.includes("{") || href.includes("}")) {
+      if (hrefLooksLikeTemplateLeftover(href)) {
         broken.push(`${rel} placeholder ${href}`);
         continue;
       }
@@ -60,4 +64,10 @@ test("merch privacy link is a real same-origin path, not a leftover placeholder"
   assert.doesNotMatch(html, /\{(\.\.\/)?\}/);
   assert.match(html, /<a href="\.\.\/privacy-policy\/index\.html">Privacy<\/a>/);
   assert.match(html, new RegExp(MAIL.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+});
+
+test("negative: the previously published merch placeholder would fail the scan", () => {
+  assert.equal(hrefLooksLikeTemplateLeftover("{../}privacy-policy/index.html"), true);
+  const html = readFileSync(join(site, "merch/index.html"), "utf8");
+  assert.equal(html.includes("{../}privacy-policy/index.html"), false);
 });
