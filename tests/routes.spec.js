@@ -134,5 +134,8 @@ test.describe("product routes", () => {
   test("_headers CSP report-only allows youtube-nocookie frame-src", async ({ request }) => {
     const raw = require("node:fs").readFileSync("site/_headers", "utf8");
     expect(raw).toMatch(/frame-src[^;]*youtube-nocookie\.com/);
+    expect(raw).toMatch(/frame-src[^;]*googleads\.g\.doubleclick\.net/);
+    expect(raw).toMatch(/frame-src[^;]*adtrafficquality\.google/);
+    expect(raw).toMatch(/frame-src[^;]*www\.google\.com/);
   });
 });

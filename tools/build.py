@@ -119,7 +119,7 @@ def yt_embed(video_id=None, playlist=None, title="Product demo"):
           if playlist else "")
     return (
         f'<div class="embed"><iframe src="{src}" title="{title}" loading="lazy" '
-        f'allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" '
+        f'allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" '
         f'allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>{pl}'
     )
 
